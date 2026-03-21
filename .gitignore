@@ -34,3 +34,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# pipeline outputs
+/outputs/screenshots/
+/outputs/redesigns/
+/data/
+
+# env (keep .env.example)
+.env.local
+.env.*.local
