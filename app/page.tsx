@@ -6,6 +6,7 @@ import { WorkflowView } from "@/components/workflow/WorkflowView";
 import { RunHistory } from "@/components/history/RunHistory";
 import { AgentKitSidebar } from "@/components/AgentKitSidebar";
 import { RunModal } from "@/components/RunModal";
+import { AnalyzeModal } from "@/components/AnalyzeModal";
 
 export type ViewMode = "graph" | "workflow";
 
@@ -36,6 +37,7 @@ export default function Home() {
   });
   const [isRunning, setIsRunning] = useState(false);
   const [showRunModal, setShowRunModal] = useState(false);
+  const [showAnalyzeModal, setShowAnalyzeModal] = useState(false);
 
   const loadRuns = useCallback(async () => {
     const res = await fetch("/api/runs");
@@ -110,7 +112,7 @@ export default function Home() {
               </svg>
             </div>
             <div>
-              <div className="font-semibold text-white leading-tight">Beautiful Websites Agent</div>
+              <div className="font-semibold text-white leading-tight">Neuron Websites Agent</div>
               <div className="text-xs text-gray-500">The visual layer for AI agents</div>
             </div>
           </div>
@@ -121,6 +123,16 @@ export default function Home() {
               className="px-3 py-1.5 text-xs border border-[#2a2a2a] rounded text-gray-400 hover:text-white hover:border-[#444] transition-all"
             >
               {viewMode === "graph" ? "Visualize Workflow" : "Back to Graph"}
+            </button>
+
+            <button
+              onClick={() => setShowAnalyzeModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[#2a2a2a] rounded text-gray-400 hover:text-[#E8622A] hover:border-[#E8622A] transition-all"
+            >
+              <svg viewBox="0 0 12 12" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="5" cy="5" r="4" /><path d="M8.5 8.5l2.5 2.5" strokeLinecap="round" />
+              </svg>
+              Analyze Website
             </button>
 
             <button
@@ -158,6 +170,7 @@ export default function Home() {
       <AgentKitSidebar />
 
       {showRunModal && <RunModal onConfirm={startRun} onClose={() => setShowRunModal(false)} />}
+      {showAnalyzeModal && <AnalyzeModal onClose={() => setShowAnalyzeModal(false)} />}
     </div>
   );
 }

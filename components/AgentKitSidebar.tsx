@@ -44,7 +44,7 @@ export function AgentKitSidebar() {
           <div className="w-10 h-10 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg flex items-center justify-center text-lg">
             🌐
           </div>
-          <div className="font-bold text-white text-base">Beautiful Websites</div>
+          <div className="font-bold text-white text-base">Neuron Websites</div>
         </div>
         <p className="text-sm text-gray-400 leading-relaxed">
           Find local businesses with outdated websites, qualify them, redesign their sites with AI,
@@ -71,14 +71,14 @@ export function AgentKitSidebar() {
       <div className="p-4 border-t border-[#1e1e1e]">
         <div className="text-xs uppercase tracking-widest text-gray-600 mb-3">Workflow included</div>
         <div className="text-xs text-gray-500 px-3 py-1 bg-[#1a1a1a] rounded border border-[#2a2a2a] inline-block">
-          Beautiful Websites v1
+          Neuron Websites v1
         </div>
       </div>
 
       {/* Footer */}
       <div className="mt-auto p-4 border-t border-[#1e1e1e]">
         <p className="text-xs text-gray-700">
-          © Built with Beautiful Websites Agent
+          © Built with Neuron Websites Agent
         </p>
       </div>
     </div>

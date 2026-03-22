@@ -20,10 +20,9 @@ export const db = drizzle(client, { schema });
 
 // Initialize schema
 export async function initDb() {
+  await client.execute("PRAGMA journal_mode = WAL");
+  await client.execute("PRAGMA foreign_keys = ON");
   await client.executeMultiple(`
-    PRAGMA journal_mode = WAL;
-    PRAGMA foreign_keys = ON;
-
     CREATE TABLE IF NOT EXISTS runs (
       id TEXT PRIMARY KEY,
       query TEXT NOT NULL,
