@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import type { SkillStatus } from "@/app/page";
+import type { SkillStatus } from "@/lib/types";
 
 const SKILLS = [
-  { id: "scrape", label: "Apify Scrape", desc: "Scrape Google Maps for local business leads with both an email and website. Filters out national chains.", angle: -90, icon: "🔍" },
-  { id: "qualify", label: "Site Qualify", desc: "Screenshot each business website with Playwright and visually assess whether it's worth redesigning.", angle: 0, icon: "◈" },
-  { id: "redesign", label: "Site Redesign", desc: "Generate premium single-file HTML/CSS/JS redesigns using a mix-and-match design system with unique palette, font, and layout combos.", angle: 90, icon: "</>" },
-  { id: "deploy", label: "Vercel Deploy", desc: "Deploy all generated sites to Vercel using the CLI. Captures live URLs and logs them to the build log.", angle: 180, icon: "⚡" },
+  { id: "scrape", label: "Apify Scrape", desc: "Scrape Google Maps for local business leads with both an email and website. Filters out national chains.", angle: -90 },
+  { id: "qualify", label: "Site Qualify", desc: "Screenshot each business website with Playwright and visually assess whether it's worth redesigning.", angle: 0 },
+  { id: "redesign", label: "Site Redesign", desc: "Generate premium single-file HTML/CSS/JS redesigns using a mix-and-match design system with unique palette, font, and layout combos.", angle: 90 },
+  { id: "deploy", label: "Vercel Deploy", desc: "Deploy all generated sites to Vercel using the CLI. Captures live URLs and logs them to the build log.", angle: 180 },
 ] as const;
 
 const STATUS_COLORS: Record<string, string> = {
@@ -24,6 +24,56 @@ const STATUS_TEXT: Record<string, string> = {
   failed: "#ef4444",
 };
 
+function SkillIcon({ id, color }: { id: string; color: string }) {
+  const s = { stroke: color, fill: "none", strokeWidth: "1.7", strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+
+  if (id === "scrape") return (
+    <g {...s}>
+      <circle cx="-1" cy="-2" r="6" />
+      <line x1="3.5" y1="3.5" x2="8" y2="8" />
+    </g>
+  );
+  if (id === "qualify") return (
+    <g {...s}>
+      <path d="M-9,0 C-6,-6.5 -3,-8 0,-8 C3,-8 6,-6.5 9,0 C6,6.5 3,8 0,8 C-3,8 -6,6.5 -9,0 Z" />
+      <circle cx="0" cy="0" r="3" />
+      <circle cx="0" cy="0" r="1" fill={color} stroke="none" />
+    </g>
+  );
+  if (id === "redesign") return (
+    <g {...s}>
+      <rect x="-8" y="-7" width="16" height="14" rx="2" />
+      <line x1="-8" y1="-1.5" x2="8" y2="-1.5" />
+      <line x1="-1.5" y1="-1.5" x2="-1.5" y2="7" />
+      <line x1="2" y1="1.5" x2="6" y2="1.5" />
+      <line x1="2" y1="4" x2="5" y2="4" />
+    </g>
+  );
+  if (id === "deploy") return (
+    <g {...s}>
+      <line x1="0" y1="8" x2="0" y2="-4" />
+      <polyline points="-5.5,-0.5 0,-7 5.5,-0.5" />
+      <line x1="-7" y1="8" x2="7" y2="8" />
+    </g>
+  );
+  return null;
+}
+
+function AgentIcon({ color, size = 12 }: { color: string; size?: number }) {
+  const s = size;
+  const h = s * 0.866;
+  const pts = `0,${-s} ${h},${-s / 2} ${h},${s / 2} 0,${s} ${-h},${s / 2} ${-h},${-s / 2}`;
+  return (
+    <g fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round">
+      <polygon points={pts} />
+      <circle cx="0" cy="0" r="2.8" fill={color} stroke="none" />
+      <line x1="0" y1={-s + 2} x2="0" y2="-2.8" />
+      <line x1={h - 2} y1={-s / 2 + 1.2} x2="2.4" y2="-1.4" />
+      <line x1={h - 2} y1={s / 2 - 1.2} x2="2.4" y2="1.4" />
+    </g>
+  );
+}
+
 function polarToXY(angle: number, radius: number, cx: number, cy: number) {
   const rad = (angle * Math.PI) / 180;
   return { x: cx + radius * Math.cos(rad), y: cy + radius * Math.sin(rad) };
@@ -35,7 +85,8 @@ interface Props {
 }
 
 export function AgentGraph({ skillStatus, isRunning }: Props) {
-  const [tooltip, setTooltip] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const cx = 380, cy = 300, radius = 180;
 
@@ -46,8 +97,22 @@ export function AgentGraph({ skillStatus, isRunning }: Props) {
     deploy: skillStatus.deploy,
   };
 
+  const hoveredSkill = SKILLS.find((s) => s.id === hovered);
+
+  // Smart tooltip offset based on node angle
+  function tooltipStyle(angle: number) {
+    const offset = 20;
+    if (angle === -90) return { left: mousePos.x + offset, top: mousePos.y - offset }; // top
+    if (angle === 0)   return { left: mousePos.x + offset, top: mousePos.y - offset }; // right
+    if (angle === 90)  return { left: mousePos.x + offset, top: mousePos.y - offset }; // bottom
+    return { left: mousePos.x - offset, top: mousePos.y - offset, transform: "translateX(-100%)" }; // left
+  }
+
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
+    <div
+      className="relative w-full h-full flex items-center justify-center"
+      onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
+    >
       <svg
         viewBox="0 0 760 600"
         className="w-full h-full max-w-3xl"
@@ -58,16 +123,18 @@ export function AgentGraph({ skillStatus, isRunning }: Props) {
           const pos = polarToXY(skill.angle, radius, cx, cy);
           const status = statusMap[skill.id];
           const isActive = status === "running" || status === "complete";
+          const isHov = hovered === skill.id;
           return (
             <line
               key={`edge-${skill.id}`}
               x1={cx} y1={cy}
               x2={pos.x} y2={pos.y}
-              stroke={isActive ? STATUS_COLORS[status] : "#2a2a2a"}
-              strokeWidth={isActive ? "2" : "1"}
+              stroke={isHov ? "#E8622A" : isActive ? STATUS_COLORS[status] : "#2a2a2a"}
+              strokeWidth={isHov || isActive ? "2" : "1"}
               strokeDasharray={status === "running" ? "6 4" : "none"}
               className={status === "running" ? "edge-active" : ""}
-              opacity={isActive ? 1 : 0.5}
+              opacity={isHov || isActive ? 1 : 0.5}
+              style={{ transition: "stroke 0.2s, opacity 0.2s" }}
             />
           );
         })}
@@ -76,40 +143,52 @@ export function AgentGraph({ skillStatus, isRunning }: Props) {
         {SKILLS.map((skill) => {
           const pos = polarToXY(skill.angle, radius, cx, cy);
           const status = statusMap[skill.id];
-          const color = STATUS_COLORS[status];
-          const isActive = status === "running";
+          const baseColor = STATUS_COLORS[status];
+          const isRunningNode = status === "running";
+          const isHov = hovered === skill.id;
+
+          // Orange on hover, else status color
+          const borderColor = isHov ? "#E8622A" : baseColor;
+          const iconColor = isHov ? "#E8622A" : status === "idle" ? "#555" : baseColor;
 
           return (
             <g
               key={skill.id}
-              onMouseEnter={() => setTooltip({ id: skill.id, x: pos.x, y: pos.y })}
-              onMouseLeave={() => setTooltip(null)}
+              onMouseEnter={() => setHovered(skill.id)}
+              onMouseLeave={() => setHovered(null)}
               className="cursor-pointer"
+              style={{ transition: "all 0.2s" }}
             >
-              {/* Glow ring when running */}
-              {isActive && (
-                <circle cx={pos.x} cy={pos.y} r="34" fill={color} opacity="0.15" className="animate-pulse-slow" />
+              {/* Glow ring on hover or running */}
+              {(isRunningNode || isHov) && (
+                <circle
+                  cx={pos.x} cy={pos.y} r="36"
+                  fill="#E8622A"
+                  opacity={isHov ? 0.15 : 0.1}
+                  className={isRunningNode ? "animate-pulse-slow" : ""}
+                />
               )}
               {/* Node background */}
-              <circle cx={pos.x} cy={pos.y} r="28" fill="#111" stroke={color} strokeWidth="2" />
+              <circle
+                cx={pos.x} cy={pos.y} r="28"
+                fill={isHov ? "#1a1a1a" : "#111"}
+                stroke={borderColor}
+                strokeWidth={isHov ? "2.5" : "2"}
+                style={{ transition: "stroke 0.2s, fill 0.2s" }}
+              />
               {/* Icon */}
-              <text
-                x={pos.x} y={pos.y + 5}
-                textAnchor="middle"
-                fontSize="14"
-                fill={status === "idle" ? "#555" : color}
-                fontFamily="monospace"
-              >
-                {skill.icon}
-              </text>
+              <g transform={`translate(${pos.x}, ${pos.y})`}>
+                <SkillIcon id={skill.id} color={iconColor} />
+              </g>
               {/* Label */}
               <text
                 x={pos.x} y={pos.y + 50}
                 textAnchor="middle"
                 fontSize="11"
-                fill={STATUS_TEXT[status]}
+                fill={isHov ? "#E8622A" : STATUS_TEXT[status]}
                 fontFamily="Inter, sans-serif"
                 fontWeight="500"
+                style={{ transition: "fill 0.2s" }}
               >
                 {skill.label}
               </text>
@@ -118,8 +197,8 @@ export function AgentGraph({ skillStatus, isRunning }: Props) {
                 <circle
                   cx={pos.x + 20} cy={pos.y - 20}
                   r="5"
-                  fill={color}
-                  className={isActive ? "animate-pulse" : ""}
+                  fill={baseColor}
+                  className={isRunningNode ? "animate-pulse" : ""}
                 />
               )}
             </g>
@@ -129,31 +208,33 @@ export function AgentGraph({ skillStatus, isRunning }: Props) {
         {/* Central agent node */}
         <g>
           {isRunning && (
-            <circle cx={cx} cy={cy} r="50" fill="#E8622A" opacity="0.1" className="node-active" />
+            <circle cx={cx} cy={cy} r="52" fill="#E8622A" opacity="0.08" className="node-active" />
           )}
           <circle cx={cx} cy={cy} r="40" fill="#111" stroke="#E8622A" strokeWidth="2.5" />
-          {/* Robot icon */}
-          <text x={cx} y={cy - 4} textAnchor="middle" fontSize="18" fill="#E8622A">🤖</text>
-          <text x={cx} y={cy + 60} textAnchor="middle" fontSize="12" fill="#888" fontFamily="Inter, sans-serif">
+          <g transform={`translate(${cx}, ${cy})`}>
+            <AgentIcon color="#E8622A" size={12} />
+          </g>
+          <text x={cx} y={cy + 62} textAnchor="middle" fontSize="12" fill="#888" fontFamily="Inter, sans-serif">
             Agent
           </text>
         </g>
       </svg>
 
-      {/* Tooltip */}
-      {tooltip && (() => {
-        const skill = SKILLS.find((s) => s.id === tooltip.id);
-        if (!skill) return null;
-        return (
-          <div
-            className="absolute z-20 bg-[#1a1a1a] border border-[#333] rounded-lg p-4 max-w-xs shadow-2xl pointer-events-none"
-            style={{ left: "50%", bottom: "80px", transform: "translateX(-50%)" }}
-          >
-            <div className="font-semibold text-white mb-1">{skill.label}</div>
-            <div className="text-sm text-gray-400">{skill.desc}</div>
+      {/* Tooltip — follows cursor, beside the node */}
+      {hoveredSkill && (
+        <div
+          className="fixed z-50 pointer-events-none"
+          style={tooltipStyle(hoveredSkill.angle)}
+        >
+          <div className="bg-[#1a1a1a] border border-[#E8622A]/30 rounded-lg px-4 py-3 max-w-[240px] shadow-2xl shadow-black/40">
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#E8622A]" />
+              <span className="text-xs font-semibold text-[#E8622A] uppercase tracking-wide">{hoveredSkill.label}</span>
+            </div>
+            <p className="text-xs text-gray-400 leading-relaxed">{hoveredSkill.desc}</p>
           </div>
-        );
-      })()}
+        </div>
+      )}
     </div>
   );
 }

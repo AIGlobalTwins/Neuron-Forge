@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { RunSummary } from "@/app/page";
+import type { RunSummary } from "@/lib/types";
 import { LeadCard } from "./LeadCard";
 
 interface Props {
