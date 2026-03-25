@@ -13,6 +13,7 @@ interface Result {
   name: string;
   category: string;
   address: string;
+  deployUrl: string | null;
 }
 
 const LOADING_STEPS = [
@@ -37,6 +38,7 @@ export function GoogleMapsModal({ onClose }: Props) {
   const [email, setEmail] = useState("");
   const [images, setImages] = useState<string[]>([]); // base64 data URLs
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [instructions, setInstructions] = useState("");
   const [loadingStep, setLoadingStep] = useState(0);
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +96,7 @@ export function GoogleMapsModal({ onClose }: Props) {
           phone: phone.trim(),
           email: email.trim(),
           images,
+          instructions: instructions.trim(),
         }),
       });
 
@@ -271,6 +274,20 @@ export function GoogleMapsModal({ onClose }: Props) {
               />
             </div>
 
+            {/* Instructions */}
+            <div>
+              <label className="block text-xs text-gray-500 mb-1.5 uppercase tracking-wide">
+                Instruções adicionais <span className="normal-case text-gray-700">— opcional</span>
+              </label>
+              <textarea
+                value={instructions}
+                onChange={(e) => setInstructions(e.target.value)}
+                rows={3}
+                className="w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#E8622A] transition-colors placeholder-gray-600 resize-none"
+                placeholder="Ex: Usa tons de azul escuro. O site deve ter um estilo minimalista e moderno. Destaca o serviço de entrega ao domicílio..."
+              />
+            </div>
+
             {/* Actions */}
             <div className="flex gap-3 pt-1">
               <button
@@ -294,11 +311,27 @@ export function GoogleMapsModal({ onClose }: Props) {
         {/* ── Loading ── */}
         {step === "loading" && (
           <div className="p-10 flex flex-col items-center justify-center gap-6">
-            <div className="relative w-16 h-16">
-              <div className="absolute inset-0 rounded-full border-2 border-[#E8622A]/20" />
+            <div className="relative w-20 h-20">
+              <div className="absolute inset-0 rounded-full border border-[#E8622A]/15 animate-ping" style={{ animationDuration: "2.5s" }} />
               <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-[#E8622A] animate-spin" />
-              <div className="absolute inset-3 rounded-full bg-[#E8622A]/10 flex items-center justify-center text-xl">
-                📍
+              <div className="absolute inset-0 rounded-full border border-[#E8622A]/20" />
+              <div className="absolute inset-2.5 rounded-full bg-[#111] border border-[#E8622A]/30 flex items-center justify-center">
+                <svg viewBox="0 0 32 32" className="w-7 h-7" fill="none">
+                  <circle cx="16" cy="16" r="3.5" fill="#E8622A" opacity="0.9" />
+                  <path d="M16 4 L26.4 10 L26.4 22 L16 28 L5.6 22 L5.6 10 Z" stroke="#E8622A" strokeWidth="1.2" strokeOpacity="0.5" fill="none" />
+                  <line x1="16" y1="12.5" x2="16" y2="7" stroke="#E8622A" strokeWidth="1" strokeOpacity="0.7" strokeLinecap="round" />
+                  <line x1="19" y1="14" x2="23.5" y2="11.5" stroke="#E8622A" strokeWidth="1" strokeOpacity="0.7" strokeLinecap="round" />
+                  <line x1="19" y1="18" x2="23.5" y2="20.5" stroke="#E8622A" strokeWidth="1" strokeOpacity="0.7" strokeLinecap="round" />
+                  <line x1="16" y1="19.5" x2="16" y2="25" stroke="#E8622A" strokeWidth="1" strokeOpacity="0.7" strokeLinecap="round" />
+                  <line x1="13" y1="18" x2="8.5" y2="20.5" stroke="#E8622A" strokeWidth="1" strokeOpacity="0.7" strokeLinecap="round" />
+                  <line x1="13" y1="14" x2="8.5" y2="11.5" stroke="#E8622A" strokeWidth="1" strokeOpacity="0.7" strokeLinecap="round" />
+                  <circle cx="16" cy="6.5" r="1" fill="#E8622A" opacity="0.6" />
+                  <circle cx="24" cy="11" r="1" fill="#E8622A" opacity="0.6" />
+                  <circle cx="24" cy="21" r="1" fill="#E8622A" opacity="0.6" />
+                  <circle cx="16" cy="25.5" r="1" fill="#E8622A" opacity="0.6" />
+                  <circle cx="8" cy="21" r="1" fill="#E8622A" opacity="0.6" />
+                  <circle cx="8" cy="11" r="1" fill="#E8622A" opacity="0.6" />
+                </svg>
               </div>
             </div>
             <div className="space-y-3 w-full max-w-xs">
@@ -375,13 +408,28 @@ export function GoogleMapsModal({ onClose }: Props) {
               >
                 ← Create another
               </button>
-              <a
-                href={`/api/preview/${result.id}`}
-                download={`website-${result.name.toLowerCase().replace(/\s+/g, "-")}.html`}
-                className="px-4 py-1.5 border border-[#2a2a2a] hover:border-[#E8622A] text-gray-400 hover:text-[#E8622A] text-xs rounded-lg transition-all"
-              >
-                Download HTML
-              </a>
+              <div className="flex items-center gap-2">
+                {result.deployUrl && (
+                  <a
+                    href={result.deployUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-4 py-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-medium rounded-lg transition-all"
+                  >
+                    <svg viewBox="0 0 16 16" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M8 2l4 4-4 4M4 8h8M8 14v-4" />
+                    </svg>
+                    Site publicado ↗
+                  </a>
+                )}
+                <a
+                  href={`/api/preview/${result.id}`}
+                  download={`website-${result.name.toLowerCase().replace(/\s+/g, "-")}.html`}
+                  className="px-4 py-1.5 border border-[#2a2a2a] hover:border-[#E8622A] text-gray-400 hover:text-[#E8622A] text-xs rounded-lg transition-all"
+                >
+                  Download HTML
+                </a>
+              </div>
             </div>
           </div>
         )}

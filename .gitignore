@@ -40,6 +40,9 @@ next-env.d.ts
 /outputs/redesigns/
 /data/
 
+# uploaded photos (runtime generated)
+/public/uploads/
+
 # env (keep .env.example)
 .env.local
 .env.*.local

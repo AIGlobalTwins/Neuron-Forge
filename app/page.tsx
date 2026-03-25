@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AnalyzeModal } from "@/components/AnalyzeModal";
 import { GoogleMapsModal } from "@/components/GoogleMapsModal";
+import { SettingsModal } from "@/components/SettingsModal";
 
 function SearchIcon() {
   return (
@@ -68,6 +69,7 @@ function OptionCard({ tag, title, desc, cta, icon, onClick }: OptionCardProps) {
 export default function Home() {
   const [showAnalyzeModal, setShowAnalyzeModal] = useState(false);
   const [showMapsModal, setShowMapsModal] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   return (
     <div className="h-screen flex flex-col hex-bg overflow-hidden">
@@ -81,14 +83,26 @@ export default function Home() {
             </svg>
           </div>
           <div>
-            <div className="font-semibold text-white leading-tight">Neuron Websites Agent</div>
+            <div className="font-semibold text-white leading-tight">Neuron Forge Agents</div>
             <div className="text-xs text-gray-500">The visual layer for AI agents</div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-gray-600">
-          <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-          Ready
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-xs text-gray-600">
+            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+            Ready
+          </div>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="w-8 h-8 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-gray-500 hover:text-[#E8622A] hover:border-[#E8622A]/40 hover:bg-[#E8622A]/5 transition-all duration-200"
+            title="Configurações"
+          >
+            <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="10" cy="10" r="2.5" />
+              <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4" />
+            </svg>
+          </button>
         </div>
       </header>
 
@@ -136,6 +150,7 @@ export default function Home() {
 
       {showAnalyzeModal && <AnalyzeModal onClose={() => setShowAnalyzeModal(false)} />}
       {showMapsModal && <GoogleMapsModal onClose={() => setShowMapsModal(false)} />}
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
     </div>
   );
 }

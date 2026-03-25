@@ -5,6 +5,8 @@ import { randomUUID } from "crypto";
 import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
+import { getAnthropicKey } from "@/lib/settings";
+import { deployToVercel } from "@/lib/vercel-deploy";
 
 const REDESIGN_DIR = "./outputs/redesigns";
 
@@ -140,6 +142,8 @@ interface SiteAnalysis {
   address: string;
   brandPersonality: string;
   keyMessages: string[];
+  primaryCta: string;
+  secondaryCta: string;
   score: number;
   scoreReasoning: string;
 }
@@ -192,6 +196,8 @@ JSON:
   "address": "physical address",
   "brandPersonality": "one sentence about brand tone",
   "keyMessages": ["message 1", "message 2", "message 3"],
+  "primaryCta": "exact text of the main CTA button from the site (e.g. Book Now, Reservar, Marcar)",
+  "secondaryCta": "exact text of the secondary CTA button if present",
   "score": 6,
   "scoreReasoning": "2 sentences on current design quality"
 }`,
@@ -220,9 +226,43 @@ JSON:
     address: p.address || "",
     brandPersonality: p.brandPersonality || "professional",
     keyMessages: Array.isArray(p.keyMessages) ? p.keyMessages : [],
+    primaryCta: p.primaryCta || "",
+    secondaryCta: p.secondaryCta || "",
     score: Math.max(1, Math.min(10, Number(p.score) || 5)),
     scoreReasoning: p.scoreReasoning || "",
   };
+}
+
+// ── Category-aware CTAs ───────────────────────────────────────────────────
+interface CategoryMeta {
+  ctaPrimary: string;
+  ctaSecondary: string;
+  navCta: string;
+  contactTitle: string;
+  contactBtn: string;
+}
+
+function getCategoryMeta(category: string): CategoryMeta {
+  const c = category.toLowerCase();
+  if (c.includes("restaur") || c.includes("café") || c.includes("cafe") || c.includes("bar") || c.includes("pizz") || c.includes("sushi") || c.includes("comida") || c.includes("tasca") || c.includes("food"))
+    return { ctaPrimary: "Reservar Mesa", ctaSecondary: "Ver Menu", navCta: "Reservar", contactTitle: "Fazer uma Reserva", contactBtn: "Enviar Reserva" };
+  if (c.includes("beleza") || c.includes("salon") || c.includes("beauty") || c.includes("hair") || c.includes("nail") || c.includes("spa") || c.includes("estét") || c.includes("estetica") || c.includes("barbearia") || c.includes("barber"))
+    return { ctaPrimary: "Marcar Serviço", ctaSecondary: "Ver Serviços", navCta: "Marcar", contactTitle: "Marcar Serviço", contactBtn: "Confirmar Marcação" };
+  if (c.includes("fitness") || c.includes("gym") || c.includes("ginásio") || c.includes("ginasio") || c.includes("treino") || c.includes("crossfit"))
+    return { ctaPrimary: "Experimentar Grátis", ctaSecondary: "Ver Planos", navCta: "Inscrever", contactTitle: "Começa Hoje", contactBtn: "Pedir Informações" };
+  if (c.includes("dental") || c.includes("denti") || c.includes("clínica") || c.includes("clinica") || c.includes("health") || c.includes("oral") || c.includes("médico") || c.includes("medico") || c.includes("saúde") || c.includes("saude"))
+    return { ctaPrimary: "Marcar Consulta", ctaSecondary: "Ver Tratamentos", navCta: "Marcar", contactTitle: "Marcar Consulta", contactBtn: "Confirmar Consulta" };
+  if (c.includes("hotel") || c.includes("hostel") || c.includes("alojamento") || c.includes("accommodation") || c.includes("pousada") || c.includes("apart"))
+    return { ctaPrimary: "Reservar Quarto", ctaSecondary: "Ver Quartos", navCta: "Reservar", contactTitle: "Fazer Reserva", contactBtn: "Enviar Pedido" };
+  if (c.includes("legal") || c.includes("law") || c.includes("advog") || c.includes("jurídic") || c.includes("juridic") || c.includes("solicit"))
+    return { ctaPrimary: "Consulta Gratuita", ctaSecondary: "Ver Áreas", navCta: "Contactar", contactTitle: "Fale Connosco", contactBtn: "Enviar Mensagem" };
+  if (c.includes("imobil") || c.includes("real estate") || c.includes("imóvel") || c.includes("imovel") || c.includes("casa"))
+    return { ctaPrimary: "Ver Imóveis", ctaSecondary: "Contactar Agente", navCta: "Contactar", contactTitle: "Fale com um Agente", contactBtn: "Enviar Mensagem" };
+  if (c.includes("construção") || c.includes("construcao") || c.includes("arquitetur") || c.includes("architect") || c.includes("obra") || c.includes("renovaç"))
+    return { ctaPrimary: "Pedir Orçamento", ctaSecondary: "Ver Projetos", navCta: "Orçamento", contactTitle: "Pedir Orçamento", contactBtn: "Enviar Pedido" };
+  if (c.includes("auto") || c.includes("oficina") || c.includes("garage") || c.includes("mechanic") || c.includes("revisão"))
+    return { ctaPrimary: "Marcar Revisão", ctaSecondary: "Ver Serviços", navCta: "Marcar", contactTitle: "Marcar Serviço", contactBtn: "Confirmar Marcação" };
+  return { ctaPrimary: "Contactar-nos", ctaSecondary: "Ver Serviços", navCta: "Contactar", contactTitle: "Fale Connosco", contactBtn: "Enviar Mensagem" };
 }
 
 // ── UI/UX Skill ───────────────────────────────────────────────────────────
@@ -243,8 +283,16 @@ async function generateRedesign(
   crawledPages: PageData[],
   _url: string,
   category: string,
+  instructions: string = "",
 ): Promise<string> {
   const skillRec = queryUiSkill(category.toLowerCase().replace(/[^a-z0-9 ]/g, ""));
+
+  // CTAs: prefer what was detected on the original site, fall back to category defaults
+  const meta = getCategoryMeta(category);
+  const ctaPrimary = analysis.primaryCta || meta.ctaPrimary;
+  const ctaSecondary = analysis.secondaryCta || meta.ctaSecondary;
+  const navCta = meta.navCta;
+  const contactBtn = meta.contactBtn;
 
   // Map crawled pages to sections
   const pageSections = crawledPages.map(p => ({
@@ -269,18 +317,22 @@ async function generateRedesign(
     ? { heading: "Playfair Display", body: "Lora", import: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lora:wght@400;500&display=swap" }
     : { heading: "Poppins", body: "Inter", import: "https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500&display=swap" };
 
+  const showTeam = ["dental", "denti", "clínica", "clinica", "legal", "law", "advog", "fitness", "gym", "ginás", "salon", "beauty", "barber", "médico", "medico"].some(k => category.toLowerCase().includes(k));
+
   const sectionsSpec = pageSections.map(s => `
 ### SECTION id="${s.id}" — ${s.label}
 Content from original page:
 ${s.content || "(generate relevant content based on business type)"}
 `).join("\n");
 
+  const allNavIds = ["home", ...pageSections.map(p => p.id), "why", "testimonials", ...(showTeam ? ["team"] : []), "contact"];
+
   const prompt = `You are an expert web designer creating a modern redesign of a real business site. This is a SINGLE-PAGE website where every nav link scrolls to a section.
 
 ## UI/UX SKILL GUIDANCE
 ${skillRec || "Apply Soft UI Evolution + Minimalism, generous whitespace, strong visual hierarchy."}
 
-## BRAND
+${instructions ? `## USER INSTRUCTIONS (highest priority — follow these above all else)\n${instructions}\n` : ""}## BRAND
 - Name: ${analysis.businessName}
 - Tagline: "${analysis.tagline}"
 - Category: ${category}
@@ -291,56 +343,70 @@ ${skillRec || "Apply Soft UI Evolution + Minimalism, generous whitespace, strong
 - Phone: ${analysis.phone || "—"} | Email: ${analysis.email || "—"} | Address: ${analysis.address || "—"}
 - Services: ${analysis.services.join(", ")}
 
-## SECTIONS TO GENERATE
-These are all the pages from the original site. Each becomes a section with id="${sectionIds.join('", "')}":
+## ORIGINAL SITE PAGES (each becomes a section)
 ${sectionsSpec}
 
-## HTML REQUIREMENTS
+## HTML STRUCTURE
 
 HEAD:
 - <link rel="stylesheet" href="${fonts.import}">
 - <script src="https://cdn.tailwindcss.com"></script>
 - <script>tailwind.config={theme:{extend:{colors:{primary:"${analysis.primaryColor}",accent:"${analysis.accentColor}"},fontFamily:{heading:["${fonts.heading}"],body:["${fonts.body}"]}}}}</script>
 
-NAV (fixed, id="home"):
-- bg-white/90 backdrop-blur-md shadow-sm, sticky top
-- Logo + business name (font-heading font-bold) LEFT
-- Nav links: ${sectionIds.map(id => `<a href="#${id}" class="...">Label</a>`).join(" ")} + CTA button RIGHT
-- Mobile hamburger menu toggle (vanilla JS, no libraries)
-- ALL links are href="#section-id" — NEVER href="#" alone
+NAV (fixed top, bg-white/90 backdrop-blur shadow-sm):
+- Logo + business name LEFT
+- Links: ${allNavIds.map(id => `<a href="#${id}">...</a>`).join(" ")} + <a href="#contact" class="bg-accent text-white px-5 py-2 rounded-full">${navCta}</a> RIGHT
+- Mobile hamburger (vanilla JS toggle)
+- NEVER use href="#" alone
 
-HERO SECTION (id="home" or first section):
-- min-h-screen, background-image: url("${heroImage}") center/cover
-- Dark overlay div absolute inset-0 bg-black/50
-- Centered content: H1 headline | tagline | 2 buttons:
-  * Primary: "Marcar Consulta" → href="#contact"
-  * Secondary: "Ver Serviços" → href="#${pageSections[0]?.id || "services"}"
+HERO (id="home", min-h-screen, background-image: url("${heroImage}") center/cover):
+- Dark overlay + centered text: H1 + tagline + 2 buttons:
+  * "${ctaPrimary}" → href="#contact"
+  * "${ctaSecondary}" → href="#${pageSections[0]?.id || "why"}"
 
-FOR EVERY OTHER SECTION (one per crawled page):
-- section id="{slug}" py-24
-- H2 section title, content matching the original page content above
-- Relevant layout (grid, cards, list) based on content type
-- Services/treatments: card grid with inline SVG icon + name + description
-- Clinics/locations: address cards with map pin icon
-- About/team: text + stats counters
-- No dead buttons — if a button exists, it must link to #contact, tel:${analysis.phone || ""}, mailto:${analysis.email || ""}, or another section
+ORIGINAL SECTIONS (one per crawled page, use real content):
+${sectionsSpec}
 
-CONTACT SECTION (id="contact", always last before footer):
-- 2-col: left = address + phone (href="tel:${analysis.phone || ""}") + email (href="mailto:${analysis.email || ""}") with SVG icons
-- right = form: name input, email input, textarea, submit button (type="submit", styled with accent color)
-- Form action="#" method="POST" (no JS needed)
+WHY US (id="why", py-24 bg-white):
+- H2 "Porquê escolher a ${analysis.businessName}?" centered + subheading
+- 4-card grid (2×2): each card flex items-start gap-4 p-6 bg-slate-50 rounded-2xl
+  * Icon div (w-12 h-12 bg-primary/10 rounded-xl) + inline SVG + h3 + p description
+  * Reasons must be specific to ${category} and reflect: ${analysis.brandPersonality}
+  * Use key messages: ${analysis.keyMessages.join(" | ")}
+- Below grid: dark stat bar (bg-slate-900 rounded-2xl p-8) with 3 numbers + labels
 
-FOOTER:
-- bg-gray-900 text-white py-12
-- 3 cols: brand | nav links (href="#section-id") | contacts
-- Bottom: copyright © ${new Date().getFullYear()} ${analysis.businessName}
+TESTIMONIALS (id="testimonials", py-24 bg-slate-50):
+- H2 + subheading centered, mb-16
+- 3-col grid of cards (bg-white rounded-2xl p-8 shadow-sm):
+  * 5 star SVGs (text-yellow-400)
+  * Italic review paragraph (2-3 sentences, authentic, relates to ${category})
+  * Reviewer: initials avatar (w-10 h-10 rounded-full bg-slate-200) + name + "Cliente verificado"
+  * Names and content in Portuguese, realistic for this business type
+
+${showTeam ? `TEAM (id="team", py-24 bg-white):
+- H2 + subheading centered, mb-16
+- 3-col grid: each card text-center
+  * Avatar circle (w-24 h-24 rounded-full bg-slate-100 mx-auto, show initials)
+  * Name h3 font-heading font-semibold mt-4 + role text-primary text-sm + bio text-gray-400 text-xs mt-2
+  * Realistic names and roles for ${category}` : ""}
+
+CONTACT (id="contact", py-24 ${showTeam ? "bg-slate-50" : "bg-white"}):
+- 2-col: left = H2 + p + address/phone/email with SVG icons (real hrefs: tel:, mailto:)
+  ${analysis.address ? `* Address: ${analysis.address}` : ""}
+  ${analysis.phone ? `* <a href="tel:${analysis.phone}">` : ""}
+  ${analysis.email ? `* <a href="mailto:${analysis.email}">` : ""}
+- right = form (action="#" method="POST"): name, email, textarea, submit button label="${contactBtn}"
+
+FOOTER (bg-gray-900 text-white py-12):
+- 3 cols: brand+tagline | quick links (href="#section-id") | contact info
+- Copyright © ${new Date().getFullYear()} ${analysis.businessName}. Todos os direitos reservados.
 
 STRICT RULES:
-1. Every <a> must have a real href: #section-id, tel:..., mailto:..., or the original site URL
-2. Every <button> must be type="submit" inside a form, or have onclick="document.getElementById('contact').scrollIntoView()"
-3. No placeholder text, no Lorem Ipsum — use real content from above
-4. Mobile responsive: use Tailwind responsive prefixes (sm:, md:, lg:)
-5. Inline SVG icons only (no icon libraries)
+1. Every <a> → real href: #section-id, tel:..., mailto:...
+2. Every <button> → type="submit" in form OR onclick scroll
+3. No Lorem Ipsum — use real content from original site or generate authentic content
+4. Mobile responsive: sm: md: lg: prefixes
+5. Inline SVG icons only
 
 OUTPUT: ONLY the complete HTML starting with <!DOCTYPE html>. No markdown fences. No explanations.`;
 
@@ -367,11 +433,11 @@ OUTPUT: ONLY the complete HTML starting with <!DOCTYPE html>. No markdown fences
 // ── Main handler ──────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
-  const { url, name = "", category = "Business", address = "", phone = "", email = "" } = body;
+  const { url, name = "", category = "Business", address = "", phone = "", email = "", instructions = "" } = body;
 
   if (!url) return NextResponse.json({ error: "url required" }, { status: 400 });
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  if (!anthropicKey) return NextResponse.json({ error: "ANTHROPIC_API_KEY not configured" }, { status: 500 });
+  const anthropicKey = getAnthropicKey();
+  if (!anthropicKey) return NextResponse.json({ error: "Anthropic API Key not configured. Add it in Settings." }, { status: 500 });
 
   const anthropic = new Anthropic({ apiKey: anthropicKey });
 
@@ -410,7 +476,7 @@ export async function POST(req: NextRequest) {
   // 4. Generate redesign
   let html = "";
   try {
-    html = await generateRedesign(anthropic, analysis, crawlResult.pages, url, category);
+    html = await generateRedesign(anthropic, analysis, crawlResult.pages, url, category, instructions);
   } catch (err) {
     return NextResponse.json({ error: `Redesign failed: ${(err as Error).message}` }, { status: 500 });
   }
@@ -424,7 +490,10 @@ export async function POST(req: NextRequest) {
   const id = randomUUID();
   fs.writeFileSync(path.join(REDESIGN_DIR, `analyze_${id}.html`), html, "utf-8");
 
-  console.log(`[analyze] ${analysis.businessName} | score=${analysis.score} | pages=${crawlResult.pages.length} | ${Math.round(html.length / 1024)}KB`);
+  // 6. Deploy to Vercel (if token configured)
+  const deployed = await deployToVercel(html, analysis.businessName);
+
+  console.log(`[analyze] ${analysis.businessName} | score=${analysis.score} | pages=${crawlResult.pages.length} | ${Math.round(html.length / 1024)}KB${deployed ? ` | deployed: ${deployed.url}` : ""}`);
 
   return NextResponse.json({
     id,
@@ -440,5 +509,6 @@ export async function POST(req: NextRequest) {
       colors: { primary: analysis.primaryColor, accent: analysis.accentColor },
     },
     htmlSize: html.length,
+    deployUrl: deployed?.url ?? null,
   });
 }
