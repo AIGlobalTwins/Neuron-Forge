@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { saveToHistory } from "@/lib/history";
 
 interface Props {
   onClose: () => void;
@@ -151,6 +152,7 @@ export function SocialPostsModal({ onClose }: Props) {
       if (!res.ok) throw new Error(data.error || "Erro desconhecido");
       setPosts(data.posts);
       setStep("result");
+      saveToHistory({ type: "instagram", name: businessName, posts: data.posts });
     } catch (e) {
       setError((e as Error).message);
       setStep("form");

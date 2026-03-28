@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { saveToHistory } from "@/lib/history";
 
 interface Props {
   onClose: () => void;
@@ -87,6 +88,7 @@ export function AnalyzeModal({ onClose }: Props) {
 
       setResult(data);
       setStep("result");
+      saveToHistory({ type: "analyze", name: name.trim() || url, category, websiteId: data.id, score: data.score });
     } catch (err) {
       setError((err as Error).message);
       setStep("form");

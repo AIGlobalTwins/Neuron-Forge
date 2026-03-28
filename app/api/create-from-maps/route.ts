@@ -5,6 +5,7 @@ import { randomUUID } from "crypto";
 import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
+
 import { getAnthropicKey } from "@/lib/settings";
 import { deployToVercel } from "@/lib/vercel-deploy";
 
@@ -155,23 +156,54 @@ async function extractFromMaps(mapsUrl: string): Promise<{ name: string; address
   return result;
 }
 
-function fixHtml(html: string): string {
-  html = html.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
-  const start = html.indexOf("<!DOCTYPE");
-  if (start > 0) html = html.slice(start);
+function stripMarkdown(s: string): string {
+  return s.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
+}
+
+/** Remove any HTML boilerplate from Part 2 so it can be safely spliced in */
+function cleanPart2(raw: string): string {
+  let s = stripMarkdown(raw);
+  // Drop everything up to and including <body...> if present
+  const bodyMatch = s.match(/<body[^>]*>/i);
+  if (bodyMatch && bodyMatch.index !== undefined) s = s.slice(bodyMatch.index + bodyMatch[0].length);
+  // Drop </body> and </html> if present
+  s = s.replace(/<\/body\s*>/gi, "").replace(/<\/html\s*>/gi, "");
+  // Drop any stray <!DOCTYPE / <html / <head>…</head> blocks
+  s = s.replace(/<!DOCTYPE[^>]*>/gi, "");
+  s = s.replace(/<html[^>]*>/gi, "");
+  s = s.replace(/<head[\s\S]*?<\/head>/gi, "");
+  return s.trim();
+}
+
+function fixHtml(part1: string, part2: string): string {
+  let p1 = stripMarkdown(part1);
+  const docStart = p1.indexOf("<!DOCTYPE");
+  if (docStart > 0) p1 = p1.slice(docStart);
+  // Remove premature </body></html> from Part 1 if Claude added them
+  p1 = p1.replace(/<\/body\s*>\s*<\/html\s*>/gi, "").replace(/<\/body\s*>/gi, "").replace(/<\/html\s*>/gi, "");
+
+  const p2 = cleanPart2(part2);
+
+  let html = p1 + "\n" + p2;
+
+  // Close any unclosed <style> block
   const lastStyleOpen = html.lastIndexOf("<style");
   const lastStyleClose = html.lastIndexOf("</style>");
   if (lastStyleOpen > -1 && lastStyleClose < lastStyleOpen) html += "\n}</style>";
+
   if (!html.includes("</body>")) html += "\n</body>";
   if (!html.includes("</html>")) html += "\n</html>";
   return html;
 }
 
 export async function POST(req: NextRequest) {
+  try {
   const body = await req.json().catch(() => ({}));
   const { mapsUrl = "", name = "", category = "Business", address = "", phone = "", email = "", images = [], instructions = "" } = body;
 
-  const anthropicKey = getAnthropicKey();
+  let userId: string | null = null;
+  try { const { auth } = await import("@clerk/nextjs/server"); const a = await auth(); userId = a.userId; } catch {}
+  const anthropicKey = getAnthropicKey(userId);
   if (!anthropicKey) return NextResponse.json({ error: "Anthropic API Key not configured. Add it in Settings." }, { status: 500 });
 
   // ── Extract from Maps ──────────────────────────────────────────────────
@@ -216,15 +248,27 @@ export async function POST(req: NextRequest) {
   // ── Category-aware CTAs ────────────────────────────────────────────────
   const meta = getCategoryMeta(finalCategory);
 
-  // ── Build image context blocks for Claude ──────────────────────────────
-  const imageBlocks: Anthropic.ImageBlockParam[] = (images as string[]).slice(0, 3).map((img) => ({
-    type: "image",
-    source: {
-      type: "base64",
-      media_type: (img.includes("image/png") ? "image/png" : "image/jpeg") as "image/jpeg" | "image/png",
-      data: img.replace(/^data:image\/\w+;base64,/, ""),
-    },
-  }));
+  // ── Build image context blocks for Claude (skip images > 4.5 MB) ─────────
+  const MAX_IMAGE_BYTES = 4.5 * 1024 * 1024; // 4.5 MB safe margin below Claude's 5 MB limit
+  const imageBlocks: Anthropic.ImageBlockParam[] = (images as string[])
+    .slice(0, 3)
+    .filter((img) => {
+      const base64 = img.replace(/^data:image\/\w+;base64,/, "");
+      const byteSize = (base64.length * 3) / 4;
+      if (byteSize > MAX_IMAGE_BYTES) {
+        console.warn(`[maps] skipping oversized image: ${Math.round(byteSize / 1024 / 1024 * 10) / 10} MB`);
+        return false;
+      }
+      return true;
+    })
+    .map((img) => ({
+      type: "image",
+      source: {
+        type: "base64",
+        media_type: (img.includes("image/png") ? "image/png" : "image/jpeg") as "image/jpeg" | "image/png",
+        data: img.replace(/^data:image\/\w+;base64,/, ""),
+      },
+    }));
 
   // ── Anthropic client ────────────────────────────────────────────────────
   const anthropic = new Anthropic({ apiKey: anthropicKey });
@@ -263,37 +307,47 @@ HEAD:
 <link href="${fonts.import}" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{primary:"${photoAnalysis.primaryColor}",accent:"${photoAnalysis.accentColor}"},fontFamily:{heading:["${fonts.heading}"],body:["${fonts.body}"]}}}}</script>
-<body class="font-body">
+<style>*,*::before,*::after{box-sizing:border-box}html{scroll-behavior:smooth}body{overflow-x:hidden}img{max-width:100%;height:auto}p,h1,h2,h3,h4,li,span{overflow-wrap:break-word;word-break:break-word}</style>
+<body class="font-body bg-white antialiased">
 
-NAV (id="navbar") — fixed top-0 inset-x-0 z-50 bg-white/90 backdrop-blur shadow-sm:
-- Left: logo div + business name font-heading font-bold
-- Right: <a href="#services">Serviços</a> <a href="#why">Porquê Nós</a> <a href="#testimonials">Testemunhos</a> <a href="#contact">Contacto</a> + <a href="#contact" class="bg-blue-600 text-white px-5 py-2 rounded-full">${meta.navCta}</a>
-- Hamburger button (id="hamburger") + hidden mobile menu (id="mobile-menu") with same links
-- JS: document.getElementById('hamburger').onclick=()=>document.getElementById('mobile-menu').classList.toggle('hidden')
+NAV (id="navbar") — <nav id="navbar" class="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-100 shadow-sm">:
+- Inner: <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+- Left: <a href="#home" class="flex items-center gap-3"> — logo circle w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-heading font-bold + span font-heading font-bold text-xl text-slate-900
+- Right desktop: <div class="hidden md:flex items-center gap-8"> — nav links text-slate-600 hover:text-primary text-sm font-medium transition + <a href="#contact" class="px-5 py-2.5 bg-primary hover:opacity-90 text-white text-sm font-semibold rounded-full transition">${meta.navCta}</a>
+- Right mobile: hamburger button id="hamburger" class="md:hidden p-2" (3 lines SVG 24x24)
+- Mobile menu: <div id="mobile-menu" class="hidden md:hidden border-t border-slate-100 px-6 py-4 space-y-3"> — same links + CTA button w-full
+- JS: <script>document.getElementById('hamburger').addEventListener('click',()=>{document.getElementById('mobile-menu').classList.toggle('hidden')})</script>
 
-HERO (id="home") — relative min-h-screen flex items-center justify-center, style="background-image:url('${heroImage}');background-size:cover;background-position:center":
-- Overlay: div absolute inset-0 bg-black/50
-- Content: relative z-10 text-center — H1 font-heading text-5xl md:text-7xl font-bold text-white + tagline p text-white/80 text-xl mt-4 + 2 buttons mt-8:
-  * <button onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})" class="bg-blue-600 px-8 py-4 rounded-full text-white font-semibold text-lg">${meta.ctaPrimary}</button>
-  * <button onclick="document.getElementById('services').scrollIntoView({behavior:'smooth'})" class="ml-4 border-2 border-white px-8 py-4 rounded-full text-white font-semibold text-lg">${meta.ctaSecondary}</button>
+HERO (id="home") — <section id="home" class="relative min-h-screen flex items-center justify-center" style="background-image:url('${heroImage}');background-size:cover;background-position:center">:
+- Overlay: <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70"></div>
+- Content: <div class="relative z-10 text-center px-6 max-w-4xl mx-auto">
+  * <h1 class="font-heading text-5xl md:text-7xl font-bold text-white leading-tight mb-6"> — compelling headline using business name + tagline
+  * <p class="text-white/80 text-xl mb-10 max-w-2xl mx-auto leading-relaxed"> — 1-sentence value prop
+  * <div class="flex flex-col sm:flex-row gap-4 justify-center">
+    - <button onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})" class="px-8 py-4 bg-primary hover:opacity-90 text-white font-semibold text-lg rounded-full transition shadow-lg">${meta.ctaPrimary}</button>
+    - <button onclick="document.getElementById('services').scrollIntoView({behavior:'smooth'})" class="px-8 py-4 border-2 border-white/70 hover:border-white text-white font-semibold text-lg rounded-full transition backdrop-blur-sm">${meta.ctaSecondary}</button>
 
-SERVICES (id="services") — py-24 px-6 bg-slate-50:
-- H2 font-heading text-4xl font-bold text-center mb-4 + p text-gray-500 text-center mb-12
-- grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto
-- Exactly 3 real service cards for a ${finalCategory} business, each: bg-white rounded-2xl p-8 shadow-md hover:shadow-xl transition
-  * Inline SVG icon (stroke), h3 font-heading font-bold text-xl mt-4, p text-gray-500 mt-2
+SERVICES (id="services") — <section id="services" class="py-24 px-6 bg-slate-50">:
+- <div class="max-w-6xl mx-auto">
+- <div class="text-center mb-16"> — H2 font-heading text-4xl font-bold text-slate-900 mb-4 + p text-slate-500 text-lg max-w-2xl mx-auto
+- <div class="grid grid-cols-1 md:grid-cols-3 gap-8"> — 3 service cards for ${finalCategory}:
+  Each card: <div class="bg-white rounded-2xl p-8 shadow-sm hover:shadow-lg border border-slate-100 transition-all duration-300 flex flex-col">
+  * Icon container: <div class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 text-primary"> + inline SVG w-7 h-7 stroke currentColor
+  * <h3 class="font-heading font-bold text-xl text-slate-900 mb-3">
+  * <p class="text-slate-500 leading-relaxed flex-1">
 
-WHY US (id="why") — py-24 px-6 bg-white:
-- max-w-6xl mx-auto
-- Top: H2 font-heading text-4xl font-bold text-center mb-4 "Porquê escolher a ${finalName}?" + p text-gray-500 text-center mb-16 (compelling 1-sentence reason)
-- grid grid-cols-1 md:grid-cols-2 gap-8 mb-16:
-  * 4 reason cards, each: flex items-start gap-4 p-6 bg-slate-50 rounded-2xl
-    - div w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center + inline SVG icon
-    - div: h3 font-heading font-semibold text-lg mb-2 + p text-gray-500 text-sm leading-relaxed
-    - Reasons must be real/specific for ${finalCategory} business with personality: ${photoAnalysis.brandPersonality}
-- Bottom stat bar: bg-slate-900 rounded-2xl p-8 grid grid-cols-3 gap-8 text-center — each: big number text-4xl font-heading font-bold text-white, label text-gray-400 text-sm mt-1
+WHY US (id="why") — <section id="why" class="py-24 px-6 bg-white">:
+- <div class="max-w-6xl mx-auto">
+- Text center header: H2 font-heading text-4xl font-bold text-slate-900 mb-4 "Porquê escolher a ${finalName}?" + p text-slate-500 text-lg max-w-2xl mx-auto mb-16
+- <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16"> — 4 cards, each:
+  <div class="flex items-start gap-5 p-7 bg-slate-50 rounded-2xl border border-slate-100 hover:border-primary/30 transition">
+  * <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary"> + SVG icon
+  * <div> — <h3 class="font-heading font-semibold text-lg text-slate-900 mb-2"> + <p class="text-slate-500 text-sm leading-relaxed">
+  * Reasons specific to ${finalCategory} and personality: ${photoAnalysis.brandPersonality}
+- Stats bar: <div class="bg-slate-900 rounded-2xl p-10 grid grid-cols-3 gap-8 text-center">
+  Each: <div> — <div class="font-heading text-4xl font-bold text-white mb-1"> + <div class="text-slate-400 text-sm">
 
-Stop here. Output ONLY valid HTML, no markdown, no explanations.`;
+Stop after the WHY US closing </section>. Do NOT add </body> or </html>. Output ONLY valid HTML, no markdown, no explanations.`;
 
   const res1 = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
@@ -304,48 +358,57 @@ Stop here. Output ONLY valid HTML, no markdown, no explanations.`;
   part1 = part1.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
 
   // ── Part 2: TESTIMONIALS + TEAM? + CONTACT + FOOTER ─────────────────────
-  const prompt2 = `You are building Part 2 of a website. Output ONLY the remaining sections — no <html>, no <head>, no nav, no hero, no services, no why-us.
+  const prompt2 = `You are building Part 2 of a website. Output ONLY raw <section> HTML blocks listed below.
+CRITICAL: Do NOT output <!DOCTYPE>, <html>, <head>, <body>, </body>, </html>, or any wrapper tags — only the sections themselves.
 
 ${sharedContext}
 
 Output ONLY these sections (raw HTML, no wrapper, no markdown):
 
-TESTIMONIALS (id="testimonials") — py-24 px-6 bg-slate-50:
-- max-w-6xl mx-auto
-- H2 font-heading text-4xl font-bold text-center mb-4 + p text-gray-500 text-center mb-16
-- grid grid-cols-1 md:grid-cols-3 gap-8
-- 3 realistic testimonial cards, each: bg-white rounded-2xl p-8 shadow-sm
-  * 5 filled star SVGs (text-yellow-400) in a flex row
-  * p text-gray-600 leading-relaxed mt-4 italic (realistic 2-3 sentence review about ${finalCategory} experience)
-  * div flex items-center gap-3 mt-6: w-10 h-10 rounded-full bg-slate-200 (initials as text) + div (name font-semibold text-sm + "Cliente verificado" text-xs text-gray-400)
-  * Names and reviews must feel authentic for ${finalCategory} in Portuguese
+TESTIMONIALS (id="testimonials") — <section id="testimonials" class="py-24 px-6 bg-slate-50">:
+- <div class="max-w-6xl mx-auto">
+- <div class="text-center mb-16"> — H2 font-heading text-4xl font-bold text-slate-900 mb-4 + p text-slate-500 text-lg max-w-2xl mx-auto
+- <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full"> — 3 cards, EACH card MUST use this exact structure:
+  <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 flex flex-col h-full">
+    <div class="flex gap-1 mb-4"><!-- 5 star SVGs: <svg class="w-5 h-5 text-yellow-400 fill-yellow-400" viewBox="0 0 20 20"><path d="M10 1l2.4 7.4H20l-6.2 4.5 2.4 7.4L10 16l-6.2 4.3 2.4-7.4L0 8.4h7.6z"/></svg> --></div>
+    <p class="text-slate-600 leading-relaxed flex-1 mb-6">"2-3 sentence authentic review in Portuguese"</p>
+    <div class="flex items-center gap-3 pt-4 border-t border-slate-100">
+      <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-heading font-bold text-primary text-sm flex-shrink-0">XX</div>
+      <div><p class="font-semibold text-sm text-slate-900">Nome Apelido</p><p class="text-xs text-slate-400">Cliente verificado</p></div>
+    </div>
+  </div>
+  Names and reviews MUST feel authentic for ${finalCategory} in Portuguese. No italic text.
 
-${showTeam ? `TEAM (id="team") — py-24 px-6 bg-white:
-- max-w-6xl mx-auto
-- H2 font-heading text-4xl font-bold text-center mb-4 + p text-gray-500 text-center mb-16
-- grid grid-cols-1 md:grid-cols-3 gap-8
-- 3 team member cards (realistic names/roles for ${finalCategory}), each: text-center
-  * div w-24 h-24 rounded-full bg-slate-200 mx-auto flex items-center justify-center (initials text-2xl font-heading text-slate-500)
-  * h3 font-heading font-semibold text-lg mt-4 + p text-gray-500 text-sm (role) + p text-gray-400 text-xs mt-2 (1-line bio)` : ""}
+${showTeam ? `TEAM (id="team") — <section id="team" class="py-24 px-6 bg-white">:
+- <div class="max-w-6xl mx-auto">
+- Text center header: H2 font-heading text-4xl font-bold text-slate-900 mb-4 + p text-slate-500 text-lg mb-16
+- <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+- 3 team cards for ${finalCategory}, each: <div class="text-center p-8 bg-slate-50 rounded-2xl border border-slate-100">
+  * Avatar: <div class="w-24 h-24 rounded-full bg-primary/10 mx-auto flex items-center justify-center font-heading text-2xl font-bold text-primary mb-4">initials</div>
+  * <h3 class="font-heading font-semibold text-lg text-slate-900"> + <p class="text-slate-500 text-sm mt-1"> role + <p class="text-slate-400 text-xs mt-2"> 1-line bio` : ""}
 
-CONTACT (id="contact") — py-24 px-6 ${showTeam ? "bg-slate-50" : "bg-white"}:
-- max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16
-- Left: H2 font-heading text-4xl font-bold mb-4 + p text-gray-500 mb-8 + contact items (each: flex items-center gap-3 mb-4):
-  * SVG map-pin + <span>${finalAddress || "Endereço disponível em breve"}</span>
-  * SVG phone + <a href="tel:${finalPhone || ""}" class="text-blue-600 hover:underline">${finalPhone || "—"}</a>
-  * SVG mail + <a href="mailto:${email || ""}" class="text-blue-600 hover:underline">${email || "—"}</a>
-  ${mapsUrl ? `* <iframe src="https://www.google.com/maps?q=${encodeURIComponent(finalAddress || finalName)}&output=embed" class="w-full h-56 rounded-2xl border-0 mt-6"></iframe>` : ""}
-- Right: <form action="#" method="POST" class="space-y-4 bg-white rounded-2xl p-8 shadow-md border border-slate-100">
-  * inputs: name, email (class="w-full border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500")
-  * textarea message rows=4 same class
-  * <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-xl transition">${meta.contactBtn}</button>
+CONTACT (id="contact") — <section id="contact" class="py-24 px-6 ${showTeam ? "bg-slate-50" : "bg-white"}">:
+- <div class="max-w-6xl mx-auto">
+- <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-start">
+- Left <div>: <h2 class="font-heading text-4xl font-bold text-slate-900 mb-4"> + <p class="text-slate-500 mb-8">
+  Contact items each: <div class="flex items-center gap-3 mb-4 text-slate-600">
+  * Map pin SVG w-5 h-5 + <span>${finalAddress || "Endereço disponível em breve"}</span>
+  * Phone SVG w-5 h-5 + <a href="tel:${finalPhone || ""}" class="text-primary hover:underline">${finalPhone || "—"}</a>
+  * Mail SVG w-5 h-5 + <a href="mailto:${email || ""}" class="text-primary hover:underline">${email || "—"}</a>
+  ${mapsUrl ? `* <iframe src="https://www.google.com/maps?q=${encodeURIComponent(finalAddress || finalName)}&output=embed" class="w-full h-56 rounded-2xl border-0 mt-6 block"></iframe>` : ""}
+- Right <div>: <form class="space-y-4 bg-white rounded-2xl p-8 shadow-sm border border-slate-100">
+  * <input type="text" placeholder="O seu nome" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition">
+  * <input type="email" placeholder="O seu email" same class>
+  * <textarea placeholder="A sua mensagem" rows="4" same class></textarea>
+  * <button type="submit" class="w-full bg-primary hover:opacity-90 text-white font-semibold py-4 rounded-xl transition">${meta.contactBtn}</button>
 
-FOOTER — bg-gray-900 text-white py-12 px-6:
-- max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8
-- Col 1: business name font-heading font-bold text-xl + tagline text-gray-400 mt-2 text-sm
-- Col 2: "Links Rápidos" h4 font-semibold mb-4 + ul space-y-2: Início, Serviços, Porquê Nós, Testemunhos${showTeam ? ", Equipa" : ""}, Contacto (each as href="#section-id" text-gray-400 hover:text-white text-sm)
-- Col 3: "Contacto" h4 font-semibold mb-4 + address/phone/email text-gray-400 text-sm
-- Bottom: border-t border-gray-800 mt-8 pt-6 text-center text-gray-500 text-sm — © ${new Date().getFullYear()} ${finalName}. Todos os direitos reservados.
+FOOTER — <footer class="bg-slate-900 text-white py-16 px-6">:
+- <div class="max-w-6xl mx-auto">
+- <div class="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12">
+- Col 1: <h3 class="font-heading font-bold text-xl mb-3">${finalName}</h3> + <p class="text-slate-400 text-sm leading-relaxed"> brand tagline
+- Col 2: <h4 class="font-semibold mb-4">Links Rápidos</h4> + <ul class="space-y-2"> — li: <a href="#section-id" class="text-slate-400 hover:text-white text-sm transition"> Início, Serviços, Porquê Nós, Testemunhos${showTeam ? ", Equipa" : ""}, Contacto
+- Col 3: <h4 class="font-semibold mb-4">Contacto</h4> + address/phone/email each on own <p class="text-slate-400 text-sm mb-2">
+- Bottom divider + copyright: <div class="border-t border-slate-800 mt-10 pt-8 text-center text-slate-500 text-sm">© ${new Date().getFullYear()} ${finalName}. Todos os direitos reservados.</div>
 
 End with </body></html>
 
@@ -360,7 +423,7 @@ Output ONLY raw HTML. No markdown. No explanations.`;
   part2 = part2.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
 
   // ── Combine parts ──────────────────────────────────────────────────────
-  let html = fixHtml(part1 + "\n" + part2);
+  let html = fixHtml(part1, part2);
 
   if (html.length < 3000) {
     return NextResponse.json({ error: "Generated HTML too short — try again" }, { status: 500 });
@@ -377,4 +440,13 @@ Output ONLY raw HTML. No markdown. No explanations.`;
   console.log(`[maps] "${finalName}" | ${finalCategory} | ${Math.round(html.length / 1024)}KB | photos=${savedImageUrls.length}${deployed ? ` | deployed: ${deployed.url}` : ""}`);
 
   return NextResponse.json({ id, name: finalName, category: finalCategory, address: finalAddress, deployUrl: deployed?.url ?? null });
+  } catch (err) {
+    console.error("[maps] unhandled error:", err);
+    const raw = (err as Error).message || "";
+    let friendly = "Erro inesperado — tenta novamente.";
+    if (raw.includes("image exceeds")) friendly = "Uma das imagens é demasiado grande. Remove-a e tenta novamente.";
+    else if (raw.includes("Could not connect") || raw.includes("ECONNREFUSED")) friendly = "Não foi possível ligar ao serviço. Verifica a tua ligação.";
+    else if (raw.includes("API Key") || raw.includes("authentication")) friendly = "API Key inválida. Verifica as configurações.";
+    return NextResponse.json({ error: friendly }, { status: 500 });
+  }
 }

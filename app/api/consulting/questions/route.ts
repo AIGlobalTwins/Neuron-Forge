@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+
 import { getAnthropicKey } from "@/lib/settings";
 
 export interface Question {
@@ -19,7 +20,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "area e problem são obrigatórios" }, { status: 400 });
   }
 
-  const anthropicKey = getAnthropicKey();
+  let userId: string | null = null;
+  try { const { auth } = await import("@clerk/nextjs/server"); const a = await auth(); userId = a.userId; } catch {}
+  const anthropicKey = getAnthropicKey(userId);
   if (!anthropicKey) {
     return NextResponse.json({ error: "Anthropic API Key não configurada." }, { status: 500 });
   }

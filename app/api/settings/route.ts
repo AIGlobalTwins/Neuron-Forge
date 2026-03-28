@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readSettings, writeSettings } from "@/lib/settings";
 
+async function getUserId(): Promise<string | null> {
+  try {
+    const { auth } = await import("@clerk/nextjs/server");
+    const { userId } = await auth();
+    return userId;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET() {
-  const s = readSettings();
+  const userId = await getUserId();
+  const s = readSettings(userId);
   return NextResponse.json({
     anthropicApiKey: s.anthropicApiKey ? maskKey(s.anthropicApiKey) : "",
     vercelToken: s.vercelToken ? maskKey(s.vercelToken) : "",
@@ -15,6 +26,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const userId = await getUserId();
   const body = await req.json().catch(() => ({}));
   const update: Record<string, string> = {};
 
@@ -30,8 +42,17 @@ export async function POST(req: NextRequest) {
   if (typeof body.instagramAccountId === "string") {
     update.instagramAccountId = body.instagramAccountId.trim();
   }
+  if (typeof body.whatsappPhoneNumberId === "string") {
+    update.whatsappPhoneNumberId = body.whatsappPhoneNumberId.trim();
+  }
+  if (typeof body.whatsappAccessToken === "string") {
+    update.whatsappAccessToken = body.whatsappAccessToken.trim();
+  }
+  if (typeof body.whatsappVerifyToken === "string") {
+    update.whatsappVerifyToken = body.whatsappVerifyToken.trim();
+  }
 
-  writeSettings(update);
+  writeSettings(update, userId);
   return NextResponse.json({ ok: true });
 }
 

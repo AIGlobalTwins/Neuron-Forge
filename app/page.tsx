@@ -1,12 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AnalyzeModal } from "@/components/AnalyzeModal";
 import { GoogleMapsModal } from "@/components/GoogleMapsModal";
 import { SettingsModal } from "@/components/SettingsModal";
 import { SocialPostsModal } from "@/components/SocialPostsModal";
 import { WhatsAppModal } from "@/components/WhatsAppModal";
 import { ConsultingModal } from "@/components/ConsultingModal";
+import { OnboardingModal } from "@/components/OnboardingModal";
+import { DocsModal } from "@/components/DocsModal";
+import { DemoModal } from "@/components/DemoModal";
+import { SeoModal } from "@/components/SeoModal";
+import { HistoryModal } from "@/components/HistoryModal";
+
+type DemoTool = "maps" | "analyze" | "instagram" | "consulting" | "whatsapp" | "seo";
 
 function SearchIcon() {
   return (
@@ -22,6 +29,16 @@ function MapPinIcon() {
     <svg viewBox="-10 -10 20 20" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
       <path d="M0,-9 C-5,-9 -8,-5 -8,-1 C-8,5 0,9 0,9 C0,9 8,5 8,-1 C8,-5 5,-9 0,-9 Z" />
       <circle cx="0" cy="-1" r="3" />
+    </svg>
+  );
+}
+
+function SeoIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4.35-4.35" />
+      <path d="M8 11h6M11 8v6" />
     </svg>
   );
 }
@@ -57,15 +74,14 @@ interface OptionCardProps {
   desc: string;
   cta: string;
   icon: React.ReactNode;
+  hasKey: boolean;
   onClick: () => void;
+  onDemo: () => void;
 }
 
-function OptionCard({ tag, title, desc, cta, icon, onClick }: OptionCardProps) {
+function OptionCard({ tag, title, desc, cta, icon, hasKey, onClick, onDemo }: OptionCardProps) {
   return (
-    <button
-      onClick={onClick}
-      className="group relative text-left bg-[#0d0d0d] border border-[#1e1e1e] rounded-2xl p-7 hover:border-[#E8622A]/60 hover:bg-[#111] transition-all duration-300 hover:shadow-2xl hover:shadow-[#E8622A]/10"
-    >
+    <div className="group relative text-left bg-[#0d0d0d] border border-[#1e1e1e] rounded-2xl p-7 hover:border-[#E8622A]/60 hover:bg-[#111] transition-all duration-300 hover:shadow-2xl hover:shadow-[#E8622A]/10">
       {/* Top row */}
       <div className="flex items-start justify-between mb-5">
         <div className="w-12 h-12 rounded-xl bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-gray-500 group-hover:text-[#E8622A] group-hover:border-[#E8622A]/40 group-hover:bg-[#E8622A]/5 transition-all duration-300">
@@ -77,20 +93,33 @@ function OptionCard({ tag, title, desc, cta, icon, onClick }: OptionCardProps) {
       </div>
 
       {/* Content */}
-      <h2 className="text-lg font-semibold text-white mb-2 group-hover:text-white">{title}</h2>
-      <p className="text-sm text-gray-500 leading-relaxed mb-7">{desc}</p>
+      <h2 className="text-lg font-semibold text-white mb-2">{title}</h2>
+      <p className="text-sm text-gray-500 leading-relaxed mb-6">{desc}</p>
 
-      {/* CTA */}
-      <div className="flex items-center gap-2 text-sm font-medium text-gray-500 group-hover:text-[#E8622A] transition-colors duration-300">
-        {cta}
-        <svg viewBox="0 0 16 16" className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M3 8h10M9 4l4 4-4 4" />
-        </svg>
+      {/* Actions */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onClick}
+          className="flex items-center gap-2 text-sm font-medium text-gray-500 group-hover:text-[#E8622A] transition-colors duration-300"
+        >
+          {cta}
+          <svg viewBox="0 0 16 16" className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 8h10M9 4l4 4-4 4" />
+          </svg>
+        </button>
+        {!hasKey && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDemo(); }}
+            className="ml-auto text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full border border-[#2a2a2a] text-gray-600 hover:border-[#E8622A]/40 hover:text-[#E8622A] transition-all"
+          >
+            Ver demo
+          </button>
+        )}
       </div>
 
       {/* Hover glow line at bottom */}
       <div className="absolute bottom-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-[#E8622A] to-transparent opacity-0 group-hover:opacity-60 transition-opacity duration-300" />
-    </button>
+    </div>
   );
 }
 
@@ -101,12 +130,49 @@ export default function Home() {
   const [showSocialPosts, setShowSocialPosts] = useState(false);
   const [showWhatsApp, setShowWhatsApp] = useState(false);
   const [showConsulting, setShowConsulting] = useState(false);
+  const [showSeo, setShowSeo] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showDocs, setShowDocs] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [demoTool, setDemoTool] = useState<DemoTool | null>(null);
+  const [hasKey, setHasKey] = useState(true); // optimistic — avoids flash
+
+  // Check API key + onboarding on mount
+  useEffect(() => {
+    const alreadyOnboarded = localStorage.getItem("forge_onboarded") === "1";
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        const keySet = !!data.hasAnthropicKey;
+        setHasKey(keySet);
+        if (!keySet && !alreadyOnboarded) setShowOnboarding(true);
+      })
+      .catch(() => setHasKey(false));
+  }, []);
 
   function openTool(toolId: string) {
     if (toolId === "analyze") setShowAnalyzeModal(true);
     else if (toolId === "maps") setShowMapsModal(true);
     else if (toolId === "instagram") setShowSocialPosts(true);
     else if (toolId === "whatsapp") setShowWhatsApp(true);
+  }
+
+  function handleOnboardingComplete() {
+    setShowOnboarding(false);
+    // Re-check key after onboarding
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((data) => setHasKey(!!data.hasAnthropicKey))
+      .catch(() => {});
+  }
+
+  function openDemo(tool: DemoTool) {
+    setDemoTool(tool);
+  }
+
+  function handleDemoSetupKey() {
+    setDemoTool(null);
+    setShowOnboarding(true);
   }
 
   return (
@@ -127,10 +193,36 @@ export default function Home() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* API Key status */}
           <div className="flex items-center gap-2 text-xs text-gray-600">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-            Ready
+            <div className={`w-1.5 h-1.5 rounded-full ${hasKey ? "bg-green-500 animate-pulse" : "bg-yellow-500"}`} />
+            {hasKey ? "Ready" : "No API Key"}
           </div>
+
+          {/* History button */}
+          <button
+            onClick={() => setShowHistory(true)}
+            className="w-8 h-8 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-gray-500 hover:text-[#E8622A] hover:border-[#E8622A]/40 hover:bg-[#E8622A]/5 transition-all duration-200"
+            title="Histórico"
+          >
+            <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 6h14M3 10h10M3 14h7" />
+            </svg>
+          </button>
+
+          {/* Docs button */}
+          <button
+            onClick={() => setShowDocs(true)}
+            className="w-8 h-8 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-gray-500 hover:text-[#E8622A] hover:border-[#E8622A]/40 hover:bg-[#E8622A]/5 transition-all duration-200"
+            title="Documentação"
+          >
+            <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 4h12v12H4z" />
+              <path d="M7 8h6M7 11h4" />
+            </svg>
+          </button>
+
+          {/* Settings button */}
           <button
             onClick={() => setShowSettings(true)}
             className="w-8 h-8 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-gray-500 hover:text-[#E8622A] hover:border-[#E8622A]/40 hover:bg-[#E8622A]/5 transition-all duration-200"
@@ -144,6 +236,22 @@ export default function Home() {
           </button>
         </div>
       </header>
+
+      {/* No-key banner */}
+      {!hasKey && (
+        <div className="flex items-center justify-between px-6 py-2.5 bg-[#E8622A]/10 border-b border-[#E8622A]/20 text-sm">
+          <div className="flex items-center gap-2 text-[#E8622A]">
+            <svg viewBox="0 0 16 16" className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M8 1l7 13H1L8 1z"/><path d="M8 6v4M8 11.5v.5"/></svg>
+            Sem API Key — os agentes estão em modo demo.
+          </div>
+          <button
+            onClick={() => setShowOnboarding(true)}
+            className="text-xs font-medium text-[#E8622A] hover:text-white border border-[#E8622A]/40 hover:bg-[#E8622A] px-3 py-1 rounded-full transition-all"
+          >
+            Configurar →
+          </button>
+        </div>
+      )}
 
       {/* Main */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 pb-8">
@@ -169,7 +277,9 @@ export default function Home() {
             desc="Paste any website URL. We'll screenshot it, score the design with AI, and generate a fully modern redesign."
             cta="Analyze website"
             icon={<SearchIcon />}
+            hasKey={hasKey}
             onClick={() => setShowAnalyzeModal(true)}
+            onDemo={() => openDemo("analyze")}
           />
           <OptionCard
             tag="No website"
@@ -177,7 +287,9 @@ export default function Home() {
             desc="Paste a Google Maps business URL and add your photos. We'll extract the info and build a professional site from scratch."
             cta="Create website"
             icon={<MapPinIcon />}
+            hasKey={hasKey}
             onClick={() => setShowMapsModal(true)}
+            onDemo={() => openDemo("maps")}
           />
           <OptionCard
             tag="Social Media"
@@ -185,7 +297,9 @@ export default function Home() {
             desc="Gera captions, hashtags e sugestões de imagem para o Instagram. Liga a tua conta e publica diretamente."
             cta="Criar post"
             icon={<InstagramCardIcon />}
+            hasKey={hasKey}
             onClick={() => setShowSocialPosts(true)}
+            onDemo={() => openDemo("instagram")}
           />
           <OptionCard
             tag="WhatsApp Agent"
@@ -193,7 +307,9 @@ export default function Home() {
             desc="Cria um agente de IA para o teu WhatsApp Business. Responde automaticamente a clientes 24/7."
             cta="Criar agente"
             icon={<WhatsAppCardIcon />}
+            hasKey={hasKey}
             onClick={() => setShowWhatsApp(true)}
+            onDemo={() => openDemo("whatsapp")}
           />
           <OptionCard
             tag="Consultoria"
@@ -201,7 +317,19 @@ export default function Home() {
             desc="Diagnóstico inteligente do teu negócio. Responde a perguntas específicas e recebe um plano de acção profissional em PDF."
             cta="Iniciar análise"
             icon={<ConsultingIcon />}
+            hasKey={hasKey}
             onClick={() => setShowConsulting(true)}
+            onDemo={() => openDemo("consulting")}
+          />
+          <OptionCard
+            tag="SEO"
+            title="SEO Content Agent"
+            desc="Gera artigos de blog, meta tags, landing page copy e FAQs otimizados para motores de pesquisa — prontos a publicar."
+            cta="Criar conteúdo SEO"
+            icon={<SeoIcon />}
+            hasKey={hasKey}
+            onClick={() => setShowSeo(true)}
+            onDemo={() => openDemo("seo")}
           />
         </div>
 
@@ -211,12 +339,18 @@ export default function Home() {
         </p>
       </main>
 
+      {/* Modals */}
+      {showOnboarding && <OnboardingModal onComplete={handleOnboardingComplete} />}
+      {showDocs && <DocsModal onClose={() => setShowDocs(false)} />}
+      {demoTool && <DemoModal tool={demoTool} onClose={() => setDemoTool(null)} onSetupKey={handleDemoSetupKey} />}
       {showAnalyzeModal && <AnalyzeModal onClose={() => setShowAnalyzeModal(false)} />}
       {showMapsModal && <GoogleMapsModal onClose={() => setShowMapsModal(false)} />}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       {showSocialPosts && <SocialPostsModal onClose={() => setShowSocialPosts(false)} />}
       {showWhatsApp && <WhatsAppModal onClose={() => setShowWhatsApp(false)} />}
       {showConsulting && <ConsultingModal onClose={() => setShowConsulting(false)} onOpenTool={openTool} />}
+      {showSeo && <SeoModal onClose={() => setShowSeo(false)} />}
+      {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
     </div>
   );
 }

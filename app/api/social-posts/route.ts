@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+
 import { getAnthropicKey } from "@/lib/settings";
 
 export interface GeneratedPost {
@@ -16,7 +17,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "businessName e description são obrigatórios" }, { status: 400 });
   }
 
-  const anthropicKey = getAnthropicKey();
+  let userId: string | null = null;
+  try { const { auth } = await import("@clerk/nextjs/server"); const a = await auth(); userId = a.userId; } catch {}
+  const anthropicKey = getAnthropicKey(userId);
   if (!anthropicKey) {
     return NextResponse.json({ error: "Anthropic API Key não configurada. Adiciona nas Configurações." }, { status: 500 });
   }

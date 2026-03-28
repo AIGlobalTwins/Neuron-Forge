@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { saveToHistory } from "@/lib/history";
 
 interface Props {
   onClose: () => void;
@@ -44,19 +45,39 @@ export function GoogleMapsModal({ onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  function compressImage(file: File): Promise<string> {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 1200;
+          let { width, height } = img;
+          if (width > MAX || height > MAX) {
+            if (width >= height) { height = Math.round((height * MAX) / width); width = MAX; }
+            else { width = Math.round((width * MAX) / height); height = MAX; }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", 0.82));
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   function handleImageUpload(files: FileList | null) {
     if (!files) return;
     const remaining = 3 - images.length;
     const toProcess = Array.from(files).slice(0, remaining);
 
-    toProcess.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        setImages((prev) => [...prev, result]);
-        setImagePreviews((prev) => [...prev, result]);
-      };
-      reader.readAsDataURL(file);
+    toProcess.forEach(async (file) => {
+      const compressed = await compressImage(file);
+      setImages((prev) => [...prev, compressed]);
+      setImagePreviews((prev) => [...prev, compressed]);
     });
   }
 
@@ -108,6 +129,7 @@ export function GoogleMapsModal({ onClose }: Props) {
       }
       setResult(data);
       setStep("result");
+      saveToHistory({ type: "maps", name: data.name || name, category: data.category || category, websiteId: data.id });
     } catch (err) {
       setError((err as Error).message);
       setStep("form");

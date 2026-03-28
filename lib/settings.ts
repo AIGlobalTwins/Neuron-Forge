@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-const SETTINGS_FILE = path.join(process.cwd(), "data", "settings.json");
+const DATA_DIR = path.join(process.cwd(), "data");
 
 export interface AppSettings {
   anthropicApiKey: string;
@@ -23,47 +23,65 @@ const DEFAULTS: AppSettings = {
   whatsappVerifyToken: "",
 };
 
-export function readSettings(): AppSettings {
+/**
+ * Returns the settings file path for a given user.
+ * - If userId provided → data/users/{userId}/settings.json  (multi-tenant)
+ * - Fallback → data/settings.json  (legacy / single-tenant)
+ */
+function settingsFilePath(userId?: string | null): string {
+  if (userId) return path.join(DATA_DIR, "users", userId, "settings.json");
+  return path.join(DATA_DIR, "settings.json");
+}
+
+export function readSettings(userId?: string | null): AppSettings {
   try {
-    if (!fs.existsSync(SETTINGS_FILE)) return DEFAULTS;
-    const raw = fs.readFileSync(SETTINGS_FILE, "utf-8");
+    const file = settingsFilePath(userId);
+    if (!fs.existsSync(file)) {
+      // For existing installs, fall back to the global settings file
+      if (userId) return readSettings(null);
+      return DEFAULTS;
+    }
+    const raw = fs.readFileSync(file, "utf-8");
     return { ...DEFAULTS, ...JSON.parse(raw) };
   } catch {
     return DEFAULTS;
   }
 }
 
-export function writeSettings(settings: Partial<AppSettings>): void {
-  const dir = path.dirname(SETTINGS_FILE);
+export function writeSettings(settings: Partial<AppSettings>, userId?: string | null): void {
+  const file = settingsFilePath(userId);
+  const dir = path.dirname(file);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  const current = readSettings();
-  fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ ...current, ...settings }, null, 2), "utf-8");
+  const current = readSettings(userId);
+  fs.writeFileSync(file, JSON.stringify({ ...current, ...settings }, null, 2), "utf-8");
 }
 
-export function getAnthropicKey(): string {
-  return readSettings().anthropicApiKey || process.env.ANTHROPIC_API_KEY || "";
+// ── Convenience getters (accept optional userId) ───────────────────────────
+
+export function getAnthropicKey(userId?: string | null): string {
+  return readSettings(userId).anthropicApiKey || process.env.ANTHROPIC_API_KEY || "";
 }
 
-export function getVercelToken(): string {
-  return readSettings().vercelToken || process.env.VERCEL_TOKEN || "";
+export function getVercelToken(userId?: string | null): string {
+  return readSettings(userId).vercelToken || process.env.VERCEL_TOKEN || "";
 }
 
-export function getInstagramToken(): string {
-  return readSettings().instagramToken || process.env.INSTAGRAM_TOKEN || "";
+export function getInstagramToken(userId?: string | null): string {
+  return readSettings(userId).instagramToken || process.env.INSTAGRAM_TOKEN || "";
 }
 
-export function getInstagramAccountId(): string {
-  return readSettings().instagramAccountId || process.env.INSTAGRAM_ACCOUNT_ID || "";
+export function getInstagramAccountId(userId?: string | null): string {
+  return readSettings(userId).instagramAccountId || process.env.INSTAGRAM_ACCOUNT_ID || "";
 }
 
-export function getWhatsAppPhoneNumberId(): string {
-  return readSettings().whatsappPhoneNumberId || process.env.WHATSAPP_PHONE_NUMBER_ID || "";
+export function getWhatsAppPhoneNumberId(userId?: string | null): string {
+  return readSettings(userId).whatsappPhoneNumberId || process.env.WHATSAPP_PHONE_NUMBER_ID || "";
 }
 
-export function getWhatsAppAccessToken(): string {
-  return readSettings().whatsappAccessToken || process.env.WHATSAPP_ACCESS_TOKEN || "";
+export function getWhatsAppAccessToken(userId?: string | null): string {
+  return readSettings(userId).whatsappAccessToken || process.env.WHATSAPP_ACCESS_TOKEN || "";
 }
 
-export function getWhatsAppVerifyToken(): string {
-  return readSettings().whatsappVerifyToken || process.env.WHATSAPP_VERIFY_TOKEN || "";
+export function getWhatsAppVerifyToken(userId?: string | null): string {
+  return readSettings(userId).whatsappVerifyToken || process.env.WHATSAPP_VERIFY_TOKEN || "";
 }

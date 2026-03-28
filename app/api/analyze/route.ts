@@ -5,6 +5,7 @@ import { randomUUID } from "crypto";
 import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
+
 import { getAnthropicKey } from "@/lib/settings";
 import { deployToVercel } from "@/lib/vercel-deploy";
 
@@ -485,11 +486,14 @@ OUTPUT: ONLY the complete HTML starting with <!DOCTYPE html>. No markdown fences
 
 // ── Main handler ──────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  try {
   const body = await req.json().catch(() => ({}));
   const { url, name = "", category = "Business", address = "", phone = "", email = "", instructions = "" } = body;
 
   if (!url) return NextResponse.json({ error: "url required" }, { status: 400 });
-  const anthropicKey = getAnthropicKey();
+  let userId: string | null = null;
+  try { const { auth } = await import("@clerk/nextjs/server"); const a = await auth(); userId = a.userId; } catch {}
+  const anthropicKey = getAnthropicKey(userId);
   if (!anthropicKey) return NextResponse.json({ error: "Anthropic API Key not configured. Add it in Settings." }, { status: 500 });
 
   const anthropic = new Anthropic({ apiKey: anthropicKey });
@@ -564,4 +568,8 @@ export async function POST(req: NextRequest) {
     htmlSize: html.length,
     deployUrl: deployed?.url ?? null,
   });
+  } catch (err) {
+    console.error("[analyze] unhandled error:", err);
+    return NextResponse.json({ error: (err as Error).message || "Erro inesperado — tenta novamente" }, { status: 500 });
+  }
 }
