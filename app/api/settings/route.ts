@@ -8,6 +8,9 @@ export async function GET() {
     vercelToken: s.vercelToken ? maskKey(s.vercelToken) : "",
     hasAnthropicKey: !!s.anthropicApiKey,
     hasVercelToken: !!s.vercelToken,
+    hasInstagramToken: !!s.instagramToken,
+    hasInstagramAccountId: !!s.instagramAccountId,
+    instagramAccountId: s.instagramAccountId ? maskKey(s.instagramAccountId) : "",
   });
 }
 
@@ -20,6 +23,12 @@ export async function POST(req: NextRequest) {
   }
   if (typeof body.vercelToken === "string") {
     update.vercelToken = body.vercelToken.trim();
+  }
+  if (typeof body.instagramToken === "string") {
+    update.instagramToken = body.instagramToken.trim();
+  }
+  if (typeof body.instagramAccountId === "string") {
+    update.instagramAccountId = body.instagramAccountId.trim();
   }
 
   writeSettings(update);

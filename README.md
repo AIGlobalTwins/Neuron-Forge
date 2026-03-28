@@ -1,36 +1,131 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Neuron Forge
+
+**Neuron Forge** is an AI-powered multi-agent platform for businesses. Each agent is an autonomous tool that solves a specific business problem — from generating professional websites to automating customer support on WhatsApp.
+
+All agents are powered by **Claude Sonnet** and built on **Next.js 14 App Router**.
+
+---
+
+## Agents
+
+| Agent | Description |
+|---|---|
+| [Analyze & Redesign](docs/agents/analyze-redesign.md) | Screenshots an existing website, scores the design, and generates a modern redesign |
+| [Create from Google Maps](docs/agents/create-from-maps.md) | Builds a full website from a Google Maps business profile |
+| [Instagram Posts](docs/agents/instagram-posts.md) | Generates captions, hashtags and image prompts for Instagram, with direct publishing |
+| [WhatsApp Agent](docs/agents/whatsapp-agent.md) | Creates a 24/7 AI customer support agent for WhatsApp Business |
+| [Consulting Agent](docs/agents/consulting-agent.md) | Diagnoses business problems, builds action plans, and exports professional PDF reports |
+
+More agents are continuously added. See [Adding a New Agent](docs/ADDING-AGENT.md).
+
+---
+
+## Stack
+
+- **Framework:** Next.js 14 App Router (TypeScript)
+- **AI:** Anthropic Claude Sonnet 4.6 (Vision + Text)
+- **Browser automation:** Playwright (screenshots, HTML/CSS extraction, PDF generation)
+- **Storage:** Local filesystem (`data/`) — settings, bot configs, conversation history
+- **Deploy:** Vercel
+
+---
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
+npx playwright install chromium
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Required
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Set your Anthropic API key in **Settings** (top-right wrench icon) or in `.env.local`:
 
-## Learn More
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
 
-To learn more about Next.js, take a look at the following resources:
+### Optional
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+VERCEL_TOKEN=...          # Auto-deploy generated websites to Vercel
+INSTAGRAM_TOKEN=...       # Instagram Business access token
+INSTAGRAM_ACCOUNT_ID=...  # Instagram Business account ID
+WHATSAPP_PHONE_NUMBER_ID= # WhatsApp Business phone number ID
+WHATSAPP_ACCESS_TOKEN=... # WhatsApp Business access token
+WHATSAPP_VERIFY_TOKEN=... # Webhook verify token
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+All credentials can also be set via the Settings modal in the UI — no `.env.local` required.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Project Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/
+  page.tsx                      # Homepage — all agent cards
+  api/
+    analyze/                    # Analyze & Redesign agent
+    create-from-maps/           # Google Maps agent
+    social-posts/               # Instagram Posts agent
+    instagram-publish/          # Instagram direct publish
+    whatsapp/
+      webhook/                  # WhatsApp incoming messages + Claude reply
+      configure/                # Bot config CRUD
+      status/                   # Bot status + conversation log
+    consulting/
+      questions/                # Dynamic question generation
+      plan/                     # Consulting plan generation
+      pdf/                      # Playwright PDF export
+    settings/                   # App-wide settings CRUD
+    preview/[id]/               # Serve generated HTML files
+
+components/
+  AnalyzeModal.tsx
+  GoogleMapsModal.tsx
+  SocialPostsModal.tsx
+  WhatsAppModal.tsx
+  ConsultingModal.tsx
+  SettingsModal.tsx
+
+lib/
+  settings.ts                   # Read/write all credentials
+  whatsapp-bot.ts               # Bot config, conversation history, system prompt builder
+  vercel-deploy.ts              # Deploy HTML to Vercel
+
+data/
+  settings.json                 # Stored credentials (gitignored)
+  forge-tools.md                # Forge agent registry — read by Consulting Agent
+  whatsapp-bot.json             # WhatsApp bot configuration
+  whatsapp-history/             # Per-number conversation history
+
+outputs/
+  redesigns/                    # Generated HTML files
+
+docs/
+  agents/                       # Per-agent documentation
+  ADDING-AGENT.md               # Guide for adding new agents
+  ARCHITECTURE.md               # Platform architecture overview
+```
+
+---
+
+## Documentation
+
+- [Platform Architecture](docs/ARCHITECTURE.md)
+- [Adding a New Agent](docs/ADDING-AGENT.md)
+- [Analyze & Redesign](docs/agents/analyze-redesign.md)
+- [Create from Google Maps](docs/agents/create-from-maps.md)
+- [Instagram Posts Agent](docs/agents/instagram-posts.md)
+- [WhatsApp Agent](docs/agents/whatsapp-agent.md)
+- [Consulting Agent](docs/agents/consulting-agent.md)
+
+---
+
+## Repo
+
+[github.com/AIGlobalTwins/Neuron-Forge](https://github.com/AIGlobalTwins/Neuron-Forge)

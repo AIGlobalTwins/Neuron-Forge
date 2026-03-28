@@ -33,7 +33,15 @@ interface PageData {
   content: string;
 }
 
-async function crawlSite(baseUrl: string): Promise<{ home: string; pages: PageData[]; phone: string; email: string; address: string }> {
+interface SourceSnapshot {
+  metaDescription: string;
+  cssVars: string;      // :root custom properties
+  styleTags: string;    // inline <style> contents
+  headFonts: string;    // Google Fonts / font-face hints
+  bodyStructure: string; // first 2000 chars of body HTML
+}
+
+async function crawlSite(baseUrl: string): Promise<{ home: string; pages: PageData[]; phone: string; email: string; address: string; source: SourceSnapshot }> {
   const browser = await chromium.launch({ headless: true });
   const origin = new URL(baseUrl).origin;
 
@@ -91,6 +99,45 @@ async function crawlSite(baseUrl: string): Promise<{ home: string; pages: PageDa
     });
 
     const homeContent = await extractText(homePage);
+
+    // Extract HTML/CSS source snapshot for richer analysis
+    const source: SourceSnapshot = await homePage.evaluate(() => {
+      const metaDescription = (document.querySelector('meta[name="description"]') as HTMLMetaElement)?.content ?? "";
+
+      // Font hints from <link> tags (Google Fonts, etc.)
+      const headFonts = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+        .map(l => (l as HTMLLinkElement).href)
+        .filter(h => h.includes("font") || h.includes("googleapis"))
+        .join(", ");
+
+      // CSS custom properties from :root
+      let cssVars = "";
+      try {
+        for (const sheet of Array.from(document.styleSheets)) {
+          try {
+            for (const rule of Array.from(sheet.cssRules ?? [])) {
+              if ((rule as CSSStyleRule).selectorText === ":root") {
+                cssVars = (rule as CSSStyleRule).cssText.slice(0, 600);
+                break;
+              }
+            }
+          } catch { /* cross-origin sheet */ }
+          if (cssVars) break;
+        }
+      } catch { /* ignore */ }
+
+      // Inline <style> contents
+      const styleTags = Array.from(document.querySelectorAll("style"))
+        .map(s => s.textContent ?? "")
+        .join("\n")
+        .slice(0, 1200);
+
+      // Body HTML structure (first 2000 chars)
+      const bodyStructure = document.body.innerHTML.slice(0, 2000);
+
+      return { metaDescription, headFonts, cssVars, styleTags, bodyStructure };
+    });
+
     await homePage.close();
 
     // Crawl up to 5 nav pages
@@ -120,6 +167,7 @@ async function crawlSite(baseUrl: string): Promise<{ home: string; pages: PageDa
       phone: homeContact.phone,
       email: homeContact.email,
       address: homeContact.address,
+      source,
     };
   } finally {
     await browser.close();
@@ -156,8 +204,17 @@ async function analyzeWithVision(
   name: string,
   category: string,
   crawledPages: PageData[],
+  source: SourceSnapshot,
 ): Promise<SiteAnalysis> {
   const pagesSnapshot = crawledPages.map(p => `[${p.label}]: ${p.content.slice(0, 300)}`).join("\n\n");
+
+  const sourceSection = [
+    source.metaDescription ? `Meta description: ${source.metaDescription}` : "",
+    source.headFonts ? `Fonts loaded: ${source.headFonts}` : "",
+    source.cssVars ? `CSS variables (:root):\n${source.cssVars}` : "",
+    source.styleTags ? `Inline CSS (truncated):\n${source.styleTags}` : "",
+    source.bodyStructure ? `Body HTML (truncated):\n${source.bodyStructure}` : "",
+  ].filter(Boolean).join("\n\n");
 
   const res = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
@@ -168,7 +225,7 @@ async function analyzeWithVision(
         { type: "image", source: { type: "base64", media_type: "image/png", data: screenshotBase64 } },
         {
           type: "text",
-          text: `Analyze this business website screenshot and content. Return ONLY a JSON object (no markdown):
+          text: `Analyze this business website screenshot, content, and source code. Return ONLY a JSON object (no markdown):
 
 URL: ${url}
 Business: ${name || "unknown"}
@@ -179,6 +236,9 @@ ${homeContent}
 
 Sub-pages found:
 ${pagesSnapshot || "none"}
+
+Source code (HTML/CSS):
+${sourceSection || "none"}
 
 JSON:
 {
@@ -300,13 +360,6 @@ async function generateRedesign(
     id: p.slug,
     content: p.content.slice(0, 800),
   }));
-
-  // Define nav anchor mapping (every nav item maps to a real section id)
-  const sectionIds = [
-    "home",
-    ...pageSections.map(p => p.id),
-    "contact",
-  ];
 
   const isHealthcare = category.toLowerCase().includes("dental") || category.toLowerCase().includes("health");
   const heroImage = isHealthcare
@@ -454,13 +507,13 @@ export async function POST(req: NextRequest) {
   try {
     crawlResult = await crawlSite(url);
   } catch {
-    crawlResult = { home: "", pages: [], phone: "", email: "", address: "" };
+    crawlResult = { home: "", pages: [], phone: "", email: "", address: "", source: { metaDescription: "", headFonts: "", cssVars: "", styleTags: "", bodyStructure: "" } };
   }
 
   // 3. Vision analysis
   let analysis: SiteAnalysis;
   try {
-    analysis = await analyzeWithVision(anthropic, screenshotBase64, crawlResult.home, url, name, category, crawlResult.pages);
+    analysis = await analyzeWithVision(anthropic, screenshotBase64, crawlResult.home, url, name, category, crawlResult.pages, crawlResult.source);
   } catch (err) {
     return NextResponse.json({ error: `Analysis failed: ${(err as Error).message}` }, { status: 500 });
   }
