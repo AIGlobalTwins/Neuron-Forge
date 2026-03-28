@@ -104,7 +104,7 @@ export function AnalyzeModal({ onClose }: Props) {
     >
       <div
         className={`bg-[#111] border border-[#2a2a2a] rounded-xl shadow-2xl overflow-hidden transition-all ${
-          step === "result" ? "max-w-5xl w-full" : "max-w-md w-full"
+          step === "result" ? "max-w-5xl w-full" : "max-w-4xl w-full"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -345,6 +345,28 @@ export function AnalyzeModal({ onClose }: Props) {
                 </a>
               </div>
             </div>
+
+            {/* Next steps */}
+            {!result.deployUrl && (
+              <div className="px-6 py-4 border-t border-[#1e1e1e] bg-[#080808]">
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Como publicar o teu redesign</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { step: "1", label: "Vercel (grátis)", detail: "vercel.com/new → arrastra o HTML → deploy em 30s" },
+                    { step: "2", label: "Netlify Drop", detail: "app.netlify.com/drop → arrasta o ficheiro → URL imediato" },
+                    { step: "3", label: "GitHub Pages", detail: "Commit o HTML → Settings → Pages → publicar" },
+                  ].map((s) => (
+                    <div key={s.step} className="bg-[#111] border border-[#1e1e1e] rounded-lg p-3">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <span className="w-4 h-4 rounded bg-[#E8622A]/10 border border-[#E8622A]/20 text-[#E8622A] text-[9px] font-bold flex items-center justify-center">{s.step}</span>
+                        <span className="text-[10px] font-semibold text-gray-300">{s.label}</span>
+                      </div>
+                      <p className="text-[10px] text-gray-600 leading-relaxed">{s.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

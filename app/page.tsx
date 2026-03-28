@@ -11,9 +11,10 @@ import { OnboardingModal } from "@/components/OnboardingModal";
 import { DocsModal } from "@/components/DocsModal";
 import { DemoModal } from "@/components/DemoModal";
 import { SeoModal } from "@/components/SeoModal";
+import { SecurityModal } from "@/components/SecurityModal";
 import { HistoryModal } from "@/components/HistoryModal";
 
-type DemoTool = "maps" | "analyze" | "instagram" | "consulting" | "whatsapp" | "seo";
+type DemoTool = "maps" | "analyze" | "instagram" | "consulting" | "whatsapp" | "seo" | "security";
 
 function SearchIcon() {
   return (
@@ -39,6 +40,15 @@ function SeoIcon() {
       <circle cx="11" cy="11" r="7" />
       <path d="M21 21l-4.35-4.35" />
       <path d="M8 11h6M11 8v6" />
+    </svg>
+  );
+}
+
+function SecurityIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2L4 6v6c0 5 3.5 9.7 8 11 4.5-1.3 8-6 8-11V6L12 2z" />
+      <path d="M9 12l2 2 4-4" />
     </svg>
   );
 }
@@ -131,6 +141,7 @@ export default function Home() {
   const [showWhatsApp, setShowWhatsApp] = useState(false);
   const [showConsulting, setShowConsulting] = useState(false);
   const [showSeo, setShowSeo] = useState(false);
+  const [showSecurity, setShowSecurity] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showDocs, setShowDocs] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -331,6 +342,16 @@ export default function Home() {
             onClick={() => setShowSeo(true)}
             onDemo={() => openDemo("seo")}
           />
+          <OptionCard
+            tag="Security"
+            title="Security Agent"
+            desc="Audita o código público do teu website. Detecta headers em falta, JS exposto, formulários inseguros, bibliotecas desatualizadas e muito mais."
+            cta="Auditar website"
+            icon={<SecurityIcon />}
+            hasKey={hasKey}
+            onClick={() => setShowSecurity(true)}
+            onDemo={() => openDemo("security")}
+          />
         </div>
 
         {/* Footer note */}
@@ -349,7 +370,8 @@ export default function Home() {
       {showSocialPosts && <SocialPostsModal onClose={() => setShowSocialPosts(false)} />}
       {showWhatsApp && <WhatsAppModal onClose={() => setShowWhatsApp(false)} />}
       {showConsulting && <ConsultingModal onClose={() => setShowConsulting(false)} onOpenTool={openTool} />}
-      {showSeo && <SeoModal onClose={() => setShowSeo(false)} />}
+      {showSeo && <SeoModal onClose={() => setShowSeo(false)} onOpenTool={openTool} />}
+      {showSecurity && <SecurityModal onClose={() => setShowSecurity(false)} />}
       {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
     </div>
   );

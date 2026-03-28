@@ -201,7 +201,7 @@ export function SocialPostsModal({ onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg bg-[#0d0d0d] border border-[#1e1e1e] rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
+      <div className="relative z-10 w-full max-w-4xl bg-[#0d0d0d] border border-[#1e1e1e] rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-[#1e1e1e] shrink-0">
@@ -479,13 +479,31 @@ export function SocialPostsModal({ onClose }: Props) {
 
                   {/* Publish section */}
                   <div className="px-4 py-3 border-t border-[#1a1a1a] bg-[#0d0d0d] space-y-2">
-                    <span className="text-[10px] uppercase tracking-widest text-gray-600 block">Publicar no Instagram</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase tracking-widest text-gray-600">Publicar no Instagram</span>
+                    </div>
+                    {/* Image workflow guide */}
+                    <div className="bg-[#111] border border-[#1e1e1e] rounded-lg p-2.5 space-y-1.5">
+                      <p className="text-[10px] text-gray-500 font-medium">Workflow para criar a imagem:</p>
+                      <div className="space-y-1">
+                        {[
+                          { n: "1", text: "Gera a imagem com o prompt acima — usa Canva, DALL-E ou Midjourney" },
+                          { n: "2", text: "Faz upload em imgur.com ou cloudinary.com e copia o URL direto" },
+                          { n: "3", text: "Cola o URL abaixo e publica" },
+                        ].map((s) => (
+                          <div key={s.n} className="flex items-start gap-1.5">
+                            <span className="w-3.5 h-3.5 rounded bg-pink-500/10 text-pink-400 text-[8px] font-bold flex items-center justify-center shrink-0 mt-0.5">{s.n}</span>
+                            <span className="text-[10px] text-gray-600 leading-tight">{s.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                     <div className="flex gap-2">
                       <input
                         type="url"
                         value={imageUrls[idx] ?? ""}
                         onChange={(e) => setImageUrls((p) => ({ ...p, [idx]: e.target.value }))}
-                        placeholder="URL da imagem (obrigatório para publicar)"
+                        placeholder="URL público da imagem"
                         className="flex-1 bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-pink-500/40 transition-colors"
                       />
                       <button

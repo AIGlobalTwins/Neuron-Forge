@@ -220,7 +220,7 @@ export function WhatsAppModal({ onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg bg-[#0d0d0d] border border-[#1e1e1e] rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
+      <div className="relative z-10 w-full max-w-4xl bg-[#0d0d0d] border border-[#1e1e1e] rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-[#1e1e1e] shrink-0">
@@ -541,8 +541,23 @@ export function WhatsAppModal({ onClose }: Props) {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-gray-600 text-xs">
-                    Ainda sem conversas. Envia uma mensagem para o teu número WhatsApp Business.
+                  <div className="space-y-3">
+                    <div className="text-center py-4 text-gray-600 text-xs">
+                      Ainda sem conversas. O agente responde automaticamente quando receber a primeira mensagem.
+                    </div>
+                    <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-3 space-y-2">
+                      <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Como testar</p>
+                      {[
+                        { n: "1", text: "Abre o WhatsApp no teu telemóvel" },
+                        { n: "2", text: `Envia uma mensagem para o número associado ao Phone Number ID` },
+                        { n: "3", text: "O agente deve responder em segundos — verifica se o webhook está ativo" },
+                      ].map((s) => (
+                        <div key={s.n} className="flex items-start gap-2">
+                          <span className="w-4 h-4 rounded bg-[#25D366]/10 border border-[#25D366]/20 text-[#25D366] text-[9px] font-bold flex items-center justify-center shrink-0 mt-0.5">{s.n}</span>
+                          <span className="text-[10px] text-gray-600 leading-relaxed">{s.text}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
