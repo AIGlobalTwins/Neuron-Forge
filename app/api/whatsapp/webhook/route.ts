@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { getAnthropicKey, getWhatsAppAccessToken, getWhatsAppPhoneNumberId, getWhatsAppVerifyToken } from "@/lib/settings";
+import { getAnthropicKey, getClaudeModel, getWhatsAppAccessToken, getWhatsAppPhoneNumberId, getWhatsAppVerifyToken } from "@/lib/settings";
 import { readBotConfig, buildSystemPrompt, readHistory, appendHistory } from "@/lib/whatsapp-bot";
 
 const GRAPH = "https://graph.facebook.com/v19.0";
@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
     if (!config.active) return NextResponse.json({ ok: true });
 
     const anthropicKey = getAnthropicKey();
+    const claudeModel = getClaudeModel();
     const accessToken = getWhatsAppAccessToken();
     const phoneNumberId = getWhatsAppPhoneNumberId();
     if (!anthropicKey || !accessToken || !phoneNumberId) return NextResponse.json({ ok: true });
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
 
     const anthropic = new Anthropic({ apiKey: anthropicKey });
     const res = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
+      model: claudeModel,
       max_tokens: 400,
       system: buildSystemPrompt(config),
       messages: [

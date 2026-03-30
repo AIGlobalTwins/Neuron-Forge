@@ -2,7 +2,7 @@
 
 **Neuron Forge** is an AI-powered multi-agent platform for businesses. Each agent is an autonomous tool that solves a specific business problem — from generating professional websites to automating customer support on WhatsApp.
 
-All agents are powered by **Claude Sonnet** and built on **Next.js 14 App Router**.
+All agents are powered by **Claude** (Sonnet / Opus / Haiku — selectable per request) and built on **Next.js 14 App Router**.
 
 ---
 
@@ -25,7 +25,9 @@ More agents are continuously added. See [Adding a New Agent](docs/ADDING-AGENT.m
 ## Stack
 
 - **Framework:** Next.js 14 App Router (TypeScript)
-- **AI:** Anthropic Claude Sonnet 4.6 (Vision + Text)
+- **AI:** Anthropic Claude 4.6 — Sonnet, Opus, Haiku (Vision + Text, model selectable per request)
+- **Auth:** Clerk (optional — gracefully skipped when keys are absent)
+- **Photos:** Curated Unsplash catalog per business category (hero + content arrays); uploaded photos take priority for hero
 - **Browser automation:** Playwright (screenshots, HTML/CSS extraction, PDF generation)
 - **Storage:** Local filesystem (`data/`) — settings, bot configs, conversation history
 - **Deploy:** Vercel
@@ -59,9 +61,15 @@ INSTAGRAM_ACCOUNT_ID=...  # Instagram Business account ID
 WHATSAPP_PHONE_NUMBER_ID= # WhatsApp Business phone number ID
 WHATSAPP_ACCESS_TOKEN=... # WhatsApp Business access token
 WHATSAPP_VERIFY_TOKEN=... # Webhook verify token
+
+# Clerk authentication (optional — app works without it)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
 ```
 
 All credentials can also be set via the Settings modal in the UI — no `.env.local` required.
+
+Clerk auth is entirely optional: the app runs without it. When valid Clerk keys are present, sign-in/sign-up pages are enabled and API routes are protected.
 
 ---
 
@@ -70,9 +78,11 @@ All credentials can also be set via the Settings modal in the UI — no `.env.lo
 ```
 app/
   page.tsx                      # Homepage — all agent cards
+  sign-in/[[...sign-in]]/       # Clerk sign-in page (active when Clerk keys present)
+  sign-up/[[...sign-up]]/       # Clerk sign-up page (active when Clerk keys present)
   api/
     analyze/                    # Analyze & Redesign agent
-    create-from-maps/           # Google Maps agent
+    create-from-maps/           # Google Maps → full website (two-pass, Lovable-quality)
     social-posts/               # Instagram Posts agent
     instagram-publish/          # Instagram direct publish
     whatsapp/
@@ -104,7 +114,7 @@ components/
   DemoModal.tsx                 # Demo mode (no API key required)
 
 lib/
-  settings.ts                   # Read/write all credentials
+  settings.ts                   # Read/write all credentials (getAnthropicKey, getClaudeModel)
   history.ts                    # Client-side generation history (localStorage)
   whatsapp-bot.ts               # Bot config, conversation history, system prompt builder
   vercel-deploy.ts              # Deploy HTML to Vercel

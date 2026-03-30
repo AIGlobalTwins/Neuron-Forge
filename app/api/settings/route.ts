@@ -17,6 +17,7 @@ export async function GET() {
   return NextResponse.json({
     anthropicApiKey: s.anthropicApiKey ? maskKey(s.anthropicApiKey) : "",
     vercelToken: s.vercelToken ? maskKey(s.vercelToken) : "",
+    claudeModel: s.claudeModel || "claude-sonnet-4-6",
     hasAnthropicKey: !!s.anthropicApiKey,
     hasVercelToken: !!s.vercelToken,
     hasInstagramToken: !!s.instagramToken,
@@ -50,6 +51,9 @@ export async function POST(req: NextRequest) {
   }
   if (typeof body.whatsappVerifyToken === "string") {
     update.whatsappVerifyToken = body.whatsappVerifyToken.trim();
+  }
+  if (typeof body.claudeModel === "string" && body.claudeModel.trim()) {
+    update.claudeModel = body.claudeModel.trim();
   }
 
   writeSettings(update, userId);

@@ -6,7 +6,7 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 
-import { getAnthropicKey } from "@/lib/settings";
+import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 import { deployToVercel } from "@/lib/vercel-deploy";
 
 const REDESIGN_DIR = "./outputs/redesigns";
@@ -206,6 +206,7 @@ async function analyzeWithVision(
   category: string,
   crawledPages: PageData[],
   source: SourceSnapshot,
+  model: string,
 ): Promise<SiteAnalysis> {
   const pagesSnapshot = crawledPages.map(p => `[${p.label}]: ${p.content.slice(0, 300)}`).join("\n\n");
 
@@ -218,7 +219,7 @@ async function analyzeWithVision(
   ].filter(Boolean).join("\n\n");
 
   const res = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
+    model,
     max_tokens: 1024,
     messages: [{
       role: "user",
@@ -345,6 +346,7 @@ async function generateRedesign(
   _url: string,
   category: string,
   instructions: string = "",
+  model: string = "claude-sonnet-4-6",
 ): Promise<string> {
   const skillRec = queryUiSkill(category.toLowerCase().replace(/[^a-z0-9 ]/g, ""));
 
@@ -385,6 +387,14 @@ ${s.content || "(generate relevant content based on business type)"}
 
 ## UI/UX SKILL GUIDANCE
 ${skillRec || "Apply Soft UI Evolution + Minimalism, generous whitespace, strong visual hierarchy."}
+
+## CRITICAL LAYOUT RULES
+- NEVER add vertical text, writing-mode, rotated text, or decorative side text
+- NEVER add position:fixed elements except the navbar
+- NEVER add position:absolute elements except overlays inside the hero section
+- NEVER add custom <style> blocks — use ONLY Tailwind utility classes
+- ALL text must flow horizontally, left-to-right
+- Follow the exact grid column counts specified in this prompt
 
 ${instructions ? `## USER INSTRUCTIONS (highest priority — follow these above all else)\n${instructions}\n` : ""}## BRAND
 - Name: ${analysis.businessName}
@@ -465,7 +475,7 @@ STRICT RULES:
 OUTPUT: ONLY the complete HTML starting with <!DOCTYPE html>. No markdown fences. No explanations.`;
 
   const res = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
+    model,
     max_tokens: 8000,
     messages: [{ role: "user", content: prompt }],
   });
@@ -494,6 +504,7 @@ export async function POST(req: NextRequest) {
   let userId: string | null = null;
   try { const { auth } = await import("@clerk/nextjs/server"); const a = await auth(); userId = a.userId; } catch {}
   const anthropicKey = getAnthropicKey(userId);
+  const claudeModel = getClaudeModel(userId);
   if (!anthropicKey) return NextResponse.json({ error: "Anthropic API Key not configured. Add it in Settings." }, { status: 500 });
 
   const anthropic = new Anthropic({ apiKey: anthropicKey });
@@ -517,7 +528,7 @@ export async function POST(req: NextRequest) {
   // 3. Vision analysis
   let analysis: SiteAnalysis;
   try {
-    analysis = await analyzeWithVision(anthropic, screenshotBase64, crawlResult.home, url, name, category, crawlResult.pages, crawlResult.source);
+    analysis = await analyzeWithVision(anthropic, screenshotBase64, crawlResult.home, url, name, category, crawlResult.pages, crawlResult.source, claudeModel);
   } catch (err) {
     return NextResponse.json({ error: `Analysis failed: ${(err as Error).message}` }, { status: 500 });
   }
@@ -533,7 +544,7 @@ export async function POST(req: NextRequest) {
   // 4. Generate redesign
   let html = "";
   try {
-    html = await generateRedesign(anthropic, analysis, crawlResult.pages, url, category, instructions);
+    html = await generateRedesign(anthropic, analysis, crawlResult.pages, url, category, instructions, claudeModel);
   } catch (err) {
     return NextResponse.json({ error: `Redesign failed: ${(err as Error).message}` }, { status: 500 });
   }

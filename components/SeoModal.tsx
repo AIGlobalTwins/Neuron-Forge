@@ -59,7 +59,7 @@ function buildMetaHtml(sections: { title: string; content: string }[]): string {
     ogTitle  && `<meta property="og:title" content="${ogTitle}">`,
     ogDesc   && `<meta property="og:description" content="${ogDesc}">`,
     (ogTitle || ogDesc) && `<meta property="og:type" content="website">`,
-  ].filter((l): l is string => l !== false && l !== undefined && l !== "");
+  ].filter((l): l is string => typeof l === "string" && l !== "");
   return lines.join("\n");
 }
 

@@ -6,32 +6,130 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 
-import { getAnthropicKey } from "@/lib/settings";
+import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 import { deployToVercel } from "@/lib/vercel-deploy";
 
 const REDESIGN_DIR = "./outputs/redesigns";
 const UPLOADS_DIR = "./public/uploads";
 const SKILL_SCRIPT = path.join(process.cwd(), ".claude/skills/ui-ux-pro-max/scripts/search.py");
 
-const UNSPLASH: Record<string, string> = {
-  restaurant: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600&q=80",
-  beauty:     "https://images.unsplash.com/photo-1560066984-138daaa078e3?w=1600&q=80",
-  fitness:    "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1600&q=80",
-  dental:     "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=1600&q=80",
-  hotel:      "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600&q=80",
-  legal:      "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1600&q=80",
-  default:    "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1600&q=80",
+// ── Photo catalog by category ──────────────────────────────────────────────
+// hero: full-screen background (1600px wide)
+// content: section images (800px wide, aspect 4:3)
+const PHOTO_CATALOG: Record<string, { hero: string[]; content: string[] }> = {
+  restaurant: {
+    hero: [
+      "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600&q=85",
+      "https://images.unsplash.com/photo-1559339352-11d035aa65de?w=1600&q=85",
+      "https://images.unsplash.com/photo-1537047902294-62a40c20a6ae?w=1600&q=85",
+    ],
+    content: [
+      "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=85",
+      "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=85",
+      "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&q=85",
+      "https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=800&q=85",
+      "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=85",
+    ],
+  },
+  beauty: {
+    hero: [
+      "https://images.unsplash.com/photo-1560066984-138daaa078e3?w=1600&q=85",
+      "https://images.unsplash.com/photo-1522337660859-02fbefca4702?w=1600&q=85",
+    ],
+    content: [
+      "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&q=85",
+      "https://images.unsplash.com/photo-1560750133-1bab52e63e85?w=800&q=85",
+      "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=800&q=85",
+      "https://images.unsplash.com/photo-1634449571010-02389ed0f9b0?w=800&q=85",
+    ],
+  },
+  fitness: {
+    hero: [
+      "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1600&q=85",
+      "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=1600&q=85",
+    ],
+    content: [
+      "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&q=85",
+      "https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=800&q=85",
+      "https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=800&q=85",
+      "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=800&q=85",
+    ],
+  },
+  dental: {
+    hero: [
+      "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=1600&q=85",
+      "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=1600&q=85",
+    ],
+    content: [
+      "https://images.unsplash.com/photo-1609840114035-3c981b782dfe?w=800&q=85",
+      "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&q=85",
+      "https://images.unsplash.com/photo-1559757175-0eb30cd8c063?w=800&q=85",
+      "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=800&q=85",
+    ],
+  },
+  hotel: {
+    hero: [
+      "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600&q=85",
+      "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=1600&q=85",
+    ],
+    content: [
+      "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&q=85",
+      "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800&q=85",
+      "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=800&q=85",
+      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=85",
+    ],
+  },
+  real_estate: {
+    hero: [
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1600&q=85",
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1600&q=85",
+    ],
+    content: [
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=85",
+      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&q=85",
+      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=85",
+      "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800&q=85",
+    ],
+  },
+  legal: {
+    hero: [
+      "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=1600&q=85",
+      "https://images.unsplash.com/photo-1505664194779-8beaceb93744?w=1600&q=85",
+    ],
+    content: [
+      "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=800&q=85",
+      "https://images.unsplash.com/photo-1436450412740-6b988f486c6b?w=800&q=85",
+      "https://images.unsplash.com/photo-1521737852567-6949f3f9f2b5?w=800&q=85",
+    ],
+  },
+  default: {
+    hero: [
+      "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1600&q=85",
+      "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=1600&q=85",
+    ],
+    content: [
+      "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=85",
+      "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&q=85",
+      "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800&q=85",
+    ],
+  },
 };
 
-function getHeroImage(category: string): string {
+function getCatalog(category: string): { hero: string[]; content: string[] } {
   const c = category.toLowerCase();
-  if (c.includes("restaur") || c.includes("café") || c.includes("cafe") || c.includes("bar") || c.includes("pizz")) return UNSPLASH.restaurant;
-  if (c.includes("beleza") || c.includes("salon") || c.includes("beauty") || c.includes("spa") || c.includes("barbearia")) return UNSPLASH.beauty;
-  if (c.includes("fitness") || c.includes("gym") || c.includes("ginásio") || c.includes("ginasio")) return UNSPLASH.fitness;
-  if (c.includes("dental") || c.includes("denti") || c.includes("health") || c.includes("oral") || c.includes("clínica") || c.includes("clinica")) return UNSPLASH.dental;
-  if (c.includes("hotel") || c.includes("accommodation") || c.includes("pousada")) return UNSPLASH.hotel;
-  if (c.includes("legal") || c.includes("law") || c.includes("advog")) return UNSPLASH.legal;
-  return UNSPLASH.default;
+  if (c.includes("restaur")||c.includes("café")||c.includes("cafe")||c.includes("bar")||c.includes("pizz")||c.includes("sushi")||c.includes("comida")||c.includes("tasca")||c.includes("food")||c.includes("bistro")||c.includes("pastel")||c.includes("padaria")) return PHOTO_CATALOG.restaurant;
+  if (c.includes("beleza")||c.includes("salon")||c.includes("beauty")||c.includes("hair")||c.includes("nail")||c.includes("spa")||c.includes("estét")||c.includes("barber")||c.includes("barbearia")) return PHOTO_CATALOG.beauty;
+  if (c.includes("fitness")||c.includes("gym")||c.includes("ginás")||c.includes("ginasio")||c.includes("treino")||c.includes("crossfit")) return PHOTO_CATALOG.fitness;
+  if (c.includes("dental")||c.includes("denti")||c.includes("clínica")||c.includes("clinica")||c.includes("médico")||c.includes("medico")||c.includes("saúde")||c.includes("saude")||c.includes("health")||c.includes("oral")) return PHOTO_CATALOG.dental;
+  if (c.includes("hotel")||c.includes("hostel")||c.includes("pousada")||c.includes("alojamento")||c.includes("accommodation")||c.includes("apart")) return PHOTO_CATALOG.hotel;
+  if (c.includes("imobil")||c.includes("real estate")||c.includes("imóvel")||c.includes("imovel")||c.includes("casa")||c.includes("propriedade")) return PHOTO_CATALOG.real_estate;
+  if (c.includes("legal")||c.includes("law")||c.includes("advog")||c.includes("jurídic")||c.includes("solicit")) return PHOTO_CATALOG.legal;
+  return PHOTO_CATALOG.default;
+}
+
+function getHeroImage(category: string): string {
+  const catalog = getCatalog(category);
+  return catalog.hero[0];
 }
 
 interface PhotoAnalysis {
@@ -43,7 +141,7 @@ interface PhotoAnalysis {
   suggestedTagline: string;
 }
 
-async function analyzePhotos(anthropic: Anthropic, imageBlocks: Anthropic.ImageBlockParam[], businessName: string, category: string): Promise<PhotoAnalysis> {
+async function analyzePhotos(anthropic: Anthropic, imageBlocks: Anthropic.ImageBlockParam[], businessName: string, category: string, model: string): Promise<PhotoAnalysis> {
   const defaults: PhotoAnalysis = {
     primaryColor: "#1a1a2e",
     accentColor: "#e94560",
@@ -56,7 +154,7 @@ async function analyzePhotos(anthropic: Anthropic, imageBlocks: Anthropic.ImageB
 
   try {
     const res = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
+      model,
       max_tokens: 512,
       messages: [{
         role: "user",
@@ -193,6 +291,7 @@ function fixHtml(part1: string, part2: string): string {
 
   if (!html.includes("</body>")) html += "\n</body>";
   if (!html.includes("</html>")) html += "\n</html>";
+
   return html;
 }
 
@@ -204,6 +303,7 @@ export async function POST(req: NextRequest) {
   let userId: string | null = null;
   try { const { auth } = await import("@clerk/nextjs/server"); const a = await auth(); userId = a.userId; } catch {}
   const anthropicKey = getAnthropicKey(userId);
+  const claudeModel = getClaudeModel(userId);
   if (!anthropicKey) return NextResponse.json({ error: "Anthropic API Key not configured. Add it in Settings." }, { status: 500 });
 
   // ── Extract from Maps ──────────────────────────────────────────────────
@@ -240,10 +340,14 @@ export async function POST(req: NextRequest) {
     savedImageUrls.push(`/uploads/${imgId}.${ext}`);
   }
 
-  const heroImage = getHeroImage(finalCategory);
+  // Use uploaded photo as hero if available, else fallback to catalog
+  const catalog = getCatalog(finalCategory);
+  const heroImage = savedImageUrls.length > 0 ? savedImageUrls[0] : catalog.hero[0];
+  const contentPhotos = catalog.content;
 
   // ── UI/UX Skill ────────────────────────────────────────────────────────
   const skillRec = queryUiSkill(finalCategory);
+
 
   // ── Category-aware CTAs ────────────────────────────────────────────────
   const meta = getCategoryMeta(finalCategory);
@@ -274,11 +378,15 @@ export async function POST(req: NextRequest) {
   const anthropic = new Anthropic({ apiKey: anthropicKey });
 
   // ── Analyze photos → extract colors, tone, tagline ─────────────────────
-  const photoAnalysis = await analyzePhotos(anthropic, imageBlocks, finalName, finalCategory);
+  const photoAnalysis = await analyzePhotos(anthropic, imageBlocks, finalName, finalCategory, claudeModel);
   const isSerif = photoAnalysis.fontStyle === "serif";
   const fonts = isSerif
     ? { heading: "Playfair Display", body: "Lora",   import: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lora:wght@400;500&display=swap" }
     : { heading: "Poppins",          body: "Inter",  import: "https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500&display=swap" };
+
+  const isFood = ["restaur","café","cafe","bar","pizz","sushi","comida","tasca","food","pastel","padaria","bakery","bistro"].some(k => finalCategory.toLowerCase().includes(k));
+  const heroCity = finalAddress ? (finalAddress.split(",").slice(-1)[0]?.trim() ?? "") : "";
+  const heroOverline = [finalCategory, heroCity].filter(Boolean).join(" · ").toUpperCase();
 
   const sharedContext = `
 ${instructions ? `USER INSTRUCTIONS (highest priority — follow these above all else): ${instructions}\n` : ""}BUSINESS: ${finalName} | ${finalCategory}
@@ -295,9 +403,52 @@ UI/UX: ${skillRec.slice(0, 300) || "Soft UI Evolution + Minimalism"}
   // ── Team section applicability ─────────────────────────────────────────
   const showTeam = ["dental", "denti", "clínica", "clinica", "legal", "law", "advog", "fitness", "gym", "ginás", "salon", "beauty", "barber", "médico", "medico"].some(k => finalCategory.toLowerCase().includes(k));
 
+  // ── Precomputed section variants ────────────────────────────────────────
+  const foodAboutSection = isFood
+    ? `ABOUT (id="services") — <section id="services" class="py-28 px-6 bg-stone-50">:
+- <div class="max-w-4xl mx-auto text-center">
+- <p class="tracking-[0.3em] text-xs uppercase mb-5" style="color:${photoAnalysis.accentColor}">A NOSSA HISTÓRIA</p>
+- H2 class="font-heading text-5xl md:text-6xl font-bold text-slate-900 leading-tight mb-8": write a 2-line evocative phrase — line1 in plain text, line2 wrapped in <span class="italic" style="color:${photoAnalysis.accentColor}">
+- <p class="text-slate-500 text-lg leading-relaxed mb-20 max-w-3xl mx-auto"> — 2-3 sentences capturing the atmosphere: ${photoAnalysis.brandPersonality}
+- Stats: <div class="grid grid-cols-3 gap-8 border-t border-slate-200 pt-12"> — 3 relevant stats for ${finalCategory} (e.g. years open, rating, dishes), each: <div><p class="font-heading text-5xl font-bold mb-2" style="color:${photoAnalysis.accentColor}">VALUE</p><p class="text-xs tracking-[0.2em] uppercase text-slate-400">LABEL</p></div>`
+    : `SERVICES SHOWCASE (id="services") — <section id="services" class="py-24 px-6 bg-slate-50">:
+- <div class="max-w-6xl mx-auto">
+- <div class="text-center mb-16">
+  * <p class="tracking-[0.25em] text-xs uppercase mb-3" style="color:${photoAnalysis.accentColor}">O QUE FAZEMOS</p>
+  * H2 font-heading text-4xl font-bold text-slate-900 mb-4 + p text-slate-500 text-lg max-w-2xl mx-auto
+- 2 alternating showcase rows:
+  Row 1: <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center mb-20">
+    Left: <img src="${contentPhotos[0]}" class="rounded-2xl w-full aspect-[4/3] object-cover shadow-sm">
+    Right: <div> — h3 font-heading text-2xl font-bold text-slate-900 mb-3 [main service name for ${finalCategory}] + p text-slate-500 leading-relaxed mb-8 + 3 key points each: <div class="flex items-start gap-3 mb-3"><div class="w-5 h-5 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center text-primary"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg></div><span class="text-slate-600 text-sm">[point]</span></div>
+  Row 2: <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center"> — content div FIRST then image: <div>[second service, same structure with 3 points]</div> <img src="${contentPhotos[1] || contentPhotos[0]}" class="rounded-2xl w-full aspect-[4/3] object-cover shadow-sm">`;
+
+  const foodMenuSection = isFood
+    ? `MENU SHOWCASE (id="menu") — <section id="menu" class="py-24 px-6 bg-white">:
+- <div class="max-w-6xl mx-auto">
+- Header: <div class="text-center mb-16"> — <p class="tracking-[0.3em] text-xs uppercase mb-4" style="color:${photoAnalysis.accentColor}">O NOSSO MENU</p> + H2 font-heading text-4xl font-bold text-slate-900
+- 2 alternating showcase rows:
+  Row 1: <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center mb-20">
+    Left: <img src="${contentPhotos[0]}" class="rounded-2xl w-full aspect-[4/3] object-cover">
+    Right: <div> — h3 font-heading text-3xl font-bold text-slate-900 mb-2 [food category name] + p text-slate-500 mb-8 + 3-4 items each: <div class="py-3 border-b border-slate-100"><p class="font-semibold text-slate-900">[item name]</p><p class="text-slate-400 text-sm">[short description]</p></div>
+  Row 2: <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center"> — content div FIRST then image: <div>[same structure, different food category]</div> <img src="${contentPhotos[1] || contentPhotos[0]}" class="rounded-2xl w-full aspect-[4/3] object-cover">`
+    : "";
+
+  const footerLinks = isFood
+    ? `Início, Sobre, Menu, Porquê Nós${showTeam ? ", Equipa" : ""}, Contacto`
+    : `Início, Serviços, Porquê Nós${showTeam ? ", Equipa" : ""}, Contacto`;
+
   // ── Part 1: HEAD + NAV + HERO + SERVICES + WHY US ───────────────────────
   const prompt1 = `You are building Part 1 of a website. Output ONLY what is listed — stop after the "why" section closing tag.
 ${imageBlocks.length > 0 ? "Business photos were analyzed — use the extracted brand colors and personality from sharedContext. Do NOT embed any uploaded photos in the HTML." : ""}
+
+CRITICAL LAYOUT RULES:
+- NEVER add vertical text, writing-mode, rotated text, or decorative side text
+- NEVER add position:fixed elements except the navbar
+- NEVER add position:absolute elements except overlays inside the hero section
+- NEVER add custom <style> blocks or inline styles beyond what is specified below
+- NEVER change the grid column counts specified below (grid-cols-3 means 3, grid-cols-2 means 2)
+- ALL text must flow horizontally, left-to-right
+- Use ONLY Tailwind utility classes — no custom CSS
 
 ${sharedContext}
 
@@ -321,24 +472,18 @@ NAV (id="navbar") — <nav id="navbar" class="fixed top-0 inset-x-0 z-50 bg-whit
 HERO (id="home") — <section id="home" class="relative min-h-screen flex items-center justify-center" style="background-image:url('${heroImage}');background-size:cover;background-position:center">:
 - Overlay: <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70"></div>
 - Content: <div class="relative z-10 text-center px-6 max-w-4xl mx-auto">
-  * <h1 class="font-heading text-5xl md:text-7xl font-bold text-white leading-tight mb-6"> — compelling headline using business name + tagline
-  * <p class="text-white/80 text-xl mb-10 max-w-2xl mx-auto leading-relaxed"> — 1-sentence value prop
+  * <p class="tracking-[0.3em] text-xs uppercase text-white/50 mb-6">${heroOverline}</p>
+  * <h1 class="font-heading text-5xl md:text-8xl font-bold text-white leading-none mb-6"> — put business name on 2 lines: line1 first word(s) in plain white text, line2 remaining part in <span class="italic" style="color:${photoAnalysis.accentColor}">. If name is 1 word, use the tagline/category as line2 in the span.
+  * <p class="text-white/75 text-xl mb-10 max-w-2xl mx-auto leading-relaxed"> — 1-sentence value prop
   * <div class="flex flex-col sm:flex-row gap-4 justify-center">
     - <button onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})" class="px-8 py-4 bg-primary hover:opacity-90 text-white font-semibold text-lg rounded-full transition shadow-lg">${meta.ctaPrimary}</button>
     - <button onclick="document.getElementById('services').scrollIntoView({behavior:'smooth'})" class="px-8 py-4 border-2 border-white/70 hover:border-white text-white font-semibold text-lg rounded-full transition backdrop-blur-sm">${meta.ctaSecondary}</button>
 
-SERVICES (id="services") — <section id="services" class="py-24 px-6 bg-slate-50">:
-- <div class="max-w-6xl mx-auto">
-- <div class="text-center mb-16"> — H2 font-heading text-4xl font-bold text-slate-900 mb-4 + p text-slate-500 text-lg max-w-2xl mx-auto
-- <div class="grid grid-cols-1 md:grid-cols-3 gap-8"> — 3 service cards for ${finalCategory}:
-  Each card: <div class="bg-white rounded-2xl p-8 shadow-sm hover:shadow-lg border border-slate-100 transition-all duration-300 flex flex-col">
-  * Icon container: <div class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 text-primary"> + inline SVG w-7 h-7 stroke currentColor
-  * <h3 class="font-heading font-bold text-xl text-slate-900 mb-3">
-  * <p class="text-slate-500 leading-relaxed flex-1">
+${foodAboutSection}
 
 WHY US (id="why") — <section id="why" class="py-24 px-6 bg-white">:
 - <div class="max-w-6xl mx-auto">
-- Text center header: H2 font-heading text-4xl font-bold text-slate-900 mb-4 "Porquê escolher a ${finalName}?" + p text-slate-500 text-lg max-w-2xl mx-auto mb-16
+- Text center: <p class="tracking-[0.25em] text-xs uppercase mb-3" style="color:${photoAnalysis.accentColor}">PORQUÊ NÓS</p> + H2 font-heading text-4xl font-bold text-slate-900 mb-4 "Porquê escolher a ${finalName}?" + p text-slate-500 text-lg max-w-2xl mx-auto mb-16
 - <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16"> — 4 cards, each:
   <div class="flex items-start gap-5 p-7 bg-slate-50 rounded-2xl border border-slate-100 hover:border-primary/30 transition">
   * <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary"> + SVG icon
@@ -350,34 +495,30 @@ WHY US (id="why") — <section id="why" class="py-24 px-6 bg-white">:
 Stop after the WHY US closing </section>. Do NOT add </body> or </html>. Output ONLY valid HTML, no markdown, no explanations.`;
 
   const res1 = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
+    model: claudeModel,
     max_tokens: 4000,
     messages: [{ role: "user", content: [...imageBlocks, { type: "text", text: prompt1 }] }],
   });
   let part1 = res1.content[0].type === "text" ? res1.content[0].text.trim() : "";
   part1 = part1.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
 
-  // ── Part 2: TESTIMONIALS + TEAM? + CONTACT + FOOTER ─────────────────────
+  // ── Part 2: MENU SHOWCASE? + TEAM? + CONTACT + FOOTER ───────────────────
   const prompt2 = `You are building Part 2 of a website. Output ONLY raw <section> HTML blocks listed below.
 CRITICAL: Do NOT output <!DOCTYPE>, <html>, <head>, <body>, </body>, </html>, or any wrapper tags — only the sections themselves.
+
+CRITICAL LAYOUT RULES:
+- NEVER add vertical text, writing-mode, rotated text, or decorative side text
+- NEVER add position:fixed or position:absolute elements
+- NEVER add custom <style> blocks or inline styles
+- NEVER change the grid column counts specified below
+- ALL text must flow horizontally, left-to-right
+- Use ONLY Tailwind utility classes — no custom CSS
 
 ${sharedContext}
 
 Output ONLY these sections (raw HTML, no wrapper, no markdown):
 
-TESTIMONIALS (id="testimonials") — <section id="testimonials" class="py-24 px-6 bg-slate-50">:
-- <div class="max-w-6xl mx-auto">
-- <div class="text-center mb-16"> — H2 font-heading text-4xl font-bold text-slate-900 mb-4 + p text-slate-500 text-lg max-w-2xl mx-auto
-- <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full"> — 3 cards, EACH card MUST use this exact structure:
-  <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 flex flex-col h-full">
-    <div class="flex gap-1 mb-4"><!-- 5 star SVGs: <svg class="w-5 h-5 text-yellow-400 fill-yellow-400" viewBox="0 0 20 20"><path d="M10 1l2.4 7.4H20l-6.2 4.5 2.4 7.4L10 16l-6.2 4.3 2.4-7.4L0 8.4h7.6z"/></svg> --></div>
-    <p class="text-slate-600 leading-relaxed flex-1 mb-6">"2-3 sentence authentic review in Portuguese"</p>
-    <div class="flex items-center gap-3 pt-4 border-t border-slate-100">
-      <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-heading font-bold text-primary text-sm flex-shrink-0">XX</div>
-      <div><p class="font-semibold text-sm text-slate-900">Nome Apelido</p><p class="text-xs text-slate-400">Cliente verificado</p></div>
-    </div>
-  </div>
-  Names and reviews MUST feel authentic for ${finalCategory} in Portuguese. No italic text.
+${foodMenuSection}
 
 ${showTeam ? `TEAM (id="team") — <section id="team" class="py-24 px-6 bg-white">:
 - <div class="max-w-6xl mx-auto">
@@ -406,7 +547,7 @@ FOOTER — <footer class="bg-slate-900 text-white py-16 px-6">:
 - <div class="max-w-6xl mx-auto">
 - <div class="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12">
 - Col 1: <h3 class="font-heading font-bold text-xl mb-3">${finalName}</h3> + <p class="text-slate-400 text-sm leading-relaxed"> brand tagline
-- Col 2: <h4 class="font-semibold mb-4">Links Rápidos</h4> + <ul class="space-y-2"> — li: <a href="#section-id" class="text-slate-400 hover:text-white text-sm transition"> Início, Serviços, Porquê Nós, Testemunhos${showTeam ? ", Equipa" : ""}, Contacto
+- Col 2: <h4 class="font-semibold mb-4">Links Rápidos</h4> + <ul class="space-y-2"> — li: <a href="#section-id" class="text-slate-400 hover:text-white text-sm transition"> ${footerLinks}
 - Col 3: <h4 class="font-semibold mb-4">Contacto</h4> + address/phone/email each on own <p class="text-slate-400 text-sm mb-2">
 - Bottom divider + copyright: <div class="border-t border-slate-800 mt-10 pt-8 text-center text-slate-500 text-sm">© ${new Date().getFullYear()} ${finalName}. Todos os direitos reservados.</div>
 
@@ -415,7 +556,7 @@ End with </body></html>
 Output ONLY raw HTML. No markdown. No explanations.`;
 
   const res2 = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
+    model: claudeModel,
     max_tokens: 4000,
     messages: [{ role: "user", content: prompt2 }],
   });

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 // Clerk is optional — only loaded when valid keys are present
 const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
-const clerkEnabled = clerkKey.startsWith("pk_live_") || clerkKey.startsWith("pk_test_A");
+const clerkEnabled = clerkKey.startsWith("pk_live_") || clerkKey.startsWith("pk_test_");
 
 async function MaybeClerkProvider({ children }: { children: React.ReactNode }) {
   if (clerkEnabled) {

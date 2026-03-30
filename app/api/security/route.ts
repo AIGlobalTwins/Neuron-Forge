@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { getAnthropicKey } from "@/lib/settings";
+import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 
 async function getUserId(): Promise<string | null> {
   try {
@@ -188,6 +188,7 @@ export async function POST(req: NextRequest) {
   try {
     const userId = await getUserId();
     const anthropicKey = getAnthropicKey(userId);
+    const claudeModel = getClaudeModel(userId);
     if (!anthropicKey) {
       return NextResponse.json({ error: "Anthropic API Key não configurada." }, { status: 500 });
     }
@@ -334,7 +335,7 @@ Rules:
 
     const anthropic = new Anthropic({ apiKey: anthropicKey });
     const res = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
+      model: claudeModel,
       max_tokens: 4000,
       messages: [{ role: "user", content: prompt }],
     });

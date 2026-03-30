@@ -27,9 +27,16 @@ function CheckIcon() {
   );
 }
 
+const MODELS = [
+  { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", desc: "Equilibrado — rápido e capaz" },
+  { id: "claude-opus-4-6", label: "Claude Opus 4.6", desc: "Mais capaz — mais lento e caro" },
+  { id: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5", desc: "Mais rápido e barato" },
+];
+
 export function SettingsModal({ onClose }: Props) {
   const [anthropicKey, setAnthropicKey] = useState("");
   const [vercelToken, setVercelToken] = useState("");
+  const [claudeModel, setClaudeModel] = useState("claude-sonnet-4-6");
   const [showAnthropic, setShowAnthropic] = useState(false);
   const [showVercel, setShowVercel] = useState(false);
   const [hasAnthropicKey, setHasAnthropicKey] = useState(false);
@@ -44,18 +51,21 @@ export function SettingsModal({ onClose }: Props) {
       .then((data) => {
         setHasAnthropicKey(data.hasAnthropicKey);
         setHasVercelToken(data.hasVercelToken);
+        if (data.claudeModel) setClaudeModel(data.claudeModel);
       });
   }, []);
 
   async function handleSave() {
-    if (!anthropicKey && !vercelToken) return;
     setSaving(true);
     setError("");
     try {
+      const payload: Record<string, string> = { claudeModel };
+      if (anthropicKey) payload.anthropicApiKey = anthropicKey;
+      if (vercelToken) payload.vercelToken = vercelToken;
       const res = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ anthropicApiKey: anthropicKey, vercelToken }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error("Failed to save");
       setSaved(true);
@@ -135,6 +145,44 @@ export function SettingsModal({ onClose }: Props) {
           {/* Divider */}
           <div className="border-t border-[#1a1a1a]" />
 
+          {/* Model selector */}
+          <div>
+            <label className="text-sm font-medium text-gray-300 mb-2 block">Modelo Claude</label>
+            <p className="text-xs text-gray-600 mb-3">
+              O modelo usado por todos os agentes. Modelos mais capazes produzem melhores resultados mas são mais lentos.
+            </p>
+            <div className="space-y-2">
+              {MODELS.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => setClaudeModel(m.id)}
+                  className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-200 ${
+                    claudeModel === m.id
+                      ? "border-[#E8622A]/60 bg-[#E8622A]/10"
+                      : "border-[#2a2a2a] bg-[#111] hover:border-[#3a3a3a]"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full border-2 flex items-center justify-center transition-colors ${
+                      claudeModel === m.id ? "border-[#E8622A]" : "border-[#3a3a3a]"
+                    }`}>
+                      {claudeModel === m.id && <div className="w-1.5 h-1.5 rounded-full bg-[#E8622A]" />}
+                    </div>
+                    <div>
+                      <div className={`text-sm font-medium ${claudeModel === m.id ? "text-white" : "text-gray-400"}`}>
+                        {m.label}
+                      </div>
+                      <div className="text-xs text-gray-600">{m.desc}</div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-[#1a1a1a]" />
+
           {/* Vercel */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -186,7 +234,7 @@ export function SettingsModal({ onClose }: Props) {
         <div className="px-6 pb-6">
           <button
             onClick={handleSave}
-            disabled={saving || (!anthropicKey && !vercelToken)}
+            disabled={saving}
             className="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-[#E8622A] hover:bg-[#d4571f] text-white flex items-center justify-center gap-2"
           >
             {saving ? (

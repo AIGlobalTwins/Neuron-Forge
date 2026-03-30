@@ -3,9 +3,18 @@ import path from "path";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 
+export const AVAILABLE_MODELS = [
+  { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", desc: "Equilibrado — rápido e capaz" },
+  { id: "claude-opus-4-6", label: "Claude Opus 4.6", desc: "Mais capaz — mais lento e caro" },
+  { id: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5", desc: "Mais rápido e barato" },
+] as const;
+
+export const DEFAULT_MODEL = "claude-sonnet-4-6";
+
 export interface AppSettings {
   anthropicApiKey: string;
   vercelToken: string;
+  claudeModel: string;
   instagramToken: string;
   instagramAccountId: string;
   whatsappPhoneNumberId: string;
@@ -16,6 +25,7 @@ export interface AppSettings {
 const DEFAULTS: AppSettings = {
   anthropicApiKey: "",
   vercelToken: "",
+  claudeModel: DEFAULT_MODEL,
   instagramToken: "",
   instagramAccountId: "",
   whatsappPhoneNumberId: "",
@@ -64,6 +74,12 @@ export function getAnthropicKey(userId?: string | null): string {
 
 export function getVercelToken(userId?: string | null): string {
   return readSettings(userId).vercelToken || process.env.VERCEL_TOKEN || "";
+}
+
+export function getClaudeModel(userId?: string | null): string {
+  const model = readSettings(userId).claudeModel;
+  const valid = AVAILABLE_MODELS.some((m) => m.id === model);
+  return valid ? model : DEFAULT_MODEL;
 }
 
 export function getInstagramToken(userId?: string | null): string {

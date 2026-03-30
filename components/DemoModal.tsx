@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { DEMO_POSTS, DEMO_CONSULTING_PLAN, DEMO_WEBSITE_ID, DEMO_SEO } from "@/lib/demo-data";
 
-type DemoTool = "maps" | "analyze" | "instagram" | "consulting" | "whatsapp" | "seo";
+type DemoTool = "maps" | "analyze" | "instagram" | "consulting" | "whatsapp" | "seo" | "security";
 
 interface Props {
   tool: DemoTool;
@@ -48,6 +48,7 @@ export function DemoModal({ tool, onClose, onSetupKey }: Props) {
           {tool === "consulting" && <DemoConsulting plan={DEMO_CONSULTING_PLAN} onSetupKey={onSetupKey} />}
           {tool === "whatsapp" && <DemoWhatsApp onSetupKey={onSetupKey} />}
           {tool === "seo" && <DemoSeo data={DEMO_SEO} onSetupKey={onSetupKey} />}
+          {tool === "security" && <DemoSetupKey label="Security Auditor" onSetupKey={onSetupKey} />}
         </div>
       </div>
     </div>
@@ -61,6 +62,7 @@ const TOOL_TITLES: Record<DemoTool, string> = {
   consulting: "Consulting Agent",
   whatsapp: "Agente WhatsApp",
   seo: "SEO Content Agent",
+  security: "Security Auditor",
 };
 
 /* ── Website Demo ── */
@@ -256,6 +258,18 @@ function DemoSeo({ data, onSetupKey }: { data: typeof DEMO_SEO; onSetupKey: () =
         ))}
       </div>
       <SetupCTA onSetupKey={onSetupKey} label="Gerar conteúdo SEO para o meu negócio" />
+    </div>
+  );
+}
+
+/* ── Generic setup key demo (for tools without pre-generated demo data) ── */
+function DemoSetupKey({ label, onSetupKey }: { label: string; onSetupKey: () => void }) {
+  return (
+    <div className="p-6 space-y-4">
+      <p className="text-sm text-gray-400 leading-relaxed">
+        O <span className="text-white font-medium">{label}</span> analisa qualquer website em tempo real — verifica headers de segurança, paths expostos, scripts inline, formulários e libraries desatualizadas.
+      </p>
+      <SetupCTA onSetupKey={onSetupKey} label={`Experimentar o ${label}`} />
     </div>
   );
 }

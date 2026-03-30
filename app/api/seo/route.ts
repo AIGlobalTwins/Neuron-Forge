@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { getAnthropicKey } from "@/lib/settings";
+import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 
 async function getUserId(): Promise<string | null> {
   try {
@@ -189,6 +189,7 @@ export async function POST(req: NextRequest) {
   try {
     const userId = await getUserId();
     const anthropicKey = getAnthropicKey(userId);
+    const claudeModel = getClaudeModel(userId);
     if (!anthropicKey) {
       return NextResponse.json({ error: "Anthropic API Key não configurada. Adiciona em Configurações." }, { status: 500 });
     }
@@ -221,19 +222,34 @@ export async function POST(req: NextRequest) {
     );
 
     const anthropic = new Anthropic({ apiKey: anthropicKey });
-    const maxTokens = contentType === "blog" ? 3000 : contentType === "landing" ? 2500 : 2000;
+    const maxTokens = contentType === "blog" ? 4000 : contentType === "landing" ? 3000 : 2500;
 
     const res = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
+      model: claudeModel,
       max_tokens: maxTokens,
+      system: "You are an SEO expert. Always respond with a single valid JSON object only. No markdown, no code fences, no extra text before or after the JSON.",
       messages: [{ role: "user", content: prompt }],
     });
 
     const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "{}";
     const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error("Resposta inválida do modelo");
+    if (!match) throw new Error("Resposta inválida — tenta novamente.");
 
-    const parsed = JSON.parse(match[0]) as { sections: { title: string; content: string }[]; seoTips: string[]; keywords: string[] };
+    let parsed: { sections: { title: string; content: string }[]; seoTips: string[]; keywords: string[] };
+    try {
+      parsed = JSON.parse(match[0]);
+    } catch {
+      // Attempt to extract partial data if JSON is truncated
+      const sectionsMatch = match[0].match(/"sections"\s*:\s*(\[[\s\S]*?\](?=\s*[,}]))/);
+      const tipsMatch = match[0].match(/"seoTips"\s*:\s*(\[[\s\S]*?\](?=\s*[,}]))/);
+      const kwMatch = match[0].match(/"keywords"\s*:\s*(\[[\s\S]*?\](?=\s*[,}]))/);
+      if (!sectionsMatch) throw new Error("Não foi possível processar a resposta. Tenta novamente.");
+      parsed = {
+        sections: JSON.parse(sectionsMatch[1]),
+        seoTips: tipsMatch ? JSON.parse(tipsMatch[1]) : [],
+        keywords: kwMatch ? JSON.parse(kwMatch[1]) : [],
+      };
+    }
 
     const wordCount = parsed.sections.reduce((acc, s) => acc + s.content.split(/\s+/).length, 0);
 

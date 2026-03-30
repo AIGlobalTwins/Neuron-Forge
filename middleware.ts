@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const clerkKey = process.env.CLERK_SECRET_KEY ?? "";
-const clerkEnabled = clerkKey.startsWith("sk_live_") || clerkKey.startsWith("sk_test_A");
+const clerkEnabled = clerkKey.startsWith("sk_live_") || clerkKey.startsWith("sk_test_");
 
 // When Clerk is configured, use full auth middleware; otherwise passthrough
 export default async function middleware(req: NextRequest) {
