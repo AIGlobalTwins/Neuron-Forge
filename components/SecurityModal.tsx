@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { SecurityFinding, SecurityResult, SecurityRating } from "@/app/api/security/route";
+import { saveToHistory } from "@/lib/history";
 
 interface Props {
   onClose: () => void;
@@ -117,6 +118,17 @@ export function SecurityModal({ onClose }: Props) {
       }
       setResult(data);
       setStep("result");
+      const hostname = (() => { try { return new URL(data.url).hostname.replace(/^www\./, ""); } catch { return url.trim(); } })();
+      saveToHistory({
+        type: "security",
+        name: hostname,
+        securityUrl: data.url,
+        securityScore: data.score,
+        securityRating: data.rating,
+        securitySummary: data.summary,
+        securityFindings: data.findings.map((f: SecurityFinding) => ({ severity: f.severity, title: f.title, category: f.category })),
+        securityTechDetected: data.techDetected,
+      });
     } catch (e) {
       setError((e as Error).message);
       setStep("form");

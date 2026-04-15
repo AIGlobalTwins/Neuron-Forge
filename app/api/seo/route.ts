@@ -60,12 +60,18 @@ Idioma: ${lang}
 Escreve seguindo as diretrizes E-E-A-T do Google (2024):
 - EXPERTISE: usa dados concretos, estatísticas ou factos verificáveis; demonstra domínio técnico do tema
 - EXPERIENCE: inclui exemplos específicos, cenários reais ou situações práticas do sector
-- AUTHORITATIVENESS: tom seguro e direto, sem linguagem vaga ("pode ser", "talvez") — afirmações claras
+- AUTHORITATIVENESS: tom seguro e direto, sem linguagem vaga ("pode ser", "talvez") — afirmações claras e directas
 - TRUSTWORTHINESS: honestidade sem exageros, sem promessas impossíveis; linguagem que gera confiança
 `.trim();
 
   const geoGuidelines = `
-Cada secção H2 deve ter entre 134 e 167 palavras — este é o comprimento ideal para ser citado por Google AI Overviews, ChatGPT e Perplexity. Cada secção deve ser um bloco autónomo e citável, respondendo a uma sub-questão específica com clareza.
+GEO (Generative Engine Optimization) — regras para ser citado por Google AI Overviews, ChatGPT e Perplexity:
+- Cada secção H2 deve ter entre 134 e 167 palavras — comprimento ideal para extracção por AI
+- Cada secção é um bloco autónomo: responde a uma sub-questão completa, começa com uma definição ou afirmação directa
+- Inclui pelo menos 1 dado numérico por secção (%, tempo, preço, quantidade) — estatísticas aumentam citação em +37%
+- Usa afirmações directas: "X reduz Y em 40%" em vez de "pode ajudar a reduzir"
+- Inclui freshness signals: "em 2024", "actualmente", "segundo dados recentes" — aumenta relevância temporal
+- NUNCA fazer keyword stuffing — reduz visibilidade AI em -10%
 `.trim();
 
   const base = `És um especialista em SEO e copywriting. ${businessCtx}\n\n`;
@@ -80,18 +86,18 @@ ${geoGuidelines}
 Devolve APENAS um objeto JSON com esta estrutura:
 {
   "sections": [
-    { "title": "Meta Title (≤60 chars)", "content": "o título do artigo" },
-    { "title": "Meta Description (≤160 chars)", "content": "descrição apelativa para SERP" },
-    { "title": "Introdução", "content": "2-3 parágrafos de introdução com a keyword principal naturalmente inserida" },
-    { "title": "H2: [título secção 1]", "content": "conteúdo entre 134-167 palavras, autónomo e citável" },
-    { "title": "H2: [título secção 2]", "content": "conteúdo entre 134-167 palavras, autónomo e citável" },
-    { "title": "H2: [título secção 3]", "content": "conteúdo entre 134-167 palavras, autónomo e citável" },
-    { "title": "Conclusão", "content": "parágrafo final com call-to-action" },
-    { "title": "Slug sugerido", "content": "url-slug-seo-friendly" },
-    { "title": "Alt text sugerido para imagem de destaque", "content": "descrição da imagem ideal" }
+    { "title": "Meta Title (≤60 chars)", "content": "título com keyword no início, sem clickbait" },
+    { "title": "Meta Description (≤160 chars)", "content": "descrição apelativa com keyword e CTA implícito" },
+    { "title": "Introdução", "content": "2-3 parágrafos: define o tema na 1ª frase, inclui keyword principal, freshness signal (ex: em 2024)" },
+    { "title": "H2: [título secção 1]", "content": "134-167 palavras, bloco autónomo, começa com definição directa, inclui 1 dado numérico específico" },
+    { "title": "H2: [título secção 2]", "content": "134-167 palavras, bloco autónomo, começa com definição directa, inclui 1 dado numérico específico" },
+    { "title": "H2: [título secção 3]", "content": "134-167 palavras, bloco autónomo, começa com definição directa, inclui 1 dado numérico específico" },
+    { "title": "Conclusão", "content": "parágrafo final com síntese e call-to-action directo" },
+    { "title": "Slug sugerido", "content": "url-slug-seo-friendly-sem-acentos" },
+    { "title": "Alt text sugerido para imagem de destaque", "content": "descrição da imagem com keyword contextual" }
   ],
-  "seoTips": ["dica 1", "dica 2", "dica 3", "dica 4"],
-  "keywords": ["kw1", "kw2", "kw3", "kw4", "kw5"]
+  "seoTips": ["dica sobre GEO/AI Overviews", "dica E-E-A-T específica para este sector", "dica técnica SEO", "dica de distribuição/amplificação"],
+  "keywords": ["kw principal", "kw long-tail 1", "kw long-tail 2", "kw relacionada 1", "kw relacionada 2"]
 }`;
   }
 
@@ -100,22 +106,24 @@ Devolve APENAS um objeto JSON com esta estrutura:
 
 ${eeatGuidelines}
 
+Regra crítica: usa dados numéricos concretos em vez de afirmações genéricas. "Reduzimos o tempo de espera em 40%" é melhor do que "somos rápidos". Estatísticas específicas aumentam credibilidade E-E-A-T e citabilidade AI em +37%.
+
 Devolve APENAS um objeto JSON:
 {
   "sections": [
-    { "title": "Headline principal (H1)", "content": "headline poderosa com keyword — autoritária e direta" },
-    { "title": "Subheadline", "content": "frase de apoio que reforça o valor com especificidade" },
-    { "title": "Proposta de valor", "content": "2-3 frases sobre o que torna este negócio único — com dados ou factos concretos (E-E-A-T: Expertise)" },
-    { "title": "Benefício 1", "content": "título + descrição curta (2 frases) com exemplo específico" },
-    { "title": "Benefício 2", "content": "título + descrição curta (2 frases) com exemplo específico" },
-    { "title": "Benefício 3", "content": "título + descrição curta (2 frases) com exemplo específico" },
-    { "title": "Social Proof", "content": "frase de testemunho ou prova social — específica, credível, sem hipérboles (E-E-A-T: Trustworthiness)" },
-    { "title": "Call-to-Action principal", "content": "texto do botão + frase de apoio" },
-    { "title": "Meta Title (≤60 chars)", "content": "title tag para esta landing page" },
-    { "title": "Meta Description (≤160 chars)", "content": "meta description apelativa" }
+    { "title": "Headline principal (H1)", "content": "headline directa com keyword — específica, sem clickbait (ex: 'Clínica Dentária em Lisboa — Consulta em 24h')" },
+    { "title": "Subheadline", "content": "frase de apoio com dado numérico ou benefício específico" },
+    { "title": "Proposta de valor", "content": "2-3 frases com dados concretos — o que torna este negócio único, com número ou facto verificável" },
+    { "title": "Benefício 1", "content": "título + 2 frases com exemplo específico e dado numérico" },
+    { "title": "Benefício 2", "content": "título + 2 frases com exemplo específico e dado numérico" },
+    { "title": "Benefício 3", "content": "título + 2 frases com exemplo específico e dado numérico" },
+    { "title": "Social Proof", "content": "prova social específica e credível — número de clientes, avaliação, anos de experiência (E-E-A-T: Trustworthiness)" },
+    { "title": "Call-to-Action principal", "content": "texto do botão (imperativo, específico) + frase de apoio que reduz friction" },
+    { "title": "Meta Title (≤60 chars)", "content": "keyword no início + diferenciador + localização se relevante" },
+    { "title": "Meta Description (≤160 chars)", "content": "proposta de valor + CTA implícito" }
   ],
-  "seoTips": ["dica 1", "dica 2", "dica 3", "dica 4"],
-  "keywords": ["kw1", "kw2", "kw3", "kw4", "kw5"]
+  "seoTips": ["dica E-E-A-T específica para landing pages", "dica sobre Core Web Vitals e conversão", "dica sobre schema markup (LocalBusiness/Service)", "dica GEO para landing pages"],
+  "keywords": ["kw principal", "kw long-tail 1", "kw long-tail 2", "kw relacionada 1", "kw relacionada 2"]
 }`;
   }
 
@@ -170,18 +178,22 @@ Devolve APENAS um objeto JSON:
   // service
   return base + `Escreve descrições SEO-optimizadas para os serviços deste negócio.
 
+${eeatGuidelines}
+
+Cada descrição de serviço deve incluir: (1) o que é o serviço em linguagem directa, (2) um benefício concreto com dado numérico ou resultado específico, (3) diferenciador face à concorrência.
+
 Devolve APENAS um objeto JSON:
 {
   "sections": [
-    { "title": "Descrição principal do negócio", "content": "150-200 palavras, keywords naturalmente integradas, para a homepage" },
-    { "title": "Serviço 1: [nome]", "content": "descrição SEO 80-100 palavras" },
-    { "title": "Serviço 2: [nome]", "content": "descrição SEO 80-100 palavras" },
-    { "title": "Serviço 3: [nome]", "content": "descrição SEO 80-100 palavras" },
-    { "title": "About Us / Sobre nós", "content": "parágrafo institucional 100-150 palavras" },
-    { "title": "Tagline SEO", "content": "slogan curto com keyword principal" }
+    { "title": "Descrição principal do negócio", "content": "150-200 palavras para homepage: keyword na 1ª frase, dado de credibilidade (anos, clientes, avaliação), freshness signal" },
+    { "title": "Serviço 1: [nome real do serviço]", "content": "80-100 palavras: o que é, benefício com dado numérico, para quem é indicado" },
+    { "title": "Serviço 2: [nome real do serviço]", "content": "80-100 palavras: o que é, benefício com dado numérico, para quem é indicado" },
+    { "title": "Serviço 3: [nome real do serviço]", "content": "80-100 palavras: o que é, benefício com dado numérico, para quem é indicado" },
+    { "title": "About Us / Sobre nós", "content": "100-150 palavras institucionais: história, valores, dado de autoridade (anos, equipa, certificações)" },
+    { "title": "Tagline SEO", "content": "slogan ≤10 palavras com keyword principal e diferenciador claro" }
   ],
-  "seoTips": ["dica 1", "dica 2", "dica 3", "dica 4"],
-  "keywords": ["kw1", "kw2", "kw3", "kw4", "kw5"]
+  "seoTips": ["dica E-E-A-T para páginas de serviço", "dica sobre schema markup Service/LocalBusiness", "dica sobre internal linking entre serviços", "dica GEO para páginas de serviço"],
+  "keywords": ["kw serviço principal", "kw long-tail 1", "kw long-tail 2", "kw localização se relevante", "kw relacionada"]
 }`;
 }
 

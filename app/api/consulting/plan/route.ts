@@ -39,30 +39,31 @@ function loadForgeTools(): string {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
-  const { area, problem, questions, answers } = body;
+  try {
+    const body = await req.json().catch(() => ({}));
+    const { area, problem, questions, answers } = body;
 
-  if (!area || !problem || !questions || !answers) {
-    return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
-  }
+    if (!area || !problem || !questions || !answers) {
+      return NextResponse.json({ error: "Dados incompletos." }, { status: 400 });
+    }
 
-  let userId: string | null = null;
-  try { const { auth } = await import("@clerk/nextjs/server"); const a = await auth(); userId = a.userId; } catch {}
-  const anthropicKey = getAnthropicKey(userId);
-  const claudeModel = getClaudeModel(userId);
-  if (!anthropicKey) {
-    return NextResponse.json({ error: "Anthropic API Key não configurada." }, { status: 500 });
-  }
+    let userId: string | null = null;
+    try { const { auth } = await import("@clerk/nextjs/server"); const a = await auth(); userId = a.userId; } catch {}
+    const anthropicKey = getAnthropicKey(userId);
+    const claudeModel = getClaudeModel(userId);
+    if (!anthropicKey) {
+      return NextResponse.json({ error: "Anthropic API Key não configurada. Adiciona em Configurações." }, { status: 500 });
+    }
 
-  const forgeToolsMd = loadForgeTools();
+    const forgeToolsMd = loadForgeTools();
 
-  const qa = questions
-    .map((q: { id: string; text: string }, i: number) => `P${i + 1}: ${q.text}\nR: ${answers[q.id] ?? "(sem resposta)"}`)
-    .join("\n\n");
+    const qa = questions
+      .map((q: { id: string; text: string }, i: number) => `P${i + 1}: ${q.text}\nR: ${answers[q.id] ?? "(sem resposta)"}`)
+      .join("\n\n");
 
-  const anthropic = new Anthropic({ apiKey: anthropicKey });
+    const anthropic = new Anthropic({ apiKey: anthropicKey });
 
-  const prompt = `És um consultor de negócios sénior especializado em ${area}. Analisa o diagnóstico completo e constrói um plano de consultoria profissional.
+    const prompt = `És um consultor de negócios sénior especializado em ${area}. Analisa o diagnóstico completo e constrói um plano de consultoria profissional.
 
 ## PROBLEMA INICIAL
 ${problem}
@@ -113,20 +114,28 @@ Notas:
 - Escreve tudo em Português de Portugal
 - Sê específico — nada genérico`;
 
-  const res = await anthropic.messages.create({
-    model: claudeModel,
-    max_tokens: 3000,
-    messages: [{ role: "user", content: prompt }],
-  });
+    const res = await anthropic.messages.create({
+      model: claudeModel,
+      max_tokens: 3000,
+      messages: [{ role: "user", content: prompt }],
+    });
 
-  const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "{}";
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) return NextResponse.json({ error: "Erro ao gerar plano" }, { status: 500 });
+    const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "{}";
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return NextResponse.json({ error: "Erro ao gerar plano — tenta novamente." }, { status: 500 });
 
-  try {
-    const plan: ConsultingPlan = JSON.parse(match[0]);
-    return NextResponse.json({ plan });
-  } catch {
-    return NextResponse.json({ error: "Resposta inválida" }, { status: 500 });
+    try {
+      const plan: ConsultingPlan = JSON.parse(match[0]);
+      return NextResponse.json({ plan });
+    } catch {
+      return NextResponse.json({ error: "Resposta inválida — tenta novamente." }, { status: 500 });
+    }
+  } catch (err) {
+    console.error("[consulting/plan] error:", err);
+    const msg = (err as Error).message || "";
+    if (msg.includes("API Key") || msg.includes("authentication") || msg.includes("401")) {
+      return NextResponse.json({ error: "API Key inválida. Verifica as configurações." }, { status: 500 });
+    }
+    return NextResponse.json({ error: "Erro inesperado — tenta novamente." }, { status: 500 });
   }
 }

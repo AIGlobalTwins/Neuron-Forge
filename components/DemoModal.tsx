@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { DEMO_POSTS, DEMO_CONSULTING_PLAN, DEMO_WEBSITE_ID, DEMO_SEO } from "@/lib/demo-data";
 
-type DemoTool = "maps" | "analyze" | "instagram" | "consulting" | "whatsapp" | "seo" | "security";
+type DemoTool = "maps" | "analyze" | "instagram" | "consulting" | "whatsapp" | "seo" | "security" | "email" | "ads" | "calendar";
 
 interface Props {
   tool: DemoTool;
@@ -63,6 +63,9 @@ const TOOL_TITLES: Record<DemoTool, string> = {
   whatsapp: "Agente WhatsApp",
   seo: "SEO Content Agent",
   security: "Security Auditor",
+  email: "Email Marketing Agent",
+  ads: "Google Ads Agent",
+  calendar: "Content Calendar Agent",
 };
 
 /* ── Website Demo ── */

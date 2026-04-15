@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { LangContext } from "@/lib/lang";
 import { AnalyzeModal } from "@/components/AnalyzeModal";
 import { GoogleMapsModal } from "@/components/GoogleMapsModal";
 import { SettingsModal } from "@/components/SettingsModal";
@@ -12,9 +13,12 @@ import { DocsModal } from "@/components/DocsModal";
 import { DemoModal } from "@/components/DemoModal";
 import { SeoModal } from "@/components/SeoModal";
 import { SecurityModal } from "@/components/SecurityModal";
+import { EmailMarketingModal } from "@/components/EmailMarketingModal";
+import { GoogleAdsModal } from "@/components/GoogleAdsModal";
+import { ContentCalendarModal } from "@/components/ContentCalendarModal";
 import { HistoryModal } from "@/components/HistoryModal";
 
-type DemoTool = "maps" | "analyze" | "instagram" | "consulting" | "whatsapp" | "seo" | "security";
+type DemoTool = "maps" | "analyze" | "instagram" | "consulting" | "whatsapp" | "seo" | "security" | "email" | "ads" | "calendar";
 
 function SearchIcon() {
   return (
@@ -70,6 +74,35 @@ function WhatsAppCardIcon() {
   );
 }
 
+function EmailIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="M22 6L12 13 2 6" />
+    </svg>
+  );
+}
+
+function AdsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+      <path d="M2 17l10 5 10-5" />
+      <path d="M2 12l10 5 10-5" />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+      <rect x="7" y="14" width="3" height="3" rx="0.5" />
+    </svg>
+  );
+}
+
 function InstagramCardIcon() {
   return (
     <svg viewBox="0 0 24 24" className="w-7 h-7" fill="currentColor">
@@ -78,26 +111,101 @@ function InstagramCardIcon() {
   );
 }
 
+const T = {
+  pt: {
+    noKeyBanner: "Sem API Key — os agentes estão em modo demo.",
+    configure: "Configurar →",
+    history: "Histórico",
+    docs: "Documentação",
+    settings: "Configurações",
+    viewDemo: "Ver demo",
+    tagline: "Agentes de IA, zero código",
+    h1: "A tua equipa de IA, pronta em minutos",
+    sub: "Websites, redes sociais, atendimento ao cliente e consultoria estratégica — tudo com Claude.",
+    cards: [
+      { tag: "Tem website", title: "Analisar & Redesenhar", desc: "Cola qualquer URL. Fazemos um screenshot, avaliamos o design com IA e geramos um redesign completamente moderno.", cta: "Analisar website" },
+      { tag: "Sem website", title: "Criar a partir do Google Maps", desc: "Cola o URL do Google Maps do negócio e adiciona as tuas fotos. Extraímos a info e construímos um site profissional do zero.", cta: "Criar website" },
+      { tag: "Social Media", title: "Posts para Instagram", desc: "Gera captions, hashtags e sugestões de imagem para o Instagram. Liga a tua conta e publica diretamente.", cta: "Criar post" },
+      { tag: "WhatsApp Agent", title: "Agente WhatsApp", desc: "Cria um agente de IA para o teu WhatsApp Business. Responde automaticamente a clientes 24/7.", cta: "Criar agente" },
+      { tag: "Consultoria", title: "Consulting Agent", desc: "Diagnóstico inteligente do teu negócio. Responde a perguntas específicas e recebe um plano de acção profissional em PDF.", cta: "Iniciar análise" },
+      { tag: "SEO", title: "SEO Content Agent", desc: "Gera artigos de blog, meta tags, landing page copy e FAQs otimizados para motores de pesquisa — prontos a publicar.", cta: "Criar conteúdo SEO" },
+      { tag: "Segurança", title: "Security Agent", desc: "Audita o código público do teu website. Detecta headers em falta, JS exposto, formulários inseguros, bibliotecas desatualizadas e muito mais.", cta: "Auditar website" },
+      { tag: "Email Marketing", title: "Email Marketing Agent", desc: "Gera sequências completas de email — welcome, nurturing, promoção, re-engagement. Copy profissional pronto para Mailchimp ou Brevo.", cta: "Criar sequência" },
+      { tag: "Google Ads", title: "Google Ads Agent", desc: "Headlines, descriptions, sitelinks e callouts prontos a colar no Google Ads. Respeita limites de caracteres e gera keywords negativas.", cta: "Criar campanha" },
+      { tag: "Calendário", title: "Content Calendar Agent", desc: "Calendário editorial mensal com 30 dias de conteúdo — temas, captions, hashtags e melhores horários. Integra com o Instagram Agent.", cta: "Gerar calendário" },
+    ],
+  },
+  en: {
+    noKeyBanner: "No API Key — agents are in demo mode.",
+    configure: "Configure →",
+    history: "History",
+    docs: "Documentation",
+    settings: "Settings",
+    viewDemo: "View demo",
+    tagline: "AI agents, zero code",
+    h1: "Your AI team, ready in minutes",
+    sub: "Websites, social media, customer support, and strategic consulting — all powered by Claude.",
+    cards: [
+      { tag: "Has website", title: "Analyze & Redesign", desc: "Paste any website URL. We'll screenshot it, score the design with AI, and generate a fully modern redesign.", cta: "Analyze website" },
+      { tag: "No website", title: "Create from Google Maps", desc: "Paste a Google Maps business URL and add your photos. We'll extract the info and build a professional site from scratch.", cta: "Create website" },
+      { tag: "Social Media", title: "Instagram Posts", desc: "Generate captions, hashtags and image ideas for Instagram. Connect your account and publish directly.", cta: "Create post" },
+      { tag: "WhatsApp Agent", title: "WhatsApp Agent", desc: "Create an AI agent for your WhatsApp Business. Automatically responds to customers 24/7.", cta: "Create agent" },
+      { tag: "Consulting", title: "Consulting Agent", desc: "Intelligent business diagnosis. Answer specific questions and get a professional action plan in PDF.", cta: "Start analysis" },
+      { tag: "SEO", title: "SEO Content Agent", desc: "Generate blog articles, meta tags, landing page copy and FAQs optimised for search engines — ready to publish.", cta: "Create SEO content" },
+      { tag: "Security", title: "Security Agent", desc: "Audit your website's public code. Detect missing headers, exposed JS, insecure forms, outdated libraries and more.", cta: "Audit website" },
+      { tag: "Email Marketing", title: "Email Marketing Agent", desc: "Generate complete email sequences — welcome, nurture, promotion, re-engagement. Professional copy ready for Mailchimp or Brevo.", cta: "Create sequence" },
+      { tag: "Google Ads", title: "Google Ads Agent", desc: "Headlines, descriptions, sitelinks and callouts ready to paste into Google Ads. Respects character limits and generates negative keywords.", cta: "Create campaign" },
+      { tag: "Calendar", title: "Content Calendar Agent", desc: "Monthly editorial calendar with 30 days of content — themes, captions, hashtags and best posting times. Integrates with Instagram Agent.", cta: "Generate calendar" },
+    ],
+  },
+} as const;
+
 interface OptionCardProps {
   tag: string;
   title: string;
   desc: string;
   cta: string;
+  demoLabel?: string;
   icon: React.ReactNode;
+  accent?: string;
   hasKey: boolean;
   onClick: () => void;
   onDemo: () => void;
 }
 
-function OptionCard({ tag, title, desc, cta, icon, hasKey, onClick, onDemo }: OptionCardProps) {
+function OptionCard({ tag, title, desc, cta, demoLabel = "Ver demo", icon, accent = "#E8622A", hasKey, onClick, onDemo }: OptionCardProps) {
+  const [h, setH] = useState(false);
+  const [demoH, setDemoH] = useState(false);
+
   return (
-    <div className="group relative text-left bg-[#0d0d0d] border border-[#1e1e1e] rounded-2xl p-7 hover:border-[#E8622A]/60 hover:bg-[#111] transition-all duration-300 hover:shadow-2xl hover:shadow-[#E8622A]/10">
+    <div
+      className="group relative text-left bg-[#0d0d0d] border rounded-2xl p-7 transition-all duration-300"
+      style={{
+        borderColor: h ? `${accent}99` : "#1e1e1e",
+        backgroundColor: h ? "#111" : "#0d0d0d",
+        boxShadow: h ? `0 25px 50px -12px ${accent}1a` : "none",
+      }}
+      onMouseEnter={() => setH(true)}
+      onMouseLeave={() => setH(false)}
+    >
       {/* Top row */}
       <div className="flex items-start justify-between mb-5">
-        <div className="w-12 h-12 rounded-xl bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-gray-500 group-hover:text-[#E8622A] group-hover:border-[#E8622A]/40 group-hover:bg-[#E8622A]/5 transition-all duration-300">
+        <div
+          className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300"
+          style={{
+            color: h ? accent : "#6b7280",
+            borderWidth: 1,
+            borderStyle: "solid",
+            borderColor: h ? `${accent}66` : "#2a2a2a",
+            backgroundColor: h ? `${accent}0d` : "#1a1a1a",
+          }}
+        >
           {icon}
         </div>
-        <span className="text-[10px] uppercase tracking-widest text-gray-600 group-hover:text-[#E8622A]/70 transition-colors px-2 py-1 bg-[#1a1a1a] rounded-full border border-[#2a2a2a]">
+        <span
+          className="text-[10px] uppercase tracking-widest px-2 py-1 bg-[#1a1a1a] rounded-full border border-[#2a2a2a] transition-colors duration-300"
+          style={{ color: h ? `${accent}b3` : "#4b5563" }}
+        >
           {tag}
         </span>
       </div>
@@ -110,7 +218,8 @@ function OptionCard({ tag, title, desc, cta, icon, hasKey, onClick, onDemo }: Op
       <div className="flex items-center gap-2">
         <button
           onClick={onClick}
-          className="flex items-center gap-2 text-sm font-medium text-gray-500 group-hover:text-[#E8622A] transition-colors duration-300"
+          className="flex items-center gap-2 text-sm font-medium transition-colors duration-300"
+          style={{ color: h ? accent : "#6b7280" }}
         >
           {cta}
           <svg viewBox="0 0 16 16" className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -120,15 +229,27 @@ function OptionCard({ tag, title, desc, cta, icon, hasKey, onClick, onDemo }: Op
         {!hasKey && (
           <button
             onClick={(e) => { e.stopPropagation(); onDemo(); }}
-            className="ml-auto text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full border border-[#2a2a2a] text-gray-600 hover:border-[#E8622A]/40 hover:text-[#E8622A] transition-all"
+            onMouseEnter={() => setDemoH(true)}
+            onMouseLeave={() => setDemoH(false)}
+            className="ml-auto text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full border transition-all"
+            style={{
+              borderColor: demoH ? `${accent}66` : "#2a2a2a",
+              color: demoH ? accent : "#4b5563",
+            }}
           >
-            Ver demo
+            {demoLabel}
           </button>
         )}
       </div>
 
       {/* Hover glow line at bottom */}
-      <div className="absolute bottom-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-[#E8622A] to-transparent opacity-0 group-hover:opacity-60 transition-opacity duration-300" />
+      <div
+        className="absolute bottom-0 left-6 right-6 h-px transition-opacity duration-300"
+        style={{
+          background: `linear-gradient(to right, transparent, ${accent}, transparent)`,
+          opacity: h ? 0.6 : 0,
+        }}
+      />
     </div>
   );
 }
@@ -142,14 +263,20 @@ export default function Home() {
   const [showConsulting, setShowConsulting] = useState(false);
   const [showSeo, setShowSeo] = useState(false);
   const [showSecurity, setShowSecurity] = useState(false);
+  const [showEmail, setShowEmail] = useState(false);
+  const [showAds, setShowAds] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showDocs, setShowDocs] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [demoTool, setDemoTool] = useState<DemoTool | null>(null);
   const [hasKey, setHasKey] = useState(true); // optimistic — avoids flash
+  const [lang, setLang] = useState<"pt" | "en">("pt");
 
   // Check API key + onboarding on mount
   useEffect(() => {
+    const saved = localStorage.getItem("forge_lang");
+    if (saved === "en" || saved === "pt") setLang(saved);
     const alreadyOnboarded = localStorage.getItem("forge_onboarded") === "1";
     fetch("/api/settings")
       .then((r) => r.json())
@@ -177,6 +304,12 @@ export default function Home() {
       .catch(() => {});
   }
 
+  function toggleLang() {
+    const next = lang === "pt" ? "en" : "pt";
+    setLang(next);
+    localStorage.setItem("forge_lang", next);
+  }
+
   function openDemo(tool: DemoTool) {
     setDemoTool(tool);
   }
@@ -187,6 +320,7 @@ export default function Home() {
   }
 
   return (
+    <LangContext.Provider value={lang}>
     <div className="min-h-screen flex flex-col hex-bg">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e1e] bg-[#0a0a0a]/90 backdrop-blur-sm">
@@ -207,14 +341,24 @@ export default function Home() {
           {/* API Key status */}
           <div className="flex items-center gap-2 text-xs text-gray-600">
             <div className={`w-1.5 h-1.5 rounded-full ${hasKey ? "bg-green-500 animate-pulse" : "bg-yellow-500"}`} />
-            {hasKey ? "Ready" : "No API Key"}
+            {hasKey ? (lang === "pt" ? "Pronto" : "Ready") : (lang === "pt" ? "Sem API Key" : "No API Key")}
           </div>
+
+          {/* Lang toggle */}
+          <button
+            onClick={toggleLang}
+            className="h-8 px-2.5 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center gap-1 text-[10px] font-semibold tracking-widest text-gray-500 hover:text-[#E8622A] hover:border-[#E8622A]/40 hover:bg-[#E8622A]/5 transition-all duration-200"
+          >
+            <span style={{ color: lang === "pt" ? "#E8622A" : undefined }}>PT</span>
+            <span className="text-gray-700">|</span>
+            <span style={{ color: lang === "en" ? "#E8622A" : undefined }}>EN</span>
+          </button>
 
           {/* History button */}
           <button
             onClick={() => setShowHistory(true)}
             className="w-8 h-8 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-gray-500 hover:text-[#E8622A] hover:border-[#E8622A]/40 hover:bg-[#E8622A]/5 transition-all duration-200"
-            title="Histórico"
+            title={T[lang].history}
           >
             <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 6h14M3 10h10M3 14h7" />
@@ -225,7 +369,7 @@ export default function Home() {
           <button
             onClick={() => setShowDocs(true)}
             className="w-8 h-8 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-gray-500 hover:text-[#E8622A] hover:border-[#E8622A]/40 hover:bg-[#E8622A]/5 transition-all duration-200"
-            title="Documentação"
+            title={T[lang].docs}
           >
             <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 4h12v12H4z" />
@@ -237,7 +381,7 @@ export default function Home() {
           <button
             onClick={() => setShowSettings(true)}
             className="w-8 h-8 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-gray-500 hover:text-[#E8622A] hover:border-[#E8622A]/40 hover:bg-[#E8622A]/5 transition-all duration-200"
-            title="Configurações"
+            title={T[lang].settings}
           >
             <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
               <path d="M13.5 2.5a3 3 0 0 1 0 4.2L5 15.2 2 18l2.8-3 8.5-8.5a3 3 0 0 1 .2-4z" />
@@ -253,13 +397,13 @@ export default function Home() {
         <div className="flex items-center justify-between px-6 py-2.5 bg-[#E8622A]/10 border-b border-[#E8622A]/20 text-sm">
           <div className="flex items-center gap-2 text-[#E8622A]">
             <svg viewBox="0 0 16 16" className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M8 1l7 13H1L8 1z"/><path d="M8 6v4M8 11.5v.5"/></svg>
-            Sem API Key — os agentes estão em modo demo.
+            {T[lang].noKeyBanner}
           </div>
           <button
             onClick={() => setShowOnboarding(true)}
             className="text-xs font-medium text-[#E8622A] hover:text-white border border-[#E8622A]/40 hover:bg-[#E8622A] px-3 py-1 rounded-full transition-all"
           >
-            Configurar →
+            {T[lang].configure}
           </button>
         </div>
       )}
@@ -270,89 +414,43 @@ export default function Home() {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#E8622A]/10 border border-[#E8622A]/20 rounded-full text-[#E8622A] text-xs font-medium mb-5">
             <span className="w-1 h-1 rounded-full bg-[#E8622A]" />
-            AI agents, zero code
+            {T[lang].tagline}
           </div>
           <h1 className="text-3xl font-bold text-white mb-3 tracking-tight">
-            Your AI team, ready in minutes
+            {T[lang].h1}
           </h1>
           <p className="text-gray-500 text-base max-w-lg mx-auto">
-            Websites, social media, customer support, and strategic consulting — all powered by Claude.
+            {T[lang].sub}
           </p>
         </div>
 
         {/* Option cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 w-full max-w-4xl">
-          <OptionCard
-            tag="Has website"
-            title="Analyze & Redesign"
-            desc="Paste any website URL. We'll screenshot it, score the design with AI, and generate a fully modern redesign."
-            cta="Analyze website"
-            icon={<SearchIcon />}
-            hasKey={hasKey}
-            onClick={() => setShowAnalyzeModal(true)}
-            onDemo={() => openDemo("analyze")}
-          />
-          <OptionCard
-            tag="No website"
-            title="Create from Google Maps"
-            desc="Paste a Google Maps business URL and add your photos. We'll extract the info and build a professional site from scratch."
-            cta="Create website"
-            icon={<MapPinIcon />}
-            hasKey={hasKey}
-            onClick={() => setShowMapsModal(true)}
-            onDemo={() => openDemo("maps")}
-          />
-          <OptionCard
-            tag="Social Media"
-            title="Posts para Instagram"
-            desc="Gera captions, hashtags e sugestões de imagem para o Instagram. Liga a tua conta e publica diretamente."
-            cta="Criar post"
-            icon={<InstagramCardIcon />}
-            hasKey={hasKey}
-            onClick={() => setShowSocialPosts(true)}
-            onDemo={() => openDemo("instagram")}
-          />
-          <OptionCard
-            tag="WhatsApp Agent"
-            title="Agente WhatsApp"
-            desc="Cria um agente de IA para o teu WhatsApp Business. Responde automaticamente a clientes 24/7."
-            cta="Criar agente"
-            icon={<WhatsAppCardIcon />}
-            hasKey={hasKey}
-            onClick={() => setShowWhatsApp(true)}
-            onDemo={() => openDemo("whatsapp")}
-          />
-          <OptionCard
-            tag="Consultoria"
-            title="Consulting Agent"
-            desc="Diagnóstico inteligente do teu negócio. Responde a perguntas específicas e recebe um plano de acção profissional em PDF."
-            cta="Iniciar análise"
-            icon={<ConsultingIcon />}
-            hasKey={hasKey}
-            onClick={() => setShowConsulting(true)}
-            onDemo={() => openDemo("consulting")}
-          />
-          <OptionCard
-            tag="SEO"
-            title="SEO Content Agent"
-            desc="Gera artigos de blog, meta tags, landing page copy e FAQs otimizados para motores de pesquisa — prontos a publicar."
-            cta="Criar conteúdo SEO"
-            icon={<SeoIcon />}
-            hasKey={hasKey}
-            onClick={() => setShowSeo(true)}
-            onDemo={() => openDemo("seo")}
-          />
-          <OptionCard
-            tag="Security"
-            title="Security Agent"
-            desc="Audita o código público do teu website. Detecta headers em falta, JS exposto, formulários inseguros, bibliotecas desatualizadas e muito mais."
-            cta="Auditar website"
-            icon={<SecurityIcon />}
-            hasKey={hasKey}
-            onClick={() => setShowSecurity(true)}
-            onDemo={() => openDemo("security")}
-          />
-        </div>
+        {(() => {
+          const c = T[lang].cards;
+          const icons = [<SearchIcon />, <MapPinIcon />, <InstagramCardIcon />, <WhatsAppCardIcon />, <ConsultingIcon />, <SeoIcon />, <SecurityIcon />, <EmailIcon />, <AdsIcon />, <CalendarIcon />];
+          const accents = ["#a855f7", "#3b82f6", "#ec4899", "#22c55e", "#E8622A", "#10b981", "#ef4444", "#06b6d4", "#f59e0b", "#8b5cf6"];
+          const clicks = [() => setShowAnalyzeModal(true), () => setShowMapsModal(true), () => setShowSocialPosts(true), () => setShowWhatsApp(true), () => setShowConsulting(true), () => setShowSeo(true), () => setShowSecurity(true), () => setShowEmail(true), () => setShowAds(true), () => setShowCalendar(true)];
+          const demos: DemoTool[] = ["analyze", "maps", "instagram", "whatsapp", "consulting", "seo", "security", "email", "ads", "calendar"];
+          return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 w-full max-w-4xl">
+              {c.map((card, i) => (
+                <OptionCard
+                  key={demos[i]}
+                  tag={card.tag}
+                  title={card.title}
+                  desc={card.desc}
+                  cta={card.cta}
+                  demoLabel={T[lang].viewDemo}
+                  icon={icons[i]}
+                  accent={accents[i]}
+                  hasKey={hasKey}
+                  onClick={clicks[i]}
+                  onDemo={() => openDemo(demos[i])}
+                />
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Footer note */}
         <p className="mt-10 text-xs text-gray-700">
@@ -372,7 +470,11 @@ export default function Home() {
       {showConsulting && <ConsultingModal onClose={() => setShowConsulting(false)} onOpenTool={openTool} />}
       {showSeo && <SeoModal onClose={() => setShowSeo(false)} onOpenTool={openTool} />}
       {showSecurity && <SecurityModal onClose={() => setShowSecurity(false)} />}
+      {showEmail && <EmailMarketingModal onClose={() => setShowEmail(false)} />}
+      {showAds && <GoogleAdsModal onClose={() => setShowAds(false)} />}
+      {showCalendar && <ContentCalendarModal onClose={() => setShowCalendar(false)} />}
       {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
     </div>
+    </LangContext.Provider>
   );
 }

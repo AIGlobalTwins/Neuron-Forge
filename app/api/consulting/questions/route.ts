@@ -13,24 +13,25 @@ export interface Question {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
-  const { area, problem } = body;
+  try {
+    const body = await req.json().catch(() => ({}));
+    const { area, problem } = body;
 
-  if (!area || !problem) {
-    return NextResponse.json({ error: "area e problem são obrigatórios" }, { status: 400 });
-  }
+    if (!area || !problem?.trim()) {
+      return NextResponse.json({ error: "Área e descrição do problema são obrigatórios." }, { status: 400 });
+    }
 
-  let userId: string | null = null;
-  try { const { auth } = await import("@clerk/nextjs/server"); const a = await auth(); userId = a.userId; } catch {}
-  const anthropicKey = getAnthropicKey(userId);
-  const claudeModel = getClaudeModel(userId);
-  if (!anthropicKey) {
-    return NextResponse.json({ error: "Anthropic API Key não configurada." }, { status: 500 });
-  }
+    let userId: string | null = null;
+    try { const { auth } = await import("@clerk/nextjs/server"); const a = await auth(); userId = a.userId; } catch {}
+    const anthropicKey = getAnthropicKey(userId);
+    const claudeModel = getClaudeModel(userId);
+    if (!anthropicKey) {
+      return NextResponse.json({ error: "Anthropic API Key não configurada. Adiciona em Configurações." }, { status: 500 });
+    }
 
-  const anthropic = new Anthropic({ apiKey: anthropicKey });
+    const anthropic = new Anthropic({ apiKey: anthropicKey });
 
-  const prompt = `És um consultor de negócios sénior especializado em ${area}. Um cliente descreveu o seguinte problema:
+    const prompt = `És um consultor de negócios sénior especializado em ${area}. Um cliente descreveu o seguinte problema:
 
 "${problem}"
 
@@ -65,20 +66,28 @@ Responde APENAS com JSON array (sem markdown):
   }
 ]`;
 
-  const res = await anthropic.messages.create({
-    model: claudeModel,
-    max_tokens: 1500,
-    messages: [{ role: "user", content: prompt }],
-  });
+    const res = await anthropic.messages.create({
+      model: claudeModel,
+      max_tokens: 1500,
+      messages: [{ role: "user", content: prompt }],
+    });
 
-  const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "[]";
-  const match = raw.match(/\[[\s\S]*\]/);
-  if (!match) return NextResponse.json({ error: "Erro ao gerar perguntas" }, { status: 500 });
+    const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "[]";
+    const match = raw.match(/\[[\s\S]*\]/);
+    if (!match) return NextResponse.json({ error: "Erro ao gerar perguntas — tenta novamente." }, { status: 500 });
 
-  try {
-    const questions: Question[] = JSON.parse(match[0]);
-    return NextResponse.json({ questions });
-  } catch {
-    return NextResponse.json({ error: "Resposta inválida" }, { status: 500 });
+    try {
+      const questions: Question[] = JSON.parse(match[0]);
+      return NextResponse.json({ questions });
+    } catch {
+      return NextResponse.json({ error: "Resposta inválida — tenta novamente." }, { status: 500 });
+    }
+  } catch (err) {
+    console.error("[consulting/questions] error:", err);
+    const msg = (err as Error).message || "";
+    if (msg.includes("API Key") || msg.includes("authentication") || msg.includes("401")) {
+      return NextResponse.json({ error: "API Key inválida. Verifica as configurações." }, { status: 500 });
+    }
+    return NextResponse.json({ error: "Erro inesperado — tenta novamente." }, { status: 500 });
   }
 }

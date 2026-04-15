@@ -36,6 +36,9 @@ Repo: https://github.com/AIGlobalTwins/Neuron-Forge
 | `app/api/consulting/` | `ConsultingModal.tsx` | Diagnóstico de negócio + plano + PDF |
 | `app/api/seo/` | `SeoModal.tsx` | Conteúdo SEO: blog, meta tags, landing, FAQ, serviços |
 | `app/api/security/` | `SecurityModal.tsx` | Auditoria passiva de segurança (headers, JS, forms, paths) |
+| `app/api/email-marketing/` | `EmailMarketingModal.tsx` | Sequências de email (welcome, nurture, promo, re-engagement, abandoned) |
+| `app/api/google-ads/` | `GoogleAdsModal.tsx` | Copy para campanhas Google Ads (search, pmax, display, remarketing) |
+| `app/api/content-calendar/` | `ContentCalendarModal.tsx` | Calendário editorial mensal (30 dias, temas, captions, hashtags) |
 | `app/api/settings/` | `SettingsModal.tsx` | CRUD de credenciais por utilizador |
 
 ---
@@ -119,6 +122,9 @@ app/
     seo/route.ts
     security/route.ts
     security/pdf/route.ts
+    email-marketing/route.ts
+    google-ads/route.ts
+    content-calendar/route.ts
     settings/route.ts
     preview/[id]/route.ts
 
@@ -130,15 +136,18 @@ components/
   ConsultingModal.tsx
   SeoModal.tsx
   SecurityModal.tsx
+  EmailMarketingModal.tsx
+  GoogleAdsModal.tsx
+  ContentCalendarModal.tsx
   SettingsModal.tsx               # Inclui seletor de modelo Claude
   HistoryModal.tsx
-  DemoModal.tsx                   # Demo sem API key (inclui "security" no tipo DemoTool)
+  DemoModal.tsx                   # Demo sem API key
 
 lib/
   settings.ts                     # getAnthropicKey, getVercelToken, getClaudeModel, AVAILABLE_MODELS
   vercel-deploy.ts
   whatsapp-bot.ts
-  history.ts
+  history.ts                      # Client-side (localStorage), 10 tipos: maps, analyze, seo, instagram, consulting, security, email, ads, calendar
 
 data/
   settings.json                   # Credenciais globais (gitignored)
@@ -167,6 +176,7 @@ Não editar estes ficheiros. Não os referenciar em novo código.
 
 - **ui-ux-pro-max** — Python script (`scripts/search.py`) consultado via `execSync` para recomendações UI/UX por categoria. Resultado injetado no `sharedContext` dos prompts (máx 300 chars).
 - **taste-skill** — Ficheiros Markdown de referência de design (anti-AI patterns, tipografia, layout). Existem como referência mas **não são carregados em runtime** — as regras estão inlined nos prompts.
+- **seo-forge** — Skill unificada para o SEO Agent. Combina GEO (Generative Engine Optimization com dados Princeton 2024), E-E-A-T e auditoria técnica. Regras inlined nos prompts de `app/api/seo/route.ts`.
 
 ---
 

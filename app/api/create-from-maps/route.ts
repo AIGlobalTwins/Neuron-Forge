@@ -8,6 +8,8 @@ import path from "path";
 
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 import { deployToVercel } from "@/lib/vercel-deploy";
+import { searchUnsplashImages, buildImageSearchQuery } from "@/lib/image-search";
+import { planWebsite, formatPlanForPrompt } from "@/lib/website-planner";
 
 const REDESIGN_DIR = "./outputs/redesigns";
 const UPLOADS_DIR = "./public/uploads";
@@ -127,10 +129,6 @@ function getCatalog(category: string): { hero: string[]; content: string[] } {
   return PHOTO_CATALOG.default;
 }
 
-function getHeroImage(category: string): string {
-  const catalog = getCatalog(category);
-  return catalog.hero[0];
-}
 
 interface PhotoAnalysis {
   primaryColor: string;
@@ -232,16 +230,47 @@ function queryUiSkill(query: string): string {
   }
 }
 
-async function extractFromMaps(mapsUrl: string): Promise<{ name: string; address: string; phone: string; category: string }> {
-  const result = { name: "", address: "", phone: "", category: "" };
-  const browser = await chromium.launch({ headless: true });
+/** Extract business name from Google Maps URL — e.g. /place/O+Barril/@... → "O Barril" */
+function nameFromMapsUrl(mapsUrl: string): string {
   try {
-    const page = await browser.newPage();
-    await page.setExtraHTTPHeaders({ "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" });
-    await page.goto(mapsUrl, { waitUntil: "domcontentloaded", timeout: 20_000 });
-    await page.waitForTimeout(2500);
+    const m = mapsUrl.match(/\/place\/([^/@?]+)/);
+    if (!m) return "";
+    return decodeURIComponent(m[1].replace(/\+/g, " ")).trim();
+  } catch {
+    return "";
+  }
+}
+
+async function extractFromMaps(mapsUrl: string): Promise<{ name: string; address: string; phone: string; category: string }> {
+  // Instant fallback: parse name from URL before launching browser
+  const result = { name: nameFromMapsUrl(mapsUrl), address: "", phone: "", category: "" };
+
+  const browser = await chromium.launch({
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-blink-features=AutomationControlled",
+      "--disable-dev-shm-usage",
+    ],
+  });
+  try {
+    const context = await browser.newContext({
+      userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+      locale: "pt-PT",
+    });
+    const page = await context.newPage();
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "webdriver", { get: () => undefined });
+    });
+    await page.goto(mapsUrl, { waitUntil: "domcontentloaded", timeout: 35_000 });
+    await page.waitForTimeout(3000);
+
+    // Title is the most reliable source for the name
     const title = await page.title();
-    result.name = title.replace(/\s*[-–]\s*Google Maps.*$/i, "").trim();
+    const titleName = title.replace(/\s*[-–]\s*Google Maps.*$/i, "").trim();
+    if (titleName) result.name = titleName;
+
     try { result.address = await page.$eval('[data-item-id="address"] .Io6YTe', (el) => (el as HTMLElement).innerText); } catch {}
     try {
       const phoneEl = await page.$('[data-item-id^="phone"]');
@@ -340,10 +369,7 @@ export async function POST(req: NextRequest) {
     savedImageUrls.push(`/uploads/${imgId}.${ext}`);
   }
 
-  // Use uploaded photo as hero if available, else fallback to catalog
   const catalog = getCatalog(finalCategory);
-  const heroImage = savedImageUrls.length > 0 ? savedImageUrls[0] : catalog.hero[0];
-  const contentPhotos = catalog.content;
 
   // ── UI/UX Skill ────────────────────────────────────────────────────────
   const skillRec = queryUiSkill(finalCategory);
@@ -377,40 +403,66 @@ export async function POST(req: NextRequest) {
   // ── Anthropic client ────────────────────────────────────────────────────
   const anthropic = new Anthropic({ apiKey: anthropicKey });
 
-  // ── Analyze photos → extract colors, tone, tagline ─────────────────────
-  const photoAnalysis = await analyzePhotos(anthropic, imageBlocks, finalName, finalCategory, claudeModel);
-  const isSerif = photoAnalysis.fontStyle === "serif";
+  // ── Determine business type (needed for planning) ──────────────────────
+  const isFood = ["restaur","café","cafe","bar","pizz","sushi","comida","tasca","food","pastel","padaria","bakery","bistro"].some(k => finalCategory.toLowerCase().includes(k));
+  const showTeam = ["dental", "denti", "clínica", "clinica", "legal", "law", "advog", "fitness", "gym", "ginás", "salon", "beauty", "barber", "médico", "medico"].some(k => finalCategory.toLowerCase().includes(k));
+
+  // ── Plan website first (produces business-specific image queries) ──────
+  const plan = await planWebsite({ anthropic, imageBlocks, businessName: finalName, category: finalCategory, instructions, isFood, showTeam, model: claudeModel });
+  console.log(`[maps] plan: ${plan.tone} | hero="${plan.heroImageQuery}" content="${plan.contentImageQuery}"`);
+
+  // Alias for existing code that still references photoAnalysis fields
+  const photoAnalysis = plan;
+
+  // ── Search Unsplash with plan's business-specific queries (parallel) ───
+  const fallbackQuery = buildImageSearchQuery(finalCategory);
+  const [heroPool, contentPool] = await Promise.all([
+    searchUnsplashImages(plan.heroImageQuery || fallbackQuery, 3, "landscape"),
+    searchUnsplashImages(plan.contentImageQuery || fallbackQuery, 6, "landscape"),
+  ]);
+  console.log(`[maps] unsplash hero→${heroPool.length} content→${contentPool.length}`);
+
+  // ── Resolve final image set (uploaded > unsplash-plan > catalog) ───────
+  const heroImage = savedImageUrls[0] ?? heroPool[0] ?? catalog.hero[0];
+  const contentPhotos = contentPool.length >= 3
+    ? contentPool
+    : [...contentPool, ...catalog.content];
+  const isSerif = plan.fontStyle === "serif";
   const fonts = isSerif
     ? { heading: "Playfair Display", body: "Lora",   import: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lora:wght@400;500&display=swap" }
     : { heading: "Poppins",          body: "Inter",  import: "https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500&display=swap" };
 
-  const isFood = ["restaur","café","cafe","bar","pizz","sushi","comida","tasca","food","pastel","padaria","bakery","bistro"].some(k => finalCategory.toLowerCase().includes(k));
   const heroCity = finalAddress ? (finalAddress.split(",").slice(-1)[0]?.trim() ?? "") : "";
   const heroOverline = [finalCategory, heroCity].filter(Boolean).join(" · ").toUpperCase();
 
+  const planBlock = formatPlanForPrompt(plan);
+
   const sharedContext = `
-${instructions ? `USER INSTRUCTIONS (highest priority — follow these above all else): ${instructions}\n` : ""}BUSINESS: ${finalName} | ${finalCategory}
+${instructions ? `USER INSTRUCTIONS (highest priority — follow these above all else): ${instructions}\n` : ""}${planBlock}
+
+BUSINESS: ${finalName} | ${finalCategory}
 Address: ${finalAddress || "—"} | Phone: ${finalPhone || "—"} | Email: ${email || "—"}
 ${mapsUrl ? `Maps: ${mapsUrl}` : ""}
-Brand colors (extracted from business photos): primary=${photoAnalysis.primaryColor} accent=${photoAnalysis.accentColor} bg=${photoAnalysis.bgColor}
-Brand personality: ${photoAnalysis.brandPersonality}
-${photoAnalysis.suggestedTagline ? `Suggested tagline: "${photoAnalysis.suggestedTagline}"` : ""}
+Brand colors: primary=${plan.primaryColor} accent=${plan.accentColor} bg=${plan.bgColor}
+Brand personality: ${plan.brandPersonality}
 Hero image: ${heroImage}
 Fonts: heading="${fonts.heading}" body="${fonts.body}"
 UI/UX: ${skillRec.slice(0, 300) || "Soft UI Evolution + Minimalism"}
 `.trim();
 
-  // ── Team section applicability ─────────────────────────────────────────
-  const showTeam = ["dental", "denti", "clínica", "clinica", "legal", "law", "advog", "fitness", "gym", "ginás", "salon", "beauty", "barber", "médico", "medico"].some(k => finalCategory.toLowerCase().includes(k));
-
   // ── Precomputed section variants ────────────────────────────────────────
   const foodAboutSection = isFood
-    ? `ABOUT (id="services") — <section id="services" class="py-28 px-6 bg-stone-50">:
-- <div class="max-w-4xl mx-auto text-center">
-- <p class="tracking-[0.3em] text-xs uppercase mb-5" style="color:${photoAnalysis.accentColor}">A NOSSA HISTÓRIA</p>
-- H2 class="font-heading text-5xl md:text-6xl font-bold text-slate-900 leading-tight mb-8": write a 2-line evocative phrase — line1 in plain text, line2 wrapped in <span class="italic" style="color:${photoAnalysis.accentColor}">
-- <p class="text-slate-500 text-lg leading-relaxed mb-20 max-w-3xl mx-auto"> — 2-3 sentences capturing the atmosphere: ${photoAnalysis.brandPersonality}
-- Stats: <div class="grid grid-cols-3 gap-8 border-t border-slate-200 pt-12"> — 3 relevant stats for ${finalCategory} (e.g. years open, rating, dishes), each: <div><p class="font-heading text-5xl font-bold mb-2" style="color:${photoAnalysis.accentColor}">VALUE</p><p class="text-xs tracking-[0.2em] uppercase text-slate-400">LABEL</p></div>`
+    ? `ABOUT (id="services") — <section id="services" class="py-24 px-6 bg-stone-50">:
+- <div class="max-w-6xl mx-auto">
+- <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+  Left <div>:
+  * <p class="tracking-[0.3em] text-xs uppercase mb-5" style="color:${photoAnalysis.accentColor}">SOBRE NÓS</p>
+  * <h2 class="font-heading text-4xl md:text-5xl font-bold text-slate-900 leading-tight mb-6">: 2-line phrase — line1 plain text, line2 in <span class="italic" style="color:${photoAnalysis.accentColor}">
+  * <p class="text-slate-500 text-lg leading-relaxed mb-4"> — 2 sentences about atmosphere: ${photoAnalysis.brandPersonality}
+  * <p class="text-slate-500 leading-relaxed mb-10"> — 1 sentence about quality/tradition
+  * <div class="grid grid-cols-3 gap-6 border-t border-slate-200 pt-8"> — 3 stats (e.g. "4.1" Google / "€5-10" Por pessoa / "175+" Avaliações), each: <div><p class="font-heading text-4xl font-bold mb-1" style="color:${photoAnalysis.accentColor}">VALUE</p><p class="text-xs tracking-[0.2em] uppercase text-slate-400">LABEL</p></div>
+  Right <div>:
+  * <img src="${contentPhotos[0]}" class="rounded-2xl w-full aspect-[4/3] object-cover shadow-md">`
     : `SERVICES SHOWCASE (id="services") — <section id="services" class="py-24 px-6 bg-slate-50">:
 - <div class="max-w-6xl mx-auto">
 - <div class="text-center mb-16">
@@ -423,24 +475,59 @@ UI/UX: ${skillRec.slice(0, 300) || "Soft UI Evolution + Minimalism"}
   Row 2: <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center"> — content div FIRST then image: <div>[second service, same structure with 3 points]</div> <img src="${contentPhotos[1] || contentPhotos[0]}" class="rounded-2xl w-full aspect-[4/3] object-cover shadow-sm">`;
 
   const foodMenuSection = isFood
-    ? `MENU SHOWCASE (id="menu") — <section id="menu" class="py-24 px-6 bg-white">:
-- <div class="max-w-6xl mx-auto">
-- Header: <div class="text-center mb-16"> — <p class="tracking-[0.3em] text-xs uppercase mb-4" style="color:${photoAnalysis.accentColor}">O NOSSO MENU</p> + H2 font-heading text-4xl font-bold text-slate-900
-- 2 alternating showcase rows:
-  Row 1: <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center mb-20">
-    Left: <img src="${contentPhotos[0]}" class="rounded-2xl w-full aspect-[4/3] object-cover">
-    Right: <div> — h3 font-heading text-3xl font-bold text-slate-900 mb-2 [food category name] + p text-slate-500 mb-8 + 3-4 items each: <div class="py-3 border-b border-slate-100"><p class="font-semibold text-slate-900">[item name]</p><p class="text-slate-400 text-sm">[short description]</p></div>
-  Row 2: <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center"> — content div FIRST then image: <div>[same structure, different food category]</div> <img src="${contentPhotos[1] || contentPhotos[0]}" class="rounded-2xl w-full aspect-[4/3] object-cover">`
+    ? `MENU (id="menu") — <section id="menu" class="py-24 px-6 bg-white">:
+- <div class="max-w-5xl mx-auto">
+- <div class="text-center mb-16">
+  * <p class="tracking-[0.3em] text-xs uppercase mb-4" style="color:${photoAnalysis.accentColor}">A NOSSA EMENTA</p>
+  * <h2 class="font-heading text-4xl md:text-5xl font-bold text-slate-900 mb-4">evocative menu title for ${finalName}</h2>
+  * <p class="text-slate-500 max-w-xl mx-auto">short subtitle about freshness and daily preparation</p>
+- <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+  4 food categories appropriate for ${finalCategory}, each <div>:
+  * <h3 class="font-heading text-xl font-bold text-slate-900 mb-4 pb-4 border-b border-slate-200">CATEGORY NAME</h3>
+  * 4 items each: <div class="flex items-start justify-between py-3 border-b border-slate-100 last:border-0"><div><p class="font-medium text-slate-800">ITEM NAME</p><p class="text-slate-400 text-sm mt-0.5">short description</p></div><span class="font-semibold text-slate-900 ml-6 shrink-0">€X</span></div>
+
+HORÁRIO (id="horario") — <section id="horario" class="py-24 px-6 bg-stone-50">:
+- <div class="max-w-2xl mx-auto">
+- <div class="text-center mb-12">
+  * <p class="tracking-[0.3em] text-xs uppercase mb-3" style="color:${photoAnalysis.accentColor}">HORÁRIO</p>
+  * <h2 class="font-heading text-4xl font-bold text-slate-900">Quando nos visitar</h2>
+- <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+  7 rows Monday–Sunday (pt-PT: Segunda-feira … Domingo), each: <div class="flex items-center justify-between px-8 py-4 border-b border-slate-100 last:border-0">
+  * Open: <span class="font-medium text-slate-700">DIA</span> — <span class="text-slate-500">HH:MM – HH:MM</span>
+  * Closed: <span class="font-medium text-slate-700">DIA</span> — <span class="font-medium" style="color:${photoAnalysis.accentColor}">Encerrado</span>
+  Realistic hours for ${finalCategory}, 1 day closed (typically Monday or Wednesday)`
     : "";
 
   const footerLinks = isFood
-    ? `Início, Sobre, Menu, Porquê Nós${showTeam ? ", Equipa" : ""}, Contacto`
-    : `Início, Serviços, Porquê Nós${showTeam ? ", Equipa" : ""}, Contacto`;
+    ? `Início(#home), Sobre(#services), Ementa(#menu), Horário(#horario), Contacto(#contact)`
+    : `Início(#home), Serviços(#services), Porquê Nós(#why)${showTeam ? ", Equipa(#team)" : ""}, Contacto(#contact)`;
+
+  const navLinkLabels = isFood
+    ? `Início(href="#home"), Sobre(href="#services"), Ementa(href="#menu"), Horário(href="#horario"), Contacto(href="#contact")`
+    : `Início(href="#home"), Serviços(href="#services"), Porquê Nós(href="#why")${showTeam ? ', Equipa(href="#team")' : ""}, Contacto(href="#contact")`;
+
+  const mapsEmbedLine = mapsUrl || finalAddress
+    ? `* <div class="rounded-2xl overflow-hidden border border-slate-200 shadow-sm" style="height:380px"><iframe src="https://www.google.com/maps?q=${encodeURIComponent(finalAddress || finalName)}&output=embed" class="w-full h-full border-0" loading="lazy"></iframe></div>`
+    : `* <div class="rounded-2xl bg-slate-100 flex items-center justify-center" style="height:380px"><p class="text-slate-400 text-sm">Mapa não disponível</p></div>`;
+
+  const foodContactSection = `CONTACT (id="contact") — <section id="contact" class="py-24 px-6 bg-white">:
+- <div class="max-w-6xl mx-auto">
+- <div class="text-center mb-16">
+  * <p class="tracking-[0.3em] text-xs uppercase mb-3" style="color:${photoAnalysis.accentColor}">CONTACTO</p>
+  * <h2 class="font-heading text-4xl font-bold text-slate-900">Onde nos encontrar</h2>
+- <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-start">
+- Left <div class="space-y-6">:
+  * <div class="flex items-start gap-4"><div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary"><svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div><div><p class="font-semibold text-slate-900 mb-1">Morada</p><p class="text-slate-500">${finalAddress || "Endereço disponível em breve"}</p></div></div>
+  * <div class="flex items-start gap-4"><div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary"><svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 11.5 19.79 19.79 0 01.18 2.88 2 2 0 012.18 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.57a16 16 0 006.54 6.54l1.52-1.52a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div><div><p class="font-semibold text-slate-900 mb-1">Telefone</p><a href="tel:${finalPhone || ""}" class="text-primary hover:underline">${finalPhone || "—"}</a></div></div>
+  * <div class="flex items-start gap-4"><div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary"><svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div><p class="font-semibold text-slate-900 mb-1">Horário</p><p class="text-slate-500 text-sm">Ver secção de horário acima</p></div></div>
+  * Features: <div class="flex flex-wrap gap-2 mt-2"> — 5 realistic features for ${finalCategory} (e.g. Esplanada, Takeaway, Reservas, WiFi, Acessível), each: <span class="px-3 py-1.5 bg-slate-100 text-slate-600 text-sm rounded-full">TAG</span>
+- Right <div>:
+  ${mapsEmbedLine}`;
 
   // ── Part 1: HEAD + NAV + HERO + SERVICES + WHY US ───────────────────────
-  const prompt1 = `You are building Part 1 of a website. Output ONLY what is listed — stop after the "why" section closing tag.
+  const prompt1 = `You are a world-class web designer building Part 1 of a premium website. Produce the highest quality HTML possible — Lovable-level design with flawless typography, generous spacing, and polished visual hierarchy.
 ${imageBlocks.length > 0 ? "Business photos were analyzed — use the extracted brand colors and personality from sharedContext. Do NOT embed any uploaded photos in the HTML." : ""}
-
+${instructions ? `\n🎯 USER REQUIREMENTS — these override everything, implement them exactly:\n${instructions}\n` : ""}
 CRITICAL LAYOUT RULES:
 - NEVER add vertical text, writing-mode, rotated text, or decorative side text
 - NEVER add position:fixed elements except the navbar
@@ -452,19 +539,41 @@ CRITICAL LAYOUT RULES:
 
 ${sharedContext}
 
-Output Part 1: <!DOCTYPE html> through </section> of WHY US. Include:
+Output Part 1: <!DOCTYPE html> through </section> of ${isFood ? "ABOUT" : "WHY US"}. Include:
 
-HEAD:
+HEAD (MUST include everything below, in this order):
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Write an SEO-optimized <title> tag (max 60 chars) combining "${finalName}" + category keywords + city</title>
+<meta name="description" content="Write a compelling meta description (140-160 chars) with keywords, benefits, and a call to action">
+<meta property="og:title" content="same as title">
+<meta property="og:description" content="same as meta description">
+<meta property="og:type" content="website">
+${heroImage.startsWith("http") ? `<meta property="og:image" content="${heroImage}">` : ""}
+<meta name="theme-color" content="${plan.primaryColor}">
 <link href="${fonts.import}" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config={theme:{extend:{colors:{primary:"${photoAnalysis.primaryColor}",accent:"${photoAnalysis.accentColor}"},fontFamily:{heading:["${fonts.heading}"],body:["${fonts.body}"]}}}}</script>
+<script>tailwind.config={theme:{extend:{colors:{primary:"${plan.primaryColor}",accent:"${plan.accentColor}"},fontFamily:{heading:["${fonts.heading}"],body:["${fonts.body}"]}}}}</script>
 <style>*,*::before,*::after{box-sizing:border-box}html{scroll-behavior:smooth}body{overflow-x:hidden}img{max-width:100%;height:auto}p,h1,h2,h3,h4,li,span{overflow-wrap:break-word;word-break:break-word}</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "${isFood ? "Restaurant" : showTeam ? "LocalBusiness" : "ProfessionalService"}",
+  "name": "${finalName}",
+  "description": "(fill with a 1-2 sentence description of the business)",
+  ${finalAddress ? `"address": { "@type": "PostalAddress", "streetAddress": "${finalAddress.replace(/"/g, '\\"')}" },` : ""}
+  ${finalPhone ? `"telephone": "${finalPhone}",` : ""}
+  ${email ? `"email": "${email}",` : ""}
+  "url": "",
+  "image": "${heroImage.startsWith("http") ? heroImage : ""}"
+}
+</script>
 <body class="font-body bg-white antialiased">
 
 NAV (id="navbar") — <nav id="navbar" class="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-100 shadow-sm">:
 - Inner: <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
 - Left: <a href="#home" class="flex items-center gap-3"> — logo circle w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-heading font-bold + span font-heading font-bold text-xl text-slate-900
-- Right desktop: <div class="hidden md:flex items-center gap-8"> — nav links text-slate-600 hover:text-primary text-sm font-medium transition + <a href="#contact" class="px-5 py-2.5 bg-primary hover:opacity-90 text-white text-sm font-semibold rounded-full transition">${meta.navCta}</a>
+- Right desktop: <div class="hidden md:flex items-center gap-8"> — links: ${navLinkLabels} — each: <a href="HREF" class="text-slate-600 hover:text-primary text-sm font-medium transition">LABEL</a> + <a href="#contact" class="px-5 py-2.5 bg-primary hover:opacity-90 text-white text-sm font-semibold rounded-full transition">${meta.navCta}</a>
 - Right mobile: hamburger button id="hamburger" class="md:hidden p-2" (3 lines SVG 24x24)
 - Mobile menu: <div id="mobile-menu" class="hidden md:hidden border-t border-slate-100 px-6 py-4 space-y-3"> — same links + CTA button w-full
 - JS: <script>document.getElementById('hamburger').addEventListener('click',()=>{document.getElementById('mobile-menu').classList.toggle('hidden')})</script>
@@ -481,31 +590,35 @@ HERO (id="home") — <section id="home" class="relative min-h-screen flex items-
 
 ${foodAboutSection}
 
-WHY US (id="why") — <section id="why" class="py-24 px-6 bg-white">:
+${!isFood ? `WHY US (id="why") — <section id="why" class="py-24 px-6 bg-white">:
 - <div class="max-w-6xl mx-auto">
-- Text center: <p class="tracking-[0.25em] text-xs uppercase mb-3" style="color:${photoAnalysis.accentColor}">PORQUÊ NÓS</p> + H2 font-heading text-4xl font-bold text-slate-900 mb-4 "Porquê escolher a ${finalName}?" + p text-slate-500 text-lg max-w-2xl mx-auto mb-16
-- <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16"> — 4 cards, each:
-  <div class="flex items-start gap-5 p-7 bg-slate-50 rounded-2xl border border-slate-100 hover:border-primary/30 transition">
+- <div class="text-center mb-16">
+  * <p class="tracking-[0.25em] text-xs uppercase mb-3" style="color:${photoAnalysis.accentColor}">PORQUÊ NÓS</p>
+  * <h2 class="font-heading text-4xl font-bold text-slate-900 mb-4">Porquê escolher a ${finalName}?</h2>
+  * <p class="text-slate-500 text-lg max-w-2xl mx-auto">short intro sentence</p>
+  </div>
+- <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16 items-stretch"> — 4 cards, each:
+  <div class="flex items-start gap-5 p-7 bg-slate-50 rounded-2xl border border-slate-100 hover:border-primary/30 transition h-full">
   * <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary"> + SVG icon
   * <div> — <h3 class="font-heading font-semibold text-lg text-slate-900 mb-2"> + <p class="text-slate-500 text-sm leading-relaxed">
   * Reasons specific to ${finalCategory} and personality: ${photoAnalysis.brandPersonality}
-- Stats bar: <div class="bg-slate-900 rounded-2xl p-10 grid grid-cols-3 gap-8 text-center">
-  Each: <div> — <div class="font-heading text-4xl font-bold text-white mb-1"> + <div class="text-slate-400 text-sm">
+- Stats bar: <div class="bg-slate-900 rounded-2xl p-10 grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
+  Each: <div> — <div class="font-heading text-4xl font-bold text-white mb-1"> + <div class="text-slate-400 text-sm">` : ""}
 
-Stop after the WHY US closing </section>. Do NOT add </body> or </html>. Output ONLY valid HTML, no markdown, no explanations.`;
+Stop after the ${isFood ? "ABOUT" : "WHY US"} closing </section>. Do NOT add </body> or </html>. Output ONLY valid HTML, no markdown, no explanations.`;
 
   const res1 = await anthropic.messages.create({
     model: claudeModel,
-    max_tokens: 4000,
+    max_tokens: 6000,
     messages: [{ role: "user", content: [...imageBlocks, { type: "text", text: prompt1 }] }],
   });
   let part1 = res1.content[0].type === "text" ? res1.content[0].text.trim() : "";
   part1 = part1.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
 
   // ── Part 2: MENU SHOWCASE? + TEAM? + CONTACT + FOOTER ───────────────────
-  const prompt2 = `You are building Part 2 of a website. Output ONLY raw <section> HTML blocks listed below.
+  const prompt2 = `You are a world-class web designer building Part 2 of a premium website. Same quality standard as Part 1 — Lovable-level design, polished typography, generous spacing.
 CRITICAL: Do NOT output <!DOCTYPE>, <html>, <head>, <body>, </body>, </html>, or any wrapper tags — only the sections themselves.
-
+${instructions ? `\n🎯 USER REQUIREMENTS — these override everything, implement them exactly:\n${instructions}\n` : ""}
 CRITICAL LAYOUT RULES:
 - NEVER add vertical text, writing-mode, rotated text, or decorative side text
 - NEVER add position:fixed or position:absolute elements
@@ -523,12 +636,12 @@ ${foodMenuSection}
 ${showTeam ? `TEAM (id="team") — <section id="team" class="py-24 px-6 bg-white">:
 - <div class="max-w-6xl mx-auto">
 - Text center header: H2 font-heading text-4xl font-bold text-slate-900 mb-4 + p text-slate-500 text-lg mb-16
-- <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-- 3 team cards for ${finalCategory}, each: <div class="text-center p-8 bg-slate-50 rounded-2xl border border-slate-100">
+- <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+- 3 team cards for ${finalCategory}, each: <div class="text-center p-8 bg-slate-50 rounded-2xl border border-slate-100 h-full">
   * Avatar: <div class="w-24 h-24 rounded-full bg-primary/10 mx-auto flex items-center justify-center font-heading text-2xl font-bold text-primary mb-4">initials</div>
   * <h3 class="font-heading font-semibold text-lg text-slate-900"> + <p class="text-slate-500 text-sm mt-1"> role + <p class="text-slate-400 text-xs mt-2"> 1-line bio` : ""}
 
-CONTACT (id="contact") — <section id="contact" class="py-24 px-6 ${showTeam ? "bg-slate-50" : "bg-white"}">:
+${isFood ? foodContactSection : `CONTACT (id="contact") — <section id="contact" class="py-24 px-6 ${showTeam ? "bg-slate-50" : "bg-white"}">:
 - <div class="max-w-6xl mx-auto">
 - <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-start">
 - Left <div>: <h2 class="font-heading text-4xl font-bold text-slate-900 mb-4"> + <p class="text-slate-500 mb-8">
@@ -536,28 +649,29 @@ CONTACT (id="contact") — <section id="contact" class="py-24 px-6 ${showTeam ? 
   * Map pin SVG w-5 h-5 + <span>${finalAddress || "Endereço disponível em breve"}</span>
   * Phone SVG w-5 h-5 + <a href="tel:${finalPhone || ""}" class="text-primary hover:underline">${finalPhone || "—"}</a>
   * Mail SVG w-5 h-5 + <a href="mailto:${email || ""}" class="text-primary hover:underline">${email || "—"}</a>
-  ${mapsUrl ? `* <iframe src="https://www.google.com/maps?q=${encodeURIComponent(finalAddress || finalName)}&output=embed" class="w-full h-56 rounded-2xl border-0 mt-6 block"></iframe>` : ""}
 - Right <div>: <form class="space-y-4 bg-white rounded-2xl p-8 shadow-sm border border-slate-100">
   * <input type="text" placeholder="O seu nome" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition">
   * <input type="email" placeholder="O seu email" same class>
   * <textarea placeholder="A sua mensagem" rows="4" same class></textarea>
-  * <button type="submit" class="w-full bg-primary hover:opacity-90 text-white font-semibold py-4 rounded-xl transition">${meta.contactBtn}</button>
+  * <button type="submit" class="w-full bg-primary hover:opacity-90 text-white font-semibold py-4 rounded-xl transition">${meta.contactBtn}</button>`}
 
 FOOTER — <footer class="bg-slate-900 text-white py-16 px-6">:
 - <div class="max-w-6xl mx-auto">
 - <div class="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12">
 - Col 1: <h3 class="font-heading font-bold text-xl mb-3">${finalName}</h3> + <p class="text-slate-400 text-sm leading-relaxed"> brand tagline
-- Col 2: <h4 class="font-semibold mb-4">Links Rápidos</h4> + <ul class="space-y-2"> — li: <a href="#section-id" class="text-slate-400 hover:text-white text-sm transition"> ${footerLinks}
+- Col 2: <h4 class="font-semibold mb-4">Links Rápidos</h4> + <ul class="space-y-2"> — li for each: <a href="HREF" class="text-slate-400 hover:text-white text-sm transition">LABEL</a> — links: ${footerLinks}
 - Col 3: <h4 class="font-semibold mb-4">Contacto</h4> + address/phone/email each on own <p class="text-slate-400 text-sm mb-2">
 - Bottom divider + copyright: <div class="border-t border-slate-800 mt-10 pt-8 text-center text-slate-500 text-sm">© ${new Date().getFullYear()} ${finalName}. Todos os direitos reservados.</div>
 
 End with </body></html>
 
+CRITICAL: You MUST output ALL sections listed above completely — do not skip any. The output is invalid if any section header is generated without its full content, or if you stop before the footer and closing tags. Keep each section concise to stay within the token budget, but ALL sections must be fully present.
+
 Output ONLY raw HTML. No markdown. No explanations.`;
 
   const res2 = await anthropic.messages.create({
     model: claudeModel,
-    max_tokens: 4000,
+    max_tokens: 8000,
     messages: [{ role: "user", content: prompt2 }],
   });
   let part2 = res2.content[0].type === "text" ? res2.content[0].text.trim() : "";
@@ -586,8 +700,8 @@ Output ONLY raw HTML. No markdown. No explanations.`;
     const raw = (err as Error).message || "";
     let friendly = "Erro inesperado — tenta novamente.";
     if (raw.includes("image exceeds")) friendly = "Uma das imagens é demasiado grande. Remove-a e tenta novamente.";
-    else if (raw.includes("Could not connect") || raw.includes("ECONNREFUSED")) friendly = "Não foi possível ligar ao serviço. Verifica a tua ligação.";
-    else if (raw.includes("API Key") || raw.includes("authentication")) friendly = "API Key inválida. Verifica as configurações.";
+    else if (raw.includes("ENOTFOUND") || raw.includes("Connection error") || raw.includes("ECONNREFUSED") || raw.includes("Could not connect")) friendly = "Não foi possível ligar à API da Anthropic. Verifica a tua ligação à internet.";
+    else if (raw.includes("API Key") || raw.includes("authentication") || raw.includes("401")) friendly = "API Key inválida. Verifica as configurações.";
     return NextResponse.json({ error: friendly }, { status: 500 });
   }
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Question } from "@/app/api/consulting/questions/route";
 import type { ConsultingPlan } from "@/app/api/consulting/plan/route";
+import { saveToHistory } from "@/lib/history";
 
 interface Props {
   onClose: () => void;
@@ -118,6 +119,20 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
       if (!res.ok) throw new Error(data.error);
       setPlan(data.plan);
       setStep("plan");
+      saveToHistory({
+        type: "consulting",
+        name: data.plan.title || `Consultoria — ${area}`,
+        consultingArea: area,
+        consultingPlan: {
+          title: data.plan.title,
+          executive: data.plan.executive,
+          diagnosis: data.plan.diagnosis,
+          objectives: data.plan.objectives,
+          actions: data.plan.actions,
+          kpis: data.plan.kpis,
+          risks: data.plan.risks,
+        },
+      });
     } catch (e) {
       setError((e as Error).message);
       setStep("questions");

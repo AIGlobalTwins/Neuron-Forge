@@ -1,6 +1,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLang } from "@/lib/lang";
+
+const S = {
+  pt: {
+    title: "Configurações", subtitle: "API Keys & Integrações",
+    configured: "Configurado",
+    anthropicDesc: "Necessário para gerar websites com Claude. Obtém em",
+    keepPlaceholder: "••••••••••••  (deixa em branco para manter)",
+    modelTitle: "Modelo Claude",
+    modelDesc: "O modelo usado por todos os agentes. Modelos mais capazes produzem melhores resultados mas são mais lentos.",
+    modelDescs: ["Equilibrado — rápido e capaz", "Mais capaz — mais lento e caro", "Mais rápido e barato"],
+    vercelDesc: "Opcional. Para deploy automático dos websites gerados. Obtém em",
+    securityNote: "As chaves são guardadas localmente no servidor e nunca saem da tua máquina. Servem apenas para autenticar os pedidos à API.",
+    saving: "A guardar...", saved: "Guardado!", save: "Guardar Configurações",
+  },
+  en: {
+    title: "Settings", subtitle: "API Keys & Integrations",
+    configured: "Configured",
+    anthropicDesc: "Required to generate websites with Claude. Get it at",
+    keepPlaceholder: "••••••••••••  (leave blank to keep)",
+    modelTitle: "Claude Model",
+    modelDesc: "The model used by all agents. More capable models produce better results but are slower.",
+    modelDescs: ["Balanced — fast and capable", "Most capable — slower and more expensive", "Fastest and cheapest"],
+    vercelDesc: "Optional. For automatic deployment of generated websites. Get it at",
+    securityNote: "Keys are stored locally on the server and never leave your machine. They are only used to authenticate API requests.",
+    saving: "Saving...", saved: "Saved!", save: "Save Settings",
+  },
+} as const;
 
 interface Props {
   onClose: () => void;
@@ -27,13 +55,12 @@ function CheckIcon() {
   );
 }
 
-const MODELS = [
-  { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", desc: "Equilibrado — rápido e capaz" },
-  { id: "claude-opus-4-6", label: "Claude Opus 4.6", desc: "Mais capaz — mais lento e caro" },
-  { id: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5", desc: "Mais rápido e barato" },
-];
+const MODEL_IDS = ["claude-sonnet-4-6", "claude-opus-4-6", "claude-haiku-4-5-20251001"] as const;
+const MODEL_LABELS = ["Claude Sonnet 4.6", "Claude Opus 4.6", "Claude Haiku 4.5"] as const;
 
 export function SettingsModal({ onClose }: Props) {
+  const lang = useLang();
+  const t = S[lang];
   const [anthropicKey, setAnthropicKey] = useState("");
   const [vercelToken, setVercelToken] = useState("");
   const [claudeModel, setClaudeModel] = useState("claude-sonnet-4-6");
@@ -84,7 +111,7 @@ export function SettingsModal({ onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md bg-[#0d0d0d] border border-[#1e1e1e] rounded-2xl overflow-hidden shadow-2xl">
+      <div className="relative z-10 w-full max-w-md bg-[#0d0d0d] border border-[#1e1e1e] rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-[#1e1e1e]">
@@ -96,8 +123,8 @@ export function SettingsModal({ onClose }: Props) {
               </svg>
             </div>
             <div>
-              <h2 className="text-white font-semibold text-sm">Configurações</h2>
-              <p className="text-gray-600 text-xs">API Keys & Integrações</p>
+              <h2 className="text-white font-semibold text-sm">{t.title}</h2>
+              <p className="text-gray-600 text-xs">{t.subtitle}</p>
             </div>
           </div>
           <button onClick={onClose} className="text-gray-600 hover:text-gray-400 transition-colors">
@@ -108,7 +135,7 @@ export function SettingsModal({ onClose }: Props) {
         </div>
 
         {/* Body */}
-        <div className="px-6 py-6 space-y-6">
+        <div className="px-6 py-6 space-y-6 overflow-y-auto flex-1">
 
           {/* Anthropic */}
           <div>
@@ -116,12 +143,12 @@ export function SettingsModal({ onClose }: Props) {
               <label className="text-sm font-medium text-gray-300">Anthropic API Key</label>
               {hasAnthropicKey && (
                 <span className="flex items-center gap-1 text-[10px] text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
-                  <CheckIcon /> Configurado
+                  <CheckIcon /> {t.configured}
                 </span>
               )}
             </div>
             <p className="text-xs text-gray-600 mb-3">
-              Necessário para gerar websites com Claude. Obtém em{" "}
+              {t.anthropicDesc}{" "}
               <span className="text-[#E8622A]">console.anthropic.com</span>
             </p>
             <div className="relative">
@@ -129,7 +156,7 @@ export function SettingsModal({ onClose }: Props) {
                 type={showAnthropic ? "text" : "password"}
                 value={anthropicKey}
                 onChange={(e) => setAnthropicKey(e.target.value)}
-                placeholder={hasAnthropicKey ? "••••••••••••  (deixa em branco para manter)" : "sk-ant-api03-..."}
+                placeholder={hasAnthropicKey ? t.keepPlaceholder : "sk-ant-api03-..."}
                 className="w-full bg-[#111] border border-[#2a2a2a] rounded-xl px-4 py-3 pr-10 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#E8622A]/50 focus:ring-1 focus:ring-[#E8622A]/20 transition-colors"
               />
               <button
@@ -147,32 +174,30 @@ export function SettingsModal({ onClose }: Props) {
 
           {/* Model selector */}
           <div>
-            <label className="text-sm font-medium text-gray-300 mb-2 block">Modelo Claude</label>
-            <p className="text-xs text-gray-600 mb-3">
-              O modelo usado por todos os agentes. Modelos mais capazes produzem melhores resultados mas são mais lentos.
-            </p>
+            <label className="text-sm font-medium text-gray-300 mb-2 block">{t.modelTitle}</label>
+            <p className="text-xs text-gray-600 mb-3">{t.modelDesc}</p>
             <div className="space-y-2">
-              {MODELS.map((m) => (
+              {MODEL_IDS.map((id, i) => (
                 <button
-                  key={m.id}
-                  onClick={() => setClaudeModel(m.id)}
+                  key={id}
+                  onClick={() => setClaudeModel(id)}
                   className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-200 ${
-                    claudeModel === m.id
+                    claudeModel === id
                       ? "border-[#E8622A]/60 bg-[#E8622A]/10"
                       : "border-[#2a2a2a] bg-[#111] hover:border-[#3a3a3a]"
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className={`w-3 h-3 rounded-full border-2 flex items-center justify-center transition-colors ${
-                      claudeModel === m.id ? "border-[#E8622A]" : "border-[#3a3a3a]"
+                      claudeModel === id ? "border-[#E8622A]" : "border-[#3a3a3a]"
                     }`}>
-                      {claudeModel === m.id && <div className="w-1.5 h-1.5 rounded-full bg-[#E8622A]" />}
+                      {claudeModel === id && <div className="w-1.5 h-1.5 rounded-full bg-[#E8622A]" />}
                     </div>
                     <div>
-                      <div className={`text-sm font-medium ${claudeModel === m.id ? "text-white" : "text-gray-400"}`}>
-                        {m.label}
+                      <div className={`text-sm font-medium ${claudeModel === id ? "text-white" : "text-gray-400"}`}>
+                        {MODEL_LABELS[i]}
                       </div>
-                      <div className="text-xs text-gray-600">{m.desc}</div>
+                      <div className="text-xs text-gray-600">{t.modelDescs[i]}</div>
                     </div>
                   </div>
                 </button>
@@ -189,12 +214,12 @@ export function SettingsModal({ onClose }: Props) {
               <label className="text-sm font-medium text-gray-300">Vercel Token</label>
               {hasVercelToken && (
                 <span className="flex items-center gap-1 text-[10px] text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
-                  <CheckIcon /> Configurado
+                  <CheckIcon /> {t.configured}
                 </span>
               )}
             </div>
             <p className="text-xs text-gray-600 mb-3">
-              Opcional. Para deploy automático dos websites gerados. Obtém em{" "}
+              {t.vercelDesc}{" "}
               <span className="text-[#E8622A]">vercel.com/account/tokens</span>
             </p>
             <div className="relative">
@@ -202,7 +227,7 @@ export function SettingsModal({ onClose }: Props) {
                 type={showVercel ? "text" : "password"}
                 value={vercelToken}
                 onChange={(e) => setVercelToken(e.target.value)}
-                placeholder={hasVercelToken ? "••••••••••••  (deixa em branco para manter)" : "vck_..."}
+                placeholder={hasVercelToken ? t.keepPlaceholder : "vck_..."}
                 className="w-full bg-[#111] border border-[#2a2a2a] rounded-xl px-4 py-3 pr-10 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#E8622A]/50 focus:ring-1 focus:ring-[#E8622A]/20 transition-colors"
               />
               <button
@@ -225,7 +250,7 @@ export function SettingsModal({ onClose }: Props) {
               <path d="M8 7v4M8 5.5v.5" />
             </svg>
             <p className="text-xs text-gray-600 leading-relaxed">
-              As chaves são guardadas localmente no servidor e nunca saem da tua máquina. Servem apenas para autenticar os pedidos à API.
+              {t.securityNote}
             </p>
           </div>
         </div>
@@ -242,14 +267,14 @@ export function SettingsModal({ onClose }: Props) {
                 <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                 </svg>
-                A guardar...
+                {t.saving}
               </>
             ) : saved ? (
               <>
-                <CheckIcon /> Guardado!
+                <CheckIcon /> {t.saved}
               </>
             ) : (
-              "Guardar Configurações"
+              t.save
             )}
           </button>
         </div>

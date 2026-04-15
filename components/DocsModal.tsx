@@ -167,6 +167,115 @@ const DOCS = [
     tip: "No final do plano, o Forge recomenda automaticamente outros agentes relevantes para o teu caso. Por exemplo, se o problema for de marketing, sugere criar um website ou automatizar o Instagram.",
     example: "Problema de captação de clientes + área Marketing → plano com 3 fases, 5 objetivos SMART, 12 ações concretas, 4 KPIs e 3 riscos mitigados. PDF pronto para apresentar.",
   },
+  {
+    id: "security",
+    color: "red",
+    colorClass: { bg: "from-red-500/20 to-rose-500/20", border: "border-red-500/30", text: "text-red-400", active: "bg-red-500/10 border-r-2 border-red-500", tag: "text-red-400", tip: "bg-red-500/5 border-red-500/20", stepNum: "border-red-500/30 text-red-400 bg-red-500/10" },
+    icon: (
+      <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M10 2L3 5v5c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V5l-7-3z" />
+        <path d="M7 10l2 2 4-4" />
+      </svg>
+    ),
+    title: "Security Agent",
+    subtitle: "Auditoria de segurança",
+    tag: "Segurança",
+    what: "Faz uma auditoria passiva de segurança de qualquer website: analisa headers HTTP, formulários, scripts, caminhos expostos e tecnologias detetadas — sem tocar no servidor.",
+    needs: ["URL do website a auditar (público)", "API Key da Anthropic nas Configurações"],
+    steps: [
+      "Clica em 'Security Agent'",
+      "Cola o URL do website que queres auditar",
+      "O Forge analisa passivamente: headers HTTP, formulários, scripts externos, paths comuns e tecnologias",
+      "A IA classifica cada problema por severidade: Critical, High, Medium, Low, Info",
+      "Recebe um score de 0-100 com rating (Crítico, Fraco, Razoável, Bom, Excelente)",
+      "Descarrega o relatório completo em PDF para entregar ao cliente",
+    ],
+    tip: "A auditoria é 100% passiva — não faz requests intrusivos, não testa vulnerabilidades ativas, não viola a lei. É uma análise de superfície baseada em headers e código público.",
+    example: "Website de restaurante → score 42/100 (Fraco) — ausência de Content-Security-Policy, formulário de contacto sem CSRF protection, jQuery desatualizado e path /admin acessível.",
+  },
+  {
+    id: "email",
+    color: "cyan",
+    colorClass: { bg: "from-cyan-500/20 to-sky-500/20", border: "border-cyan-500/30", text: "text-cyan-400", active: "bg-cyan-500/10 border-r-2 border-cyan-500", tag: "text-cyan-400", tip: "bg-cyan-500/5 border-cyan-500/20", stepNum: "border-cyan-500/30 text-cyan-400 bg-cyan-500/10" },
+    icon: (
+      <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="4" width="16" height="12" rx="2" />
+        <path d="M2 7l8 5 8-5" />
+      </svg>
+    ),
+    title: "Email Marketing",
+    subtitle: "Sequências de email",
+    tag: "Email",
+    what: "Gera sequências completas de email marketing para 5 cenários: boas-vindas, nutrição de leads, promoção, reativação de clientes e recuperação de carrinho abandonado.",
+    needs: ["Informação básica sobre o negócio", "API Key da Anthropic nas Configurações"],
+    steps: [
+      "Clica em 'Email Marketing'",
+      "Preenche o nome do negócio, categoria e descrição",
+      "Escolhe o tipo de sequência: Welcome (5 emails), Nurture (6), Promoção (5), Reengagement (4) ou Abandoned (4)",
+      "Define o produto ou serviço principal e o tom de comunicação",
+      "Clica 'Gerar Sequência' e aguarda ~20 segundos",
+      "Cada email inclui: assunto, pré-header, corpo, CTA e dia de envio",
+      "Copia diretamente para o teu ESP (Mailchimp, ActiveCampaign, etc.)",
+    ],
+    tip: "O agente gera variantes A/B para os assuntos de cada email — testa as duas versões para identificar qual converte mais. Os assuntos têm menos de 60 caracteres para não serem cortados em mobile.",
+    example: "Clínica dentária + Welcome sequence → 5 emails: boas-vindas + oferta primeira consulta (dia 0), dicas de higiene oral (dia 3), testemunho de paciente (dia 7), serviços premium (dia 14), call urgente (dia 21).",
+  },
+  {
+    id: "ads",
+    color: "yellow",
+    colorClass: { bg: "from-yellow-500/20 to-amber-500/20", border: "border-yellow-500/30", text: "text-yellow-400", active: "bg-yellow-500/10 border-r-2 border-yellow-500", tag: "text-yellow-400", tip: "bg-yellow-500/5 border-yellow-500/20", stepNum: "border-yellow-500/30 text-yellow-400 bg-yellow-500/10" },
+    icon: (
+      <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 3h14v10H3z" />
+        <path d="M7 17h6M10 13v4" />
+        <path d="M7 8l2 2 4-4" />
+      </svg>
+    ),
+    title: "Google Ads",
+    subtitle: "Copy para campanhas",
+    tag: "Paid Ads",
+    what: "Gera copy completo para campanhas Google Ads em 4 formatos: Search, Performance Max, Display e Remarketing — com headlines, descriptions, sitelinks e callouts dentro dos limites de caracteres.",
+    needs: ["Informação básica sobre o negócio", "API Key da Anthropic nas Configurações"],
+    steps: [
+      "Clica em 'Google Ads'",
+      "Preenche o nome do negócio, categoria, URL do website e serviço principal",
+      "Escolhe o tipo de campanha: Search, PMax, Display ou Remarketing",
+      "Define o objetivo (tráfego, leads, vendas) e o público-alvo",
+      "Clica 'Gerar Copy' e aguarda ~15 segundos",
+      "Recebe 2-3 ad groups com headlines (≤30 chars), descriptions (≤90 chars), sitelinks e callouts",
+      "Copia diretamente para o Google Ads Editor ou interface do Google Ads",
+    ],
+    tip: "Headlines e descriptions a vermelho indicam que excedem os limites do Google (30 e 90 caracteres respetivamente). Edita antes de publicar — o Google rejeita copy fora dos limites.",
+    example: "Ginásio em Lisboa + Search → 3 ad groups: Personal Training (15 headlines, 4 descriptions, 4 sitelinks), Musculação (15+4+4) e Aulas de Grupo (15+4+4) + lista de negative keywords.",
+  },
+  {
+    id: "calendar",
+    color: "violet",
+    colorClass: { bg: "from-violet-500/20 to-purple-500/20", border: "border-violet-500/30", text: "text-violet-400", active: "bg-violet-500/10 border-r-2 border-violet-500", tag: "text-violet-400", tip: "bg-violet-500/5 border-violet-500/20", stepNum: "border-violet-500/30 text-violet-400 bg-violet-500/10" },
+    icon: (
+      <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="3" width="16" height="15" rx="2" />
+        <path d="M6 1v4M14 1v4M2 8h16" />
+        <path d="M6 12h2M10 12h2M6 15h2" />
+      </svg>
+    ),
+    title: "Content Calendar",
+    subtitle: "Calendário editorial",
+    tag: "Conteúdo",
+    what: "Gera um calendário editorial completo de 30 dias com temas, captions prontas, hashtags, horários de publicação e ideias de imagem — para qualquer rede social.",
+    needs: ["Informação básica sobre o negócio", "API Key da Anthropic nas Configurações"],
+    steps: [
+      "Clica em 'Content Calendar'",
+      "Preenche o nome do negócio, categoria e redes sociais alvo",
+      "Escolhe a frequência: Diário (30 posts), Dias úteis (~22) ou 3x/semana (~13)",
+      "Define os temas prioritários e o tom de comunicação",
+      "Clica 'Gerar Calendário' e aguarda ~30 segundos",
+      "Navega pelo calendário em grelha semanal (7 colunas, vista mensal completa)",
+      "Clica em qualquer dia para ver a caption, hashtags, hora ideal e ideia de imagem",
+    ],
+    tip: "Usa os filtros por tipo de conteúdo (Educativo, Promocional, Entretenimento, Testemunho, Bastidores) para identificar o equilíbrio certo para o teu negócio. O ideal é 40% educativo, 20% promocional, 40% outros.",
+    example: "Salão de beleza + diário + Instagram → 30 dias com temas semanais fixos: segunda (dica de beleza), quarta (antes/depois), sexta (promoção fim de semana), domingo (inspiração). Cada post com caption + 10 hashtags + hora ideal.",
+  },
 ];
 
 export function DocsModal({ onClose }: Props) {

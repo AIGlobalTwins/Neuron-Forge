@@ -142,13 +142,13 @@ export function GoogleMapsModal({ onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className={`bg-[#111] border border-[#2a2a2a] rounded-xl shadow-2xl overflow-hidden transition-all ${
+        className={`bg-[#111] border border-[#2a2a2a] rounded-xl shadow-2xl overflow-hidden transition-all max-h-[90vh] flex flex-col ${
           step === "result" ? "max-w-4xl w-full" : "max-w-4xl w-full"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e1e]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e1e] shrink-0">
           <div>
             <div className="font-bold text-white">Create from Google Maps</div>
             <div className="text-xs text-gray-500">Extract business info + photos → generate website</div>
@@ -158,7 +158,7 @@ export function GoogleMapsModal({ onClose }: Props) {
 
         {/* ── Form ── */}
         {step === "form" && (
-          <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+          <div className="p-6 space-y-4 overflow-y-auto flex-1">
             {error && (
               <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 text-red-400 text-sm">
                 {error}
@@ -332,7 +332,7 @@ export function GoogleMapsModal({ onClose }: Props) {
 
         {/* ── Loading ── */}
         {step === "loading" && (
-          <div className="p-10 flex flex-col items-center justify-center gap-6">
+          <div className="p-10 flex flex-col items-center justify-center gap-6 flex-1">
             <div className="relative w-20 h-20">
               <div className="absolute inset-0 rounded-full border border-[#E8622A]/15 animate-ping" style={{ animationDuration: "2.5s" }} />
               <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-[#E8622A] animate-spin" />
@@ -377,7 +377,7 @@ export function GoogleMapsModal({ onClose }: Props) {
 
         {/* ── Result ── */}
         {step === "result" && result && (
-          <div className="flex flex-col">
+          <div className="flex flex-col overflow-y-auto flex-1">
             {/* Info bar */}
             <div className="px-6 py-4 border-b border-[#1e1e1e] bg-[#E8622A]/5 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -397,6 +397,17 @@ export function GoogleMapsModal({ onClose }: Props) {
                     ))}
                   </div>
                 )}
+                <a
+                  href={`/editor/${result.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 bg-[#111] hover:bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#E8622A]/50 text-gray-300 hover:text-[#E8622A] text-xs font-medium rounded-lg transition-all flex items-center gap-1.5"
+                >
+                  <svg viewBox="0 0 14 14" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9.5 1.5l3 3-7.5 7.5H2v-3L9.5 1.5z" />
+                  </svg>
+                  Editar
+                </a>
                 <a
                   href={`/api/preview/${result.id}`}
                   target="_blank"
