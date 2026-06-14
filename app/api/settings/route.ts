@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readSettings, writeSettings, getGoogleConnection, getGoogleClientId, clearGoogleConnection } from "@/lib/settings";
+import { readSettings, writeSettings, getGoogleConnection, getGoogleClientId, clearGoogleConnection, getAnthropicKey, getVercelToken, getInstagramToken, getInstagramAccountId } from "@/lib/settings";
 import { PRODUCT_SCOPES, type GoogleProduct } from "@/lib/google";
 
 // Which products a connection covers, derived from the granted scopes.
@@ -31,10 +31,12 @@ export async function GET() {
     anthropicApiKey: s.anthropicApiKey ? maskKey(s.anthropicApiKey) : "",
     vercelToken: s.vercelToken ? maskKey(s.vercelToken) : "",
     claudeModel: s.claudeModel || "claude-sonnet-4-6",
-    hasAnthropicKey: !!s.anthropicApiKey,
-    hasVercelToken: !!s.vercelToken,
-    hasInstagramToken: !!s.instagramToken,
-    hasInstagramAccountId: !!s.instagramAccountId,
+    // has* reflect the resolved value (settings file OR environment variable),
+    // so a key set via Render env vars correctly clears the "No API Key" banner.
+    hasAnthropicKey: !!getAnthropicKey(userId),
+    hasVercelToken: !!getVercelToken(userId),
+    hasInstagramToken: !!getInstagramToken(userId),
+    hasInstagramAccountId: !!getInstagramAccountId(userId),
     instagramAccountId: s.instagramAccountId ? maskKey(s.instagramAccountId) : "",
     // Google OAuth
     googleClientId: s.googleClientId ? maskKey(s.googleClientId) : "",

@@ -10,7 +10,6 @@ import { WhatsAppModal } from "@/components/WhatsAppModal";
 import { ConsultingModal } from "@/components/ConsultingModal";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { DocsModal } from "@/components/DocsModal";
-import { DemoModal } from "@/components/DemoModal";
 import { SeoModal } from "@/components/SeoModal";
 import { SecurityModal } from "@/components/SecurityModal";
 import { EmailMarketingModal } from "@/components/EmailMarketingModal";
@@ -18,7 +17,6 @@ import { GoogleAdsModal } from "@/components/GoogleAdsModal";
 import { ContentCalendarModal } from "@/components/ContentCalendarModal";
 import { HistoryModal } from "@/components/HistoryModal";
 
-type DemoTool = "maps" | "analyze" | "instagram" | "consulting" | "whatsapp" | "seo" | "security" | "email" | "ads" | "calendar";
 
 function SearchIcon() {
   return (
@@ -165,17 +163,13 @@ interface OptionCardProps {
   title: string;
   desc: string;
   cta: string;
-  demoLabel?: string;
   icon: React.ReactNode;
   accent?: string;
-  hasKey: boolean;
   onClick: () => void;
-  onDemo: () => void;
 }
 
-function OptionCard({ tag, title, desc, cta, demoLabel = "Ver demo", icon, accent = "#E8622A", hasKey, onClick, onDemo }: OptionCardProps) {
+function OptionCard({ tag, title, desc, cta, icon, accent = "#E8622A", onClick }: OptionCardProps) {
   const [h, setH] = useState(false);
-  const [demoH, setDemoH] = useState(false);
 
   return (
     <div
@@ -226,20 +220,6 @@ function OptionCard({ tag, title, desc, cta, demoLabel = "Ver demo", icon, accen
             <path d="M3 8h10M9 4l4 4-4 4" />
           </svg>
         </button>
-        {!hasKey && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onDemo(); }}
-            onMouseEnter={() => setDemoH(true)}
-            onMouseLeave={() => setDemoH(false)}
-            className="ml-auto text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full border transition-all"
-            style={{
-              borderColor: demoH ? `${accent}66` : "#2a2a2a",
-              color: demoH ? accent : "#4b5563",
-            }}
-          >
-            {demoLabel}
-          </button>
-        )}
       </div>
 
       {/* Hover glow line at bottom */}
@@ -269,7 +249,6 @@ export default function Home() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showDocs, setShowDocs] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [demoTool, setDemoTool] = useState<DemoTool | null>(null);
   const [hasKey, setHasKey] = useState(true); // optimistic — avoids flash
   const [lang, setLang] = useState<"pt" | "en">("en");
 
@@ -308,15 +287,6 @@ export default function Home() {
     const next = lang === "pt" ? "en" : "pt";
     setLang(next);
     localStorage.setItem("forge_lang", next);
-  }
-
-  function openDemo(tool: DemoTool) {
-    setDemoTool(tool);
-  }
-
-  function handleDemoSetupKey() {
-    setDemoTool(null);
-    setShowOnboarding(true);
   }
 
   return (
@@ -430,22 +400,18 @@ export default function Home() {
           const icons = [<SearchIcon key="0" />, <MapPinIcon key="1" />, <InstagramCardIcon key="2" />, <WhatsAppCardIcon key="3" />, <ConsultingIcon key="4" />, <SeoIcon key="5" />, <SecurityIcon key="6" />, <EmailIcon key="7" />, <AdsIcon key="8" />, <CalendarIcon key="9" />];
           const accents = ["#a855f7", "#3b82f6", "#ec4899", "#22c55e", "#E8622A", "#10b981", "#ef4444", "#06b6d4", "#f59e0b", "#8b5cf6"];
           const clicks = [() => setShowAnalyzeModal(true), () => setShowMapsModal(true), () => setShowSocialPosts(true), () => setShowWhatsApp(true), () => setShowConsulting(true), () => setShowSeo(true), () => setShowSecurity(true), () => setShowEmail(true), () => setShowAds(true), () => setShowCalendar(true)];
-          const demos: DemoTool[] = ["analyze", "maps", "instagram", "whatsapp", "consulting", "seo", "security", "email", "ads", "calendar"];
           return (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 w-full max-w-4xl">
               {c.map((card, i) => (
                 <OptionCard
-                  key={demos[i]}
+                  key={i}
                   tag={card.tag}
                   title={card.title}
                   desc={card.desc}
                   cta={card.cta}
-                  demoLabel={T[lang].viewDemo}
                   icon={icons[i]}
                   accent={accents[i]}
-                  hasKey={hasKey}
                   onClick={clicks[i]}
-                  onDemo={() => openDemo(demos[i])}
                 />
               ))}
             </div>
@@ -461,7 +427,6 @@ export default function Home() {
       {/* Modals */}
       {showOnboarding && <OnboardingModal onComplete={handleOnboardingComplete} />}
       {showDocs && <DocsModal onClose={() => setShowDocs(false)} />}
-      {demoTool && <DemoModal tool={demoTool} onClose={() => setDemoTool(null)} onSetupKey={handleDemoSetupKey} />}
       {showAnalyzeModal && <AnalyzeModal onClose={() => setShowAnalyzeModal(false)} />}
       {showMapsModal && <GoogleMapsModal onClose={() => setShowMapsModal(false)} />}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
