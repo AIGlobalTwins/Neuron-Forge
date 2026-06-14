@@ -11,6 +11,7 @@ import { searchUnsplashImages, buildImageSearchQuery } from "@/lib/image-search"
 import { planWebsite, formatPlanForPrompt } from "@/lib/website-planner";
 import { buildDesignBrief, formatDesignBriefForPrompt, darkThemeInstruction } from "@/lib/design-engine";
 import { REVEAL_CSS, MOTION_SCRIPT, MOTION_PROMPT } from "@/lib/motion";
+import { balanceBlocks } from "@/lib/html-fix";
 
 const REDESIGN_DIR = "./outputs/redesigns";
 const UPLOADS_DIR = "./public/uploads";
@@ -244,6 +245,10 @@ function fixHtml(part1: string, part2: string): string {
   const p2 = cleanPart2(part2);
 
   let html = p1 + "\n" + p2;
+
+  // Repair malformed structure (unclosed divs / missing </section>) so later
+  // sections can't get nested into an earlier positioned container.
+  html = balanceBlocks(html);
 
   // Close any unclosed <style> block
   const lastStyleOpen = html.lastIndexOf("<style");

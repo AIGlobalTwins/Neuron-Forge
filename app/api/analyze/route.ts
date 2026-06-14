@@ -11,6 +11,7 @@ import { searchUnsplashImages, buildImageSearchQuery } from "@/lib/image-search"
 import { deriveDesignDirection } from "@/lib/website-planner";
 import { buildDesignBrief, formatDesignBriefForPrompt, darkThemeInstruction } from "@/lib/design-engine";
 import { REVEAL_CSS, MOTION_SCRIPT, MOTION_PROMPT } from "@/lib/motion";
+import { balanceBlocks } from "@/lib/html-fix";
 import { extractJsonObject } from "@/lib/json-extract";
 
 const REDESIGN_DIR = "./outputs/redesigns";
@@ -595,6 +596,8 @@ OUTPUT: ONLY the complete HTML starting with <!DOCTYPE html>. No markdown fences
   html = html.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
   const docStart = html.indexOf("<!DOCTYPE");
   if (docStart > 0) html = html.slice(docStart);
+  // Repair malformed structure (unclosed divs / missing </section>).
+  html = balanceBlocks(html);
   // Close truncated style if needed
   const lastStyleOpen = html.lastIndexOf("<style");
   const lastStyleClose = html.lastIndexOf("</style>");

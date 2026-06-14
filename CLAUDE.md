@@ -70,6 +70,8 @@ Repo: https://github.com/AIGlobalTwins/Neuron-Forge
    - Sempre: `<script src="https://cdn.tailwindcss.com"></script>` + `tailwind.config` inline.
    - **Motion:** o dinamismo (scroll-reveal, counters, hover-lift) vem de `lib/motion.ts` injetado por CÓDIGO (`REVEAL_CSS` no reset `<style>` + `MOTION_SCRIPT` antes de `</body>`). O modelo só adiciona hooks (`data-reveal`, `data-reveal-delay`, `data-count`) — NUNCA gerar `<style>`/`@keyframes`. Não reverter isto para CSS gerado pelo modelo.
 
+7. **Integridade estrutural obrigatória** — TODO o HTML gerado passa por `balanceBlocks()` de `lib/html-fix.ts` (em `fixHtml` do maps + na montagem do analyze). Razão: o modelo às vezes esquece um `</div>`/`</section>`, e secções seguintes ficam aninhadas num contentor `absolute` anterior → cards esmagados, texto vertical, sobreposição. `balanceBlocks` fecha divs em falta, remove closes órfãos e força as `<section>`/`<footer>` como irmãos de nível body (flat). É idempotente. NUNCA remover esta sanitização; secções são sempre irmãs (nunca aninhar `<section>` dentro de `<div>` nos templates).
+
 2. **Zero botões mortos** — Nunca `href="#"` solto.
    - `<a>` → sempre `href="#section-id"`, `href="tel:..."`, ou `href="mailto:..."`
    - `<button>` → `type="submit"` em form, ou `onclick="document.getElementById('X').scrollIntoView({behavior:'smooth'})"`
@@ -151,6 +153,7 @@ lib/
   google.ts                       # OAuth 2.0 (scopes por produto, auth URL, code exchange, refresh, getGoogleAccessToken)
   google-api.ts                   # REST clients: Business locations, Search Console sites/queries, Analytics props, Ads customers
   motion.ts                       # Camada de motion DETERMINÍSTICA (REVEAL_CSS + MOTION_SCRIPT + MOTION_PROMPT) injetada nos sites gerados
+  html-fix.ts                     # balanceBlocks() — repara HTML gerado (divs/sections não fechados) para estrutura sempre alinhada
   website-planner.ts              # planWebsite (aceita designBrief), formatPlanForPrompt, deriveDesignDirection
   vercel-deploy.ts
   whatsapp-bot.ts
