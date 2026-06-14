@@ -333,6 +333,52 @@ ${principles}
 }
 
 /**
+ * Global art-direction bar injected into every generation prompt. Pushes output
+ * away from the generic "AI template" look toward bespoke, modern, studio-grade design.
+ */
+export const ART_DIRECTION = `🎨 ART DIRECTION — Awwwards / Lovable-grade. This must look BESPOKE, not a generic template:
+- Do NOT produce the cliché hero (full-bleed photo + flat black overlay + centered white heading) or three identical stacked card rows — that reads as AI slop. Design each section intentionally.
+- Typography: confident display headings (text-5xl→text-7xl, font-bold, tracking-tight, leading-[1.05]); strong hierarchy; body text-slate-600 leading-relaxed at ~65ch. Two-tone headings (second line italic in the accent) are welcome.
+- Layout: editorial + asymmetric. Vary rhythm and alignment, alternate image-left/right, group related items in bento-style cards, use generous whitespace. Never center everything.
+- Depth & finish: soft layered shadows (shadow-xl/2xl) tinted to the background; hairline borders (border-black/5); rounded-2xl/3xl media; one tasteful gradient or accent-tinted focal block (no neon, no pure #000). Use the single accent color deliberately.
+- Imagery: place the provided photos editorially — full-bleed split, framed (rounded-3xl + shadow-2xl), or overlapping cards — not merely as a dark hero wash.
+- Interactions: every button/card/link has a tasteful hover state (lift / color / shadow).
+Ship what a top design studio would ship.`;
+
+interface HeroOpts {
+  name: string;
+  overline: string;
+  image: string;
+  accent: string;
+  primary: string;
+  ctaPrimary: string;
+  ctaSecondary: string;
+  contactId?: string;
+  servicesId?: string;
+}
+
+/**
+ * Varied, modern hero direction — replaces the single hard-coded hero so every
+ * generated site doesn't look identical. The model picks the best of 4 layouts.
+ */
+export function heroGuidance(o: HeroOpts): string {
+  const contact = o.contactId || "contact";
+  const services = o.servicesId || "services";
+  return `HERO (id="home") — design an ORIGINAL, striking hero. Pick the ONE layout below that best fits this business and the chosen design style, and build it fully and beautifully. Vary your choice by business — do NOT always pick the same one, and do NOT default to a centered dark-overlay photo.
+Image to use: ${o.image}
+Accent color: ${o.accent} · Primary: ${o.primary}
+Every hero MUST include: a small overline ("${o.overline}"), a bold headline for "${o.name}" (two-tone allowed — second part in <span class="italic" style="color:${o.accent}">), a 1-sentence value proposition, a primary button "${o.ctaPrimary}" and a secondary button "${o.ctaSecondary}" (real onclick smooth-scroll to #${contact} / #${services}). It must feel premium on first paint and leave space below the fixed navbar (pt-28+).
+
+Choose ONE layout:
+A) SPLIT EDITORIAL — <section id="home" class="relative pt-32 pb-20 px-6"> with <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">. LEFT: overline + huge headline + value prop + CTAs + a small trust row (rating ★ / years / clients). RIGHT: <img src="${o.image}" class="w-full aspect-[4/5] object-cover rounded-3xl shadow-2xl"> with an OPTIONAL floating glass stat card (absolute, backdrop-blur-xl, bg-white/70, border border-white/40, rounded-2xl) overlapping a corner.
+B) BIG-TYPE MINIMAL — clean tinted background (page bg + a large blurred accent blob via an absolute rounded-full element at low opacity — NOT a photo wash). Massive left-aligned headline, value prop, CTAs, then a thin strip of 3 small rounded images (from the content set) below. No dark overlay.
+C) ASYMMETRIC OFFSET — a wide headline up top; the image in a rounded-3xl frame offset to one side with a solid accent shape behind it (absolute, -z-10, rounded-3xl, bg accent/10); 1–2 floating metric cards overlapping the image edge.
+D) IMAGE HERO DONE RIGHT — full-bleed <section id="home" class="relative min-h-[88vh] flex items-center" style="background-image:url('${o.image}');background-size:cover;background-position:center"> with a LIGHT directional gradient overlay (bg-gradient-to-r from-black/70 via-black/30 to-transparent) and the content in a LEFT-aligned contained block (max-w-xl, not centered): headline white, value prop white/80, CTAs.
+
+Build the chosen hero with real spacing, depth, and polish.`;
+}
+
+/**
  * Dark-theme translation instructions. The section templates are authored with
  * light-mode Tailwind classes; when a dark brief is chosen we ask the model to
  * translate surface classes consistently instead of duplicating every template.
