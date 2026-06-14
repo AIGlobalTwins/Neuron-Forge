@@ -39,3 +39,8 @@ services:
       # Vercel — auto-deploy of generated websites (optional)
       - key: VERCEL_TOKEN
         sync: false
+      # Image quality — recommended for modern, relevant website images
+      - key: UNSPLASH_ACCESS_KEY
+        sync: false
+      - key: PEXELS_API_KEY
+        sync: false

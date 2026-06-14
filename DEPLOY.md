@@ -15,6 +15,9 @@ The generated *websites* still auto-deploy to Vercel separately (`lib/vercel-dep
    - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (optional — Google connections)
    - `CLERK_SECRET_KEY`, `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` (optional — login)
    - `VERCEL_TOKEN`, `GOOGLE_ADS_DEVELOPER_TOKEN` (optional)
+   - `UNSPLASH_ACCESS_KEY` (recommended — modern, relevant website images; free at
+     unsplash.com/developers). `PEXELS_API_KEY` optional fallback. Without either,
+     image sourcing falls back to slower browser scraping with lower relevance.
 4. Deploy. First build is slow (~3–5 min: image + chromium + `next build`).
 
 ## After it's live

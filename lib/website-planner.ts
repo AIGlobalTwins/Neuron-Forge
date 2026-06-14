@@ -144,8 +144,8 @@ Output a JSON plan with this exact shape:
   "sectionHints": {
 ${sectionsNeeded.map(s => `    "${s}": "1 specific sentence on what this section should emphasize (content angle + feeling)"`).join(",\n")}
   },
-  "heroImageQuery": "2-5 word Unsplash query SPECIFIC to THIS business — capture what makes it unique (e.g. for a seafood restaurant in coastal town: 'fresh seafood coastal restaurant'; for a yoga studio: 'minimal zen yoga studio'; for an italian pizzeria: 'neapolitan pizza oven rustic'). Use English. Include descriptors from instructions if provided.",
-  "contentImageQuery": "2-5 word Unsplash query for SECTION images (food close-ups, interior details, team-at-work) — more concrete than hero query"
+  "heroImageQuery": "3-6 word English stock-photo query SPECIFIC to THIS business AND modern/editorial in tone — capture what makes it unique and include a modern aesthetic cue (e.g. 'fresh seafood coastal restaurant modern', 'minimal zen yoga studio bright', 'neapolitan pizza oven editorial'). Include descriptors from user instructions.",
+  "contentImageQuery": "3-6 word English query for SECTION images (close-ups, interior details, people-at-work) — concrete + modern/editorial (e.g. 'plated modern cuisine closeup', 'bright minimal salon interior')"
 }
 
 Rules:
@@ -157,7 +157,7 @@ Rules:
 - If user says "rustic/warm", lean into earthy primaryColor, serif fonts, generous spacing.
 - If user says "minimal/modern", lean into neutral primaryColor, sans-serif, compact spacing, sharp corners.
 - Taglines must be evocative, not generic.
-- Image queries must reflect the SPECIFIC business — avoid generic "restaurant" or "office" alone.`;
+- Image queries must reflect the SPECIFIC business AND read modern/editorial/high-end with natural light — avoid generic "restaurant"/"office" alone and avoid dated or cliché stock.`;
 
   try {
     const content: Anthropic.ContentBlockParam[] = hasPhotos
