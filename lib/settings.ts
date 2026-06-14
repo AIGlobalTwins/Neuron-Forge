@@ -4,8 +4,9 @@ import path from "path";
 const DATA_DIR = path.join(process.cwd(), "data");
 
 export const AVAILABLE_MODELS = [
+  { id: "claude-opus-4-8", label: "Claude Opus 4.8", desc: "Mais capaz — melhor qualidade" },
+  { id: "claude-opus-4-7", label: "Claude Opus 4.7", desc: "Muito capaz — topo anterior" },
   { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", desc: "Equilibrado — rápido e capaz" },
-  { id: "claude-opus-4-7", label: "Claude Opus 4.7", desc: "Mais capaz — mais lento e caro" },
   { id: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5", desc: "Mais rápido e barato" },
 ] as const;
 

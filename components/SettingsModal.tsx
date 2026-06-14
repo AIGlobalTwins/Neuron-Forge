@@ -11,7 +11,7 @@ const S = {
     keepPlaceholder: "••••••••••••  (deixa em branco para manter)",
     modelTitle: "Modelo Claude",
     modelDesc: "O modelo usado por todos os agentes. Modelos mais capazes produzem melhores resultados mas são mais lentos.",
-    modelDescs: ["Equilibrado — rápido e capaz", "Mais capaz — mais lento e caro", "Mais rápido e barato"],
+    modelDescs: ["Mais capaz — melhor qualidade", "Muito capaz — topo anterior", "Equilibrado — rápido e capaz", "Mais rápido e barato"],
     vercelDesc: "Opcional. Para deploy automático dos websites gerados. Obtém em",
     securityNote: "Keys are stored locally on the server and never leave your machine. They are only used to authenticate API requests.",
     saving: "Saving...", saved: "Saved!", save: "Save Settings",
@@ -23,7 +23,7 @@ const S = {
     keepPlaceholder: "••••••••••••  (leave blank to keep)",
     modelTitle: "Claude Model",
     modelDesc: "The model used by all agents. More capable models produce better results but are slower.",
-    modelDescs: ["Balanced — fast and capable", "Most capable — slower and more expensive", "Fastest and cheapest"],
+    modelDescs: ["Most capable — best quality", "Very capable — previous flagship", "Balanced — fast and capable", "Fastest and cheapest"],
     vercelDesc: "Optional. For automatic deployment of generated websites. Get it at",
     securityNote: "Keys are stored locally on the server and never leave your machine. They are only used to authenticate API requests.",
     saving: "Saving...", saved: "Saved!", save: "Save Settings",
@@ -55,8 +55,8 @@ function CheckIcon() {
   );
 }
 
-const MODEL_IDS = ["claude-sonnet-4-6", "claude-opus-4-7", "claude-haiku-4-5-20251001"] as const;
-const MODEL_LABELS = ["Claude Sonnet 4.6", "Claude Opus 4.7", "Claude Haiku 4.5"] as const;
+const MODEL_IDS = ["claude-opus-4-8", "claude-opus-4-7", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"] as const;
+const MODEL_LABELS = ["Claude Opus 4.8", "Claude Opus 4.7", "Claude Sonnet 4.6", "Claude Haiku 4.5"] as const;
 
 export function SettingsModal({ onClose }: Props) {
   const lang = useLang();
