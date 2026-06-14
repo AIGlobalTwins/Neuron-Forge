@@ -1,0 +1,17 @@
+node_modules
+.next
+.git
+.env*.local
+npm-debug.log*
+
+# Runtime/generated data — recreated at runtime (persist via a Render disk on /app/data)
+data
+outputs
+public/uploads
+
+# Heavy skill bundle not used at runtime (only ui-ux-pro-max/search.py is)
+.claude/skills/huashu-design
+
+# Editor / OS
+.DS_Store
+.vscode

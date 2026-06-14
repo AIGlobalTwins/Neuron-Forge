@@ -17,7 +17,7 @@ const REDESIGN_DIR = "./outputs/redesigns";
 
 // ── Step 1: Screenshot ────────────────────────────────────────────────────
 async function takeScreenshot(url: string): Promise<string> {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
   try {
     const page = await browser.newPage();
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -47,7 +47,7 @@ interface SourceSnapshot {
 }
 
 async function crawlSite(baseUrl: string): Promise<{ home: string; pages: PageData[]; phone: string; email: string; address: string; source: SourceSnapshot }> {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
   const origin = new URL(baseUrl).origin;
 
   const extractText = async (page: import("playwright").Page): Promise<string> => {

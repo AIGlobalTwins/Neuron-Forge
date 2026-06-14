@@ -1,0 +1,41 @@
+# Render blueprint — deploy as a Docker web service.
+# In Render: New → Blueprint → connect this repo. Set the secret env vars
+# (sync:false) in the dashboard after the first deploy.
+services:
+  - type: web
+    name: neuron-forge
+    runtime: docker
+    plan: starter            # 512MB free tier is tight for chromium; Starter recommended
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/whatsapp/status
+    autoDeploy: true
+    disk:
+      name: data
+      mountPath: /app/data   # persists settings.json, Google tokens, WhatsApp history
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Anthropic — required (or set per user in Settings)
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # Clerk (optional — login). Also pass the publishable key as a build arg
+      # if you want login (see DEPLOY.md), since NEXT_PUBLIC_* inlines at build.
+      - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: NEXT_PUBLIC_CLERK_SIGN_IN_URL
+        value: /sign-in
+      - key: NEXT_PUBLIC_CLERK_SIGN_UP_URL
+        value: /sign-up
+      # Google OAuth (Business/Ads/Analytics/Search Console)
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_ADS_DEVELOPER_TOKEN
+        sync: false
+      # Vercel — auto-deploy of generated websites (optional)
+      - key: VERCEL_TOKEN
+        sync: false
