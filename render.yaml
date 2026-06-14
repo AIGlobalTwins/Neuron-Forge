@@ -1,0 +1,43 @@
+# Render blueprint.
+# The repo pivoted to a pnpm monorepo (apps/web + apps/api) which is not yet
+# runnable (Fase 1 in progress). Until it is, Render deploys the working v0 in
+# legacy/ (Next.js HTML generator) so there's always a live, testable version.
+# When the new builder is ready, repoint this to apps/web + apps/api.
+services:
+  - type: web
+    name: neuron-forge
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./legacy/Dockerfile
+    dockerContext: ./legacy
+    healthCheckPath: /api/whatsapp/status
+    autoDeploy: true
+    disk:
+      name: data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: NEXT_PUBLIC_CLERK_SIGN_IN_URL
+        value: /sign-in
+      - key: NEXT_PUBLIC_CLERK_SIGN_UP_URL
+        value: /sign-up
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_ADS_DEVELOPER_TOKEN
+        sync: false
+      - key: VERCEL_TOKEN
+        sync: false
+      - key: UNSPLASH_ACCESS_KEY
+        sync: false
+      - key: PEXELS_API_KEY
+        sync: false
