@@ -15,8 +15,10 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 # Install node deps (dev deps needed for `next build`).
-COPY package.json package-lock.json ./
-RUN npm ci
+# --legacy-peer-deps: @clerk/nextjs@7 declares a peer on Next 15/16 but the app
+# runs Next 14 (Clerk is optional and unused without keys), so skip strict peer checks.
+COPY package.json package-lock.json .npmrc ./
+RUN npm ci --legacy-peer-deps
 
 # Install chromium + its OS dependencies for the installed Playwright version.
 RUN npx playwright install --with-deps chromium
