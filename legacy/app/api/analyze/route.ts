@@ -9,7 +9,7 @@ import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 import { deployToVercel } from "@/lib/vercel-deploy";
 import { searchUnsplashImages, buildImageSearchQuery } from "@/lib/image-search";
 import { deriveDesignDirection } from "@/lib/website-planner";
-import { buildDesignBrief, formatDesignBriefForPrompt, darkThemeInstruction } from "@/lib/design-engine";
+import { buildDesignBrief, formatDesignBriefForPrompt, darkThemeInstruction, heroGuidance } from "@/lib/design-engine";
 import { REVEAL_CSS, MOTION_SCRIPT, MOTION_PROMPT } from "@/lib/motion";
 import { balanceBlocks } from "@/lib/html-fix";
 import { extractJsonObject } from "@/lib/json-extract";
@@ -468,7 +468,7 @@ ${s.content || "(generate relevant content based on business type)"}
   const darkBlock = darkThemeInstruction(brief);
 
   const prompt = `You are a world-class web designer creating a premium redesign of a real business site. Produce the highest quality HTML possible — Lovable-level design with flawless typography, generous spacing, and polished visual hierarchy. Wow the viewer on first impression. This is a SINGLE-PAGE website where every nav link scrolls to a section.
-${instructions ? `\n🎯 USER REQUIREMENTS — these override everything, implement them exactly:\n${instructions}\n` : ""}
+${instructions ? `\n🔴🔴 USER INSTRUCTIONS — MANDATORY, HIGHEST PRIORITY. These are direct orders and OVERRIDE every default below (layout, colors, sections, copy). Implement ALL of them, exactly and visibly. If anything conflicts with the defaults, the USER WINS. Re-read them before each section:\n"""\n${instructions}\n"""\n` : ""}
 ═══ DESIGN DIRECTION (apply to every section) ═══
 Tone: ${direction.tone}
 Visual style: ${direction.visualStyle}
@@ -523,15 +523,7 @@ NAV (id="navbar") — <nav id="navbar" class="fixed top-0 inset-x-0 z-50 bg-whit
 - JS: <script>document.getElementById('hamburger').addEventListener('click',()=>{document.getElementById('mobile-menu').classList.toggle('hidden')})</script>
 - NEVER use href="#" alone
 
-HERO (id="home") — <section id="home" class="relative min-h-screen flex items-center justify-center" style="background-image:url('${heroImage}');background-size:cover;background-position:center">:
-- Overlay: <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70"></div>
-- Content: <div class="relative z-10 text-center px-6 max-w-4xl mx-auto">
-  * <p class="tracking-[0.3em] text-xs uppercase text-white/50 mb-6">${heroOverline}</p>
-  * <h1 class="font-heading text-5xl md:text-8xl font-bold text-white leading-none mb-6"> — put business name on 2 lines: line1 first word(s) in plain white, line2 remaining in <span class="italic" style="color:${analysis.accentColor}">. If 1 word, use tagline/category as line2.
-  * <p class="text-white/75 text-xl mb-10 max-w-2xl mx-auto leading-relaxed"> — 1-sentence value prop
-  * <div class="flex flex-col sm:flex-row gap-4 justify-center">
-    - <button onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})" class="px-8 py-4 bg-primary hover:opacity-90 text-white font-semibold text-lg rounded-full transition shadow-lg">${ctaPrimary}</button>
-    - <button onclick="document.getElementById('services').scrollIntoView({behavior:'smooth'})" class="px-8 py-4 border-2 border-white/70 hover:border-white text-white font-semibold text-lg rounded-full transition backdrop-blur-sm">${ctaSecondary}</button>
+${heroGuidance({ name: analysis.businessName, overline: heroOverline, image: heroImage, accent: analysis.accentColor, primary: analysis.primaryColor, ctaPrimary, ctaSecondary, contactId: "contact", servicesId: "services" })}
 
 ${foodAboutSection}
 
@@ -586,13 +578,15 @@ STRICT RULES:
 
 OUTPUT: ONLY the complete HTML starting with <!DOCTYPE html>. No markdown fences. No explanations.`;
 
-  const res = await anthropic.messages.create({
+  // Stream with a large budget so rich, complete sites are never truncated.
+  const stream = anthropic.messages.stream({
     model,
-    max_tokens: 8000,
+    max_tokens: 32000,
     messages: [{ role: "user", content: prompt }],
   });
-
-  let html = res.content[0].type === "text" ? res.content[0].text.trim() : "";
+  const msg = await stream.finalMessage();
+  const textBlock = msg.content.find((b: Anthropic.ContentBlock) => b.type === "text");
+  let html = textBlock && textBlock.type === "text" ? textBlock.text.trim() : "";
   html = html.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
   const docStart = html.indexOf("<!DOCTYPE");
   if (docStart > 0) html = html.slice(docStart);

@@ -329,7 +329,9 @@ Typography: ${brief.fonts.heading} (headings) + ${brief.fonts.body} (body) — $
 Theme: ${brief.theme}
 NON-NEGOTIABLE PRINCIPLES:
 ${principles}
-══════════════════════════════════════`;
+══════════════════════════════════════
+
+${ART_DIRECTION}`;
 }
 
 /**

@@ -9,7 +9,7 @@ import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 import { deployToVercel } from "@/lib/vercel-deploy";
 import { searchUnsplashImages, buildImageSearchQuery } from "@/lib/image-search";
 import { planWebsite, formatPlanForPrompt } from "@/lib/website-planner";
-import { buildDesignBrief, formatDesignBriefForPrompt, darkThemeInstruction } from "@/lib/design-engine";
+import { buildDesignBrief, formatDesignBriefForPrompt, darkThemeInstruction, heroGuidance } from "@/lib/design-engine";
 import { REVEAL_CSS, MOTION_SCRIPT, MOTION_PROMPT } from "@/lib/motion";
 import { balanceBlocks } from "@/lib/html-fix";
 
@@ -388,7 +388,7 @@ export async function POST(req: NextRequest) {
   const designBlock = formatDesignBriefForPrompt(brief);
 
   const sharedContext = `
-${instructions ? `USER INSTRUCTIONS (highest priority — follow these above all else): ${instructions}\n` : ""}${designBlock}
+${instructions ? `🔴 USER INSTRUCTIONS — MANDATORY, override every default below. Implement ALL of them exactly and visibly: ${instructions}\n\n` : ""}${designBlock}
 
 ${MOTION_PROMPT}
 
@@ -482,7 +482,7 @@ HORÁRIO (id="horario") — <section id="horario" class="py-24 px-6 bg-stone-50"
   // ── Part 1: HEAD + NAV + HERO + SERVICES + WHY US ───────────────────────
   const prompt1 = `You are a world-class web designer building Part 1 of a premium website. Produce the highest quality HTML possible — Lovable-level design with flawless typography, generous spacing, and polished visual hierarchy.
 ${imageBlocks.length > 0 ? "Business photos were analyzed — use the extracted brand colors and personality from sharedContext. Do NOT embed any uploaded photos in the HTML." : ""}
-${instructions ? `\n🎯 USER REQUIREMENTS — these override everything, implement them exactly:\n${instructions}\n` : ""}
+${instructions ? `\n🔴🔴 USER INSTRUCTIONS — MANDATORY, HIGHEST PRIORITY. Direct orders; OVERRIDE every default below. Implement ALL exactly and visibly; the USER WINS any conflict:\n"""\n${instructions}\n"""\n` : ""}
 CRITICAL LAYOUT RULES:
 - NEVER add vertical text, writing-mode, rotated text, or decorative side text
 - NEVER add position:fixed elements except the navbar
@@ -534,15 +534,7 @@ NAV (id="navbar") — <nav id="navbar" class="fixed top-0 inset-x-0 z-50 bg-whit
 - Mobile menu: <div id="mobile-menu" class="hidden md:hidden border-t border-slate-100 px-6 py-4 space-y-3"> — same links + CTA button w-full
 - JS: <script>document.getElementById('hamburger').addEventListener('click',()=>{document.getElementById('mobile-menu').classList.toggle('hidden')})</script>
 
-HERO (id="home") — <section id="home" class="relative min-h-screen flex items-center justify-center" style="background-image:url('${heroImage}');background-size:cover;background-position:center">:
-- Overlay: <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70"></div>
-- Content: <div class="relative z-10 text-center px-6 max-w-4xl mx-auto">
-  * <p class="tracking-[0.3em] text-xs uppercase text-white/50 mb-6">${heroOverline}</p>
-  * <h1 class="font-heading text-5xl md:text-8xl font-bold text-white leading-none mb-6"> — put business name on 2 lines: line1 first word(s) in plain white text, line2 remaining part in <span class="italic" style="color:${photoAnalysis.accentColor}">. If name is 1 word, use the tagline/category as line2 in the span.
-  * <p class="text-white/75 text-xl mb-10 max-w-2xl mx-auto leading-relaxed"> — 1-sentence value prop
-  * <div class="flex flex-col sm:flex-row gap-4 justify-center">
-    - <button onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})" class="px-8 py-4 bg-primary hover:opacity-90 text-white font-semibold text-lg rounded-full transition shadow-lg">${meta.ctaPrimary}</button>
-    - <button onclick="document.getElementById('services').scrollIntoView({behavior:'smooth'})" class="px-8 py-4 border-2 border-white/70 hover:border-white text-white font-semibold text-lg rounded-full transition backdrop-blur-sm">${meta.ctaSecondary}</button>
+${heroGuidance({ name: finalName, overline: heroOverline, image: heroImage, accent: photoAnalysis.accentColor, primary: plan.primaryColor, ctaPrimary: meta.ctaPrimary, ctaSecondary: meta.ctaSecondary, contactId: "contact", servicesId: "services" })}
 
 ${foodAboutSection}
 
@@ -566,7 +558,7 @@ Stop after the ${isFood ? "ABOUT" : "WHY US"} closing </section>. Do NOT add </b
 
   const res1 = await anthropic.messages.create({
     model: claudeModel,
-    max_tokens: 6000,
+    max_tokens: 8000,
     messages: [{ role: "user", content: [...imageBlocks, { type: "text", text: prompt1 }] }],
   });
   let part1 = res1.content[0].type === "text" ? res1.content[0].text.trim() : "";
@@ -575,7 +567,7 @@ Stop after the ${isFood ? "ABOUT" : "WHY US"} closing </section>. Do NOT add </b
   // ── Part 2: MENU SHOWCASE? + TEAM? + CONTACT + FOOTER ───────────────────
   const prompt2 = `You are a world-class web designer building Part 2 of a premium website. Same quality standard as Part 1 — Lovable-level design, polished typography, generous spacing.
 CRITICAL: Do NOT output <!DOCTYPE>, <html>, <head>, <body>, </body>, </html>, or any wrapper tags — only the sections themselves.
-${instructions ? `\n🎯 USER REQUIREMENTS — these override everything, implement them exactly:\n${instructions}\n` : ""}
+${instructions ? `\n🔴🔴 USER INSTRUCTIONS — MANDATORY, HIGHEST PRIORITY. Direct orders; OVERRIDE every default below. Implement ALL exactly and visibly; the USER WINS any conflict:\n"""\n${instructions}\n"""\n` : ""}
 CRITICAL LAYOUT RULES:
 - NEVER add vertical text, writing-mode, rotated text, or decorative side text
 - NEVER add position:fixed or position:absolute elements
