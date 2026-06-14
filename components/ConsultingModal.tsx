@@ -13,36 +13,21 @@ interface Props {
 type Step = "topic" | "questions" | "generating" | "plan";
 
 const AREAS = [
-  { id: "Estratégia", icon: "◈", desc: "Visão, posicionamento, crescimento" },
-  { id: "Marketing", icon: "◉", desc: "Aquisição, marca, canais digitais" },
-  { id: "Operações", icon: "◎", desc: "Processos, eficiência, produtividade" },
-  { id: "Finanças", icon: "◇", desc: "Cash flow, rentabilidade, custos" },
-  { id: "Recursos Humanos", icon: "◈", desc: "Equipa, cultura, retenção" },
-  { id: "Tecnologia", icon: "◉", desc: "Sistemas, automação, digital" },
-  { id: "Produto", icon: "◎", desc: "Desenvolvimento, roadmap, mercado" },
-  { id: "Vendas", icon: "◇", desc: "Pipeline, conversão, clientes" },
+  { id: "Strategy", icon: "◈", desc: "Vision, positioning, growth" },
+  { id: "Marketing", icon: "◉", desc: "Acquisition, brand, digital channels" },
+  { id: "Operations", icon: "◎", desc: "Processes, efficiency, productivity" },
+  { id: "Finance", icon: "◇", desc: "Cash flow, profitability, costs" },
+  { id: "Human Resources", icon: "◈", desc: "Team, culture, retention" },
+  { id: "Technology", icon: "◉", desc: "Systems, automation, digital" },
+  { id: "Product", icon: "◎", desc: "Development, roadmap, market" },
+  { id: "Sales", icon: "◇", desc: "Pipeline, conversion, customers" },
 ];
 
 const LOADING_STEPS = [
-  { label: "A analisar as tuas respostas...", duration: 3000 },
-  { label: "A construir o plano de acção...", duration: 5000 },
-  { label: "A formatar o relatório...", duration: 0 },
+  { label: "Analyzing your answers...", duration: 3000 },
+  { label: "Building the action plan...", duration: 5000 },
+  { label: "Formatting the report...", duration: 0 },
 ];
-
-const FORGE_TOOL_LABELS: Record<string, string> = {
-  analyze: "Analyze & Redesign",
-  maps: "Create from Google Maps",
-  instagram: "Instagram Posts Agent",
-  whatsapp: "WhatsApp Agent",
-};
-
-function ChevronIcon() {
-  return (
-    <svg viewBox="0 0 16 16" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 6l4 4 4-4" />
-    </svg>
-  );
-}
 
 function DownloadIcon() {
   return (
@@ -121,7 +106,7 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
       setStep("plan");
       saveToHistory({
         type: "consulting",
-        name: data.plan.title || `Consultoria — ${area}`,
+        name: data.plan.title || `Consulting — ${area}`,
         consultingArea: area,
         consultingPlan: {
           title: data.plan.title,
@@ -148,7 +133,7 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan, area }),
       });
-      if (!res.ok) throw new Error("Erro ao gerar PDF");
+      if (!res.ok) throw new Error("Failed to generate PDF");
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -183,9 +168,9 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
             <div>
               <h2 className="text-white font-semibold text-sm">Consulting Agent</h2>
               <p className="text-gray-600 text-xs">
-                {step === "topic" && "Selecciona a área e descreve o problema"}
-                {step === "questions" && `${answeredCount}/${questions.length} perguntas respondidas`}
-                {step === "generating" && "A construir o teu plano..."}
+                {step === "topic" && "Select an area and describe the problem"}
+                {step === "questions" && `${answeredCount}/${questions.length} questions answered`}
+                {step === "generating" && "Building your plan..."}
                 {step === "plan" && plan?.title}
               </p>
             </div>
@@ -200,7 +185,7 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
                 {downloadingPdf ? (
                   <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg>
                 ) : <DownloadIcon />}
-                {downloadingPdf ? "A gerar..." : "Download PDF"}
+                {downloadingPdf ? "Generating..." : "Download PDF"}
               </button>
             )}
             <button onClick={onClose} className="text-gray-600 hover:text-gray-400 transition-colors">
@@ -218,7 +203,7 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
           {step === "topic" && (
             <div className="px-6 py-6 space-y-6">
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-3 uppercase tracking-widest">Área de Consultoria</label>
+                <label className="block text-xs font-medium text-gray-400 mb-3 uppercase tracking-widest">Consulting Area</label>
                 <div className="grid grid-cols-2 gap-2">
                   {AREAS.map((a) => (
                     <button
@@ -234,12 +219,12 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-widest">Descreve o problema</label>
-                <p className="text-xs text-gray-600 mb-3">Sê específico — quanto mais contexto deres, melhores serão as perguntas e o plano.</p>
+                <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-widest">Describe the problem</label>
+                <p className="text-xs text-gray-600 mb-3">Be specific — the more context you give, the better the questions and the plan.</p>
                 <textarea
                   value={problem}
                   onChange={(e) => setProblem(e.target.value)}
-                  placeholder="Ex: A nossa taxa de conversão de leads caiu 40% nos últimos 3 meses. Temos mais tráfego no site mas menos pedidos de orçamento. A equipa de vendas está a fazer o mesmo trabalho mas os resultados pioraram."
+                  placeholder="E.g. Our lead conversion rate dropped 40% over the last 3 months. We have more site traffic but fewer quote requests. The sales team is doing the same work but the results have gotten worse."
                   rows={4}
                   className={`${inputClass} resize-none`}
                 />
@@ -272,7 +257,7 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
                         value={answers[q.id] ?? ""}
                         onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
                         rows={2}
-                        placeholder="A tua resposta..."
+                        placeholder="Your answer..."
                         className={`${inputClass} resize-none ml-7`}
                       />
                     )}
@@ -331,7 +316,7 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
               </div>
               <div className="text-center space-y-1">
                 <p className="text-white font-medium text-sm">{LOADING_STEPS[loadingStep]?.label}</p>
-                <p className="text-gray-600 text-xs">Claude está a analisar os dados...</p>
+                <p className="text-gray-600 text-xs">Claude is analyzing the data...</p>
               </div>
               <div className="flex gap-1.5">
                 {LOADING_STEPS.map((_, i) => (
@@ -347,12 +332,12 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
 
               {/* Executive summary */}
               <div className="bg-[#E8622A]/5 border border-[#E8622A]/20 rounded-xl p-4">
-                <p className="text-[10px] font-semibold text-[#E8622A] uppercase tracking-widest mb-2">Resumo Executivo</p>
+                <p className="text-[10px] font-semibold text-[#E8622A] uppercase tracking-widest mb-2">Executive Summary</p>
                 <p className="text-sm text-gray-300 leading-relaxed">{plan.executive}</p>
               </div>
 
               {/* Diagnosis */}
-              <PlanSection number="1" title="Diagnóstico — Problemas Identificados">
+              <PlanSection number="1" title="Diagnosis — Identified Problems">
                 <ul className="space-y-2">
                   {plan.diagnosis.map((d, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-gray-400">
@@ -364,7 +349,7 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
               </PlanSection>
 
               {/* Objectives */}
-              <PlanSection number="2" title="Objectivos">
+              <PlanSection number="2" title="Objectives">
                 <ul className="space-y-2">
                   {plan.objectives.map((o, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-gray-400">
@@ -376,7 +361,7 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
               </PlanSection>
 
               {/* Actions */}
-              <PlanSection number="3" title="Plano de Acção">
+              <PlanSection number="3" title="Action Plan">
                 {(() => {
                   const phases: Record<string, typeof plan.actions> = {};
                   plan.actions.forEach((a) => {
@@ -403,7 +388,7 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
               </PlanSection>
 
               {/* KPIs */}
-              <PlanSection number="4" title="KPIs — Métricas de Sucesso">
+              <PlanSection number="4" title="KPIs — Success Metrics">
                 <div className="grid grid-cols-2 gap-2">
                   {plan.kpis.map((k, i) => (
                     <div key={i} className="bg-[#111] border border-[#1e1e1e] rounded-lg p-3">
@@ -415,11 +400,11 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
               </PlanSection>
 
               {/* Risks */}
-              <PlanSection number="5" title="Riscos & Mitigações">
+              <PlanSection number="5" title="Risks & Mitigations">
                 <div className="space-y-3">
                   {plan.risks.map((r, i) => (
                     <div key={i} className="flex items-start gap-3">
-                      <span className="text-[9px] font-bold text-[#E8622A] bg-[#E8622A]/10 border border-[#E8622A]/20 rounded px-1.5 py-0.5 whitespace-nowrap mt-0.5">RISCO</span>
+                      <span className="text-[9px] font-bold text-[#E8622A] bg-[#E8622A]/10 border border-[#E8622A]/20 rounded px-1.5 py-0.5 whitespace-nowrap mt-0.5">RISK</span>
                       <div>
                         <p className="text-xs text-gray-300">{r.risk}</p>
                         <p className="text-[10px] text-gray-600 mt-0.5">→ {r.mitigation}</p>
@@ -434,8 +419,8 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
                 <div className="bg-[#0d0d0d] border border-[#2a2a2a] rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 text-[#E8622A]"><ForgeIcon /></div>
-                    <p className="text-xs font-semibold text-white uppercase tracking-widest">Ferramentas Neuron Forge</p>
-                    <p className="text-[10px] text-gray-600 ml-1">— disponíveis para acelerar a execução</p>
+                    <p className="text-xs font-semibold text-white uppercase tracking-widest">Neuron Forge Tools</p>
+                    <p className="text-[10px] text-gray-600 ml-1">— available to speed up execution</p>
                   </div>
                   {plan.forgeTools.map((t) => (
                     <div key={t.id} className="flex items-start gap-3 bg-[#111] border border-[#1e1e1e] rounded-lg px-3 py-3">
@@ -448,7 +433,7 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
                           onClick={() => { onClose(); onOpenTool(t.id); }}
                           className="text-[10px] text-[#E8622A] hover:text-[#d4571f] font-semibold whitespace-nowrap transition-colors"
                         >
-                          Abrir →
+                          Open →
                         </button>
                       )}
                     </div>
@@ -460,7 +445,7 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
                 onClick={() => { setPlan(null); setAnswers({}); setQuestions([]); setStep("topic"); }}
                 className="w-full py-2.5 rounded-xl text-sm text-gray-600 border border-[#1e1e1e] hover:border-[#2a2a2a] hover:text-gray-400 transition-all"
               >
-                Nova análise
+                New analysis
               </button>
             </div>
           )}
@@ -475,9 +460,9 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
               className="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-[#E8622A] hover:bg-[#d4571f] text-white flex items-center justify-center gap-2"
             >
               {loadingQuestions ? (
-                <><svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg> A gerar perguntas...</>
+                <><svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg> Generating questions...</>
               ) : (
-                <>Gerar Diagnóstico <svg viewBox="0 0 16 16" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg></>
+                <>Generate Diagnosis <svg viewBox="0 0 16 16" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg></>
               )}
             </button>
           </div>
@@ -485,7 +470,7 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
         {step === "questions" && (
           <div className="px-6 pb-6 pt-4 border-t border-[#1e1e1e] shrink-0">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs text-gray-600">{answeredCount}/{questions.length} respondidas</p>
+              <p className="text-xs text-gray-600">{answeredCount}/{questions.length} answered</p>
               <div className="flex-1 mx-4 h-1 bg-[#1e1e1e] rounded-full overflow-hidden">
                 <div className="h-full bg-[#E8622A] rounded-full transition-all duration-300" style={{ width: `${(answeredCount / questions.length) * 100}%` }} />
               </div>
@@ -495,7 +480,7 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
               disabled={answeredCount === 0}
               className="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-[#E8622A] hover:bg-[#d4571f] text-white flex items-center justify-center gap-2"
             >
-              Construir Plano <svg viewBox="0 0 16 16" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
+              Build Plan <svg viewBox="0 0 16 16" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
             </button>
           </div>
         )}

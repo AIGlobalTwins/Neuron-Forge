@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
+import { extractJsonObject } from "@/lib/json-extract";
 
 async function getUserId(): Promise<string | null> {
   try {
@@ -21,14 +22,6 @@ export interface SeoResult {
   wordCount: number;
   keywords: string[];
 }
-
-const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
-  blog: "Artigo de Blog",
-  landing: "Copy de Landing Page",
-  meta: "Meta Tags",
-  faq: "FAQs",
-  service: "Descrição de Serviço",
-};
 
 function buildPrompt(
   contentType: ContentType,
@@ -203,7 +196,7 @@ export async function POST(req: NextRequest) {
     const anthropicKey = getAnthropicKey(userId);
     const claudeModel = getClaudeModel(userId);
     if (!anthropicKey) {
-      return NextResponse.json({ error: "Anthropic API Key não configurada. Adiciona em Configurações." }, { status: 500 });
+      return NextResponse.json({ error: "Anthropic API Key not configured. Add it in Settings." }, { status: 500 });
     }
 
     const body = await req.json().catch(() => ({}));
@@ -219,7 +212,7 @@ export async function POST(req: NextRequest) {
     } = body;
 
     if (!businessName.trim()) {
-      return NextResponse.json({ error: "Nome do negócio obrigatório." }, { status: 400 });
+      return NextResponse.json({ error: "Business name is required." }, { status: 400 });
     }
 
     const prompt = buildPrompt(
@@ -244,17 +237,13 @@ export async function POST(req: NextRequest) {
     });
 
     const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "{}";
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error("Resposta inválida — tenta novamente.");
 
-    let parsed: { sections: { title: string; content: string }[]; seoTips: string[]; keywords: string[] };
-    try {
-      parsed = JSON.parse(match[0]);
-    } catch {
-      // Attempt to extract partial data if JSON is truncated
-      const sectionsMatch = match[0].match(/"sections"\s*:\s*(\[[\s\S]*?\](?=\s*[,}]))/);
-      const tipsMatch = match[0].match(/"seoTips"\s*:\s*(\[[\s\S]*?\](?=\s*[,}]))/);
-      const kwMatch = match[0].match(/"keywords"\s*:\s*(\[[\s\S]*?\](?=\s*[,}]))/);
+    let parsed = extractJsonObject<{ sections: { title: string; content: string }[]; seoTips: string[]; keywords: string[] }>(raw);
+    if (!parsed || !Array.isArray(parsed.sections)) {
+      // Last-resort field-level salvage if the whole object can't be parsed.
+      const sectionsMatch = raw.match(/"sections"\s*:\s*(\[[\s\S]*?\](?=\s*[,}]))/);
+      const tipsMatch = raw.match(/"seoTips"\s*:\s*(\[[\s\S]*?\](?=\s*[,}]))/);
+      const kwMatch = raw.match(/"keywords"\s*:\s*(\[[\s\S]*?\](?=\s*[,}]))/);
       if (!sectionsMatch) throw new Error("Não foi possível processar a resposta. Tenta novamente.");
       parsed = {
         sections: JSON.parse(sectionsMatch[1]),
@@ -276,6 +265,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result);
   } catch (err) {
     console.error("[seo] error:", err);
-    return NextResponse.json({ error: (err as Error).message || "Erro inesperado — tenta novamente." }, { status: 500 });
+    return NextResponse.json({ error: (err as Error).message || "Unexpected error — please try again." }, { status: 500 });
   }
 }

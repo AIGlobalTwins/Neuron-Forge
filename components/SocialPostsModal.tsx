@@ -16,9 +16,9 @@ interface GeneratedPost {
 }
 
 const LOADING_STEPS = [
-  { label: "A analisar o teu negócio...", duration: 2500 },
-  { label: "A criar os captions com Claude...", duration: 4000 },
-  { label: "A adicionar os detalhes finais...", duration: 0 },
+  { label: "Analyzing your business...", duration: 2500 },
+  { label: "Writing the captions with Claude...", duration: 4000 },
+  { label: "Adding the final touches...", duration: 0 },
 ];
 
 function InstagramIcon() {
@@ -72,7 +72,7 @@ export function SocialPostsModal({ onClose }: Props) {
 
   // Form step
   const [businessName, setBusinessName] = useState("");
-  const [category, setCategory] = useState("Negócio");
+  const [category, setCategory] = useState("Business");
   const [description, setDescription] = useState("");
   const [postType, setPostType] = useState("novidade");
   const [tone, setTone] = useState("casual");
@@ -105,7 +105,7 @@ export function SocialPostsModal({ onClose }: Props) {
 
   async function handleConnect() {
     if (!igToken.trim() || !igAccountId.trim()) {
-      setConnectError("Preenche os dois campos.");
+      setConnectError("Fill in both fields.");
       return;
     }
     setConnectSaving(true);
@@ -120,7 +120,7 @@ export function SocialPostsModal({ onClose }: Props) {
       setIsConnected(true);
       setStep("form");
     } catch {
-      setConnectError("Erro ao guardar. Tenta novamente.");
+      setConnectError("Failed to save. Please try again.");
     } finally {
       setConnectSaving(false);
     }
@@ -149,7 +149,7 @@ export function SocialPostsModal({ onClose }: Props) {
         body: JSON.stringify({ businessName, category, description, postType, tone, count }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Erro desconhecido");
+      if (!res.ok) throw new Error(data.error || "Unknown error");
       setPosts(data.posts);
       setStep("result");
       saveToHistory({ type: "instagram", name: businessName, posts: data.posts });
@@ -163,7 +163,7 @@ export function SocialPostsModal({ onClose }: Props) {
     const post = posts[idx];
     const imageUrl = imageUrls[idx];
     if (!imageUrl?.trim()) {
-      setPublishErrors((p) => ({ ...p, [idx]: "Cola o URL de uma imagem para publicar." }));
+      setPublishErrors((p) => ({ ...p, [idx]: "Paste an image URL to publish." }));
       return;
     }
     setPublishingIdx(idx);
@@ -175,7 +175,7 @@ export function SocialPostsModal({ onClose }: Props) {
         body: JSON.stringify({ caption: `${post.caption}\n\n${post.hashtags}`, imageUrl }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Erro ao publicar");
+      if (!res.ok) throw new Error(data.error || "Failed to publish");
       setPublishedIdx(idx);
     } catch (e) {
       setPublishErrors((p) => ({ ...p, [idx]: (e as Error).message }));
@@ -210,12 +210,12 @@ export function SocialPostsModal({ onClose }: Props) {
               <InstagramIcon />
             </div>
             <div>
-              <h2 className="text-white font-semibold text-sm">Posts para Instagram</h2>
+              <h2 className="text-white font-semibold text-sm">Instagram Posts</h2>
               <p className="text-gray-600 text-xs">
-                {step === "connect" && "Liga a tua conta"}
-                {step === "form" && "Cria o teu post"}
-                {step === "loading" && "A gerar..."}
-                {step === "result" && `${posts.length} post(s) gerado(s)`}
+                {step === "connect" && "Connect your account"}
+                {step === "form" && "Create your post"}
+                {step === "loading" && "Generating..."}
+                {step === "result" && `${posts.length} post(s) generated`}
               </p>
             </div>
           </div>
@@ -234,14 +234,14 @@ export function SocialPostsModal({ onClose }: Props) {
             <div className="px-6 py-6 space-y-5">
               {/* Explainer */}
               <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4 space-y-3">
-                <p className="text-xs font-semibold text-gray-300 uppercase tracking-widest">Como ligar o Instagram</p>
+                <p className="text-xs font-semibold text-gray-300 uppercase tracking-widest">How to connect Instagram</p>
                 <ol className="space-y-2 text-xs text-gray-500 leading-relaxed list-none">
                   {[
-                    "Vai a developers.facebook.com/tools/explorer",
-                    "Seleciona a tua app Meta (ou cria uma gratuita)",
-                    "Adiciona os scopes: instagram_basic + instagram_content_publish",
-                    "Clica em \"Generate Access Token\" e copia o token",
-                    "O teu Instagram Business Account ID encontras em Definições › Conta › Instagram Business",
+                    "Go to developers.facebook.com/tools/explorer",
+                    "Select your Meta app (or create a free one)",
+                    "Add the scopes: instagram_basic + instagram_content_publish",
+                    "Click \"Generate Access Token\" and copy the token",
+                    "Find your Instagram Business Account ID under Settings › Account › Instagram Business",
                   ].map((s, i) => (
                     <li key={i} className="flex items-start gap-2.5">
                       <span className="w-4 h-4 rounded-full bg-pink-500/15 border border-pink-500/30 text-pink-400 text-[10px] flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
@@ -296,11 +296,11 @@ export function SocialPostsModal({ onClose }: Props) {
                     <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                     </svg>
-                    A ligar...
+                    Connecting...
                   </>
                 ) : (
                   <>
-                    <InstagramIcon /> Ligar Instagram
+                    <InstagramIcon /> Connect Instagram
                   </>
                 )}
               </button>
@@ -308,7 +308,7 @@ export function SocialPostsModal({ onClose }: Props) {
               {/* Skip note if already connected */}
               {isConnected && (
                 <button onClick={() => setStep("form")} className="w-full text-xs text-gray-600 hover:text-gray-400 transition-colors underline">
-                  Já está ligado — continuar
+                  Already connected — continue
                 </button>
               )}
             </div>
@@ -319,21 +319,21 @@ export function SocialPostsModal({ onClose }: Props) {
             <div className="px-6 py-6 space-y-4">
               {isConnected && (
                 <div className="flex items-center gap-2 text-xs text-green-500 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
-                  <CheckIcon /> Instagram ligado
-                  <button onClick={() => setStep("connect")} className="ml-auto text-gray-600 hover:text-gray-400 underline transition-colors">alterar</button>
+                  <CheckIcon /> Instagram connected
+                  <button onClick={() => setStep("connect")} className="ml-auto text-gray-600 hover:text-gray-400 underline transition-colors">change</button>
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Nome do negócio</label>
-                <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="Ex: Barbearia do João" className={inputClass} />
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">Business name</label>
+                <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="E.g. Joe's Barbershop" className={inputClass} />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Categoria</label>
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">Category</label>
                 <div className="relative">
                   <select value={category} onChange={(e) => setCategory(e.target.value)} className={selectClass}>
-                    {["Restaurante / Café", "Barbearia / Salão", "Clínica / Saúde", "Fitness / Ginásio", "Loja / Comércio", "Serviços / Consultoria", "Hotelaria", "Construção / Remodelação", "Outro"].map((c) => (
+                    {["Restaurant / Café", "Barbershop / Salon", "Clinic / Health", "Fitness / Gym", "Store / Retail", "Services / Consulting", "Hospitality", "Construction / Renovation", "Other"].map((c) => (
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
@@ -342,11 +342,11 @@ export function SocialPostsModal({ onClose }: Props) {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Sobre o negócio <span className="text-gray-600">(o que fazem, o que te diferencia)</span></label>
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">About the business <span className="text-gray-600">(what you do, what sets you apart)</span></label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Ex: Barbearia especializada em cortes clássicos e modernos. Atendimento personalizado, ambiente premium. Abertos 7 dias por semana no centro de Lisboa."
+                  placeholder="E.g. Barbershop specialized in classic and modern cuts. Personalized service, premium atmosphere. Open 7 days a week in central Lisbon."
                   rows={3}
                   className={`${inputClass} resize-none`}
                 />
@@ -354,26 +354,26 @@ export function SocialPostsModal({ onClose }: Props) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Tipo de post</label>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Post type</label>
                   <div className="relative">
                     <select value={postType} onChange={(e) => setPostType(e.target.value)} className={selectClass}>
-                      <option value="novidade">Novidade</option>
-                      <option value="promocao">Promoção</option>
-                      <option value="testemunho">Testemunho</option>
-                      <option value="dica">Dica útil</option>
-                      <option value="lancamento">Lançamento</option>
+                      <option value="novidade">News</option>
+                      <option value="promocao">Promotion</option>
+                      <option value="testemunho">Testimonial</option>
+                      <option value="dica">Useful tip</option>
+                      <option value="lancamento">Launch</option>
                     </select>
                     <svg viewBox="0 0 16 16" className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 6l4 4 4-4" /></svg>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Tom</label>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Tone</label>
                   <div className="relative">
                     <select value={tone} onChange={(e) => setTone(e.target.value)} className={selectClass}>
                       <option value="casual">Casual</option>
-                      <option value="profissional">Profissional</option>
-                      <option value="criativo">Criativo</option>
-                      <option value="inspiracional">Inspiracional</option>
+                      <option value="profissional">Professional</option>
+                      <option value="criativo">Creative</option>
+                      <option value="inspiracional">Inspirational</option>
                     </select>
                     <svg viewBox="0 0 16 16" className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 6l4 4 4-4" /></svg>
                   </div>
@@ -381,7 +381,7 @@ export function SocialPostsModal({ onClose }: Props) {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Nº de posts</label>
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">Number of posts</label>
                 <div className="flex gap-2">
                   {[1, 2, 3].map((n) => (
                     <button
@@ -418,7 +418,7 @@ export function SocialPostsModal({ onClose }: Props) {
               </div>
               <div className="text-center space-y-1">
                 <p className="text-white font-medium text-sm">{LOADING_STEPS[loadingStep]?.label}</p>
-                <p className="text-gray-600 text-xs">Claude está a escrever os teus posts...</p>
+                <p className="text-gray-600 text-xs">Claude is writing your posts...</p>
               </div>
               <div className="flex gap-1.5">
                 {LOADING_STEPS.map((_, i) => (
@@ -443,7 +443,7 @@ export function SocialPostsModal({ onClose }: Props) {
                       onClick={() => copyText(`${post.caption}\n\n${post.hashtags}`, "caption", idx)}
                       className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors px-2 py-1 rounded-lg hover:bg-[#1a1a1a]"
                     >
-                      {copiedIdx === idx ? <><CheckIcon /> Copiado</> : <><CopyIcon /> Copiar tudo</>}
+                      {copiedIdx === idx ? <><CheckIcon /> Copied</> : <><CopyIcon /> Copy all</>}
                     </button>
                   </div>
 
@@ -463,7 +463,7 @@ export function SocialPostsModal({ onClose }: Props) {
                         onClick={() => copyText(post.hashtags, "hash", idx)}
                         className="flex items-center gap-1 text-[10px] text-gray-600 hover:text-gray-400 transition-colors"
                       >
-                        {copiedHashIdx === idx ? <><CheckIcon /> Copiado</> : <><CopyIcon /> Copiar</>}
+                        {copiedHashIdx === idx ? <><CheckIcon /> Copied</> : <><CopyIcon /> Copy</>}
                       </button>
                     </div>
                     <p className="text-xs text-pink-400/70 leading-relaxed">{post.hashtags}</p>
@@ -472,7 +472,7 @@ export function SocialPostsModal({ onClose }: Props) {
                   {/* Image prompt */}
                   {post.imagePrompt && (
                     <div className="px-4 pt-2 pb-3 border-t border-[#1a1a1a]">
-                      <span className="text-[10px] uppercase tracking-widest text-gray-600 block mb-1.5">Sugestão de imagem</span>
+                      <span className="text-[10px] uppercase tracking-widest text-gray-600 block mb-1.5">Image suggestion</span>
                       <p className="text-xs text-gray-500 italic leading-relaxed">{post.imagePrompt}</p>
                     </div>
                   )}
@@ -480,16 +480,16 @@ export function SocialPostsModal({ onClose }: Props) {
                   {/* Publish section */}
                   <div className="px-4 py-3 border-t border-[#1a1a1a] bg-[#0d0d0d] space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] uppercase tracking-widest text-gray-600">Publicar no Instagram</span>
+                      <span className="text-[10px] uppercase tracking-widest text-gray-600">Publish to Instagram</span>
                     </div>
                     {/* Image workflow guide */}
                     <div className="bg-[#111] border border-[#1e1e1e] rounded-lg p-2.5 space-y-1.5">
-                      <p className="text-[10px] text-gray-500 font-medium">Workflow para criar a imagem:</p>
+                      <p className="text-[10px] text-gray-500 font-medium">Workflow to create the image:</p>
                       <div className="space-y-1">
                         {[
-                          { n: "1", text: "Gera a imagem com o prompt acima — usa Canva, DALL-E ou Midjourney" },
-                          { n: "2", text: "Faz upload em imgur.com ou cloudinary.com e copia o URL direto" },
-                          { n: "3", text: "Cola o URL abaixo e publica" },
+                          { n: "1", text: "Generate the image with the prompt above — use Canva, DALL-E or Midjourney" },
+                          { n: "2", text: "Upload to imgur.com or cloudinary.com and copy the direct URL" },
+                          { n: "3", text: "Paste the URL below and publish" },
                         ].map((s) => (
                           <div key={s.n} className="flex items-start gap-1.5">
                             <span className="w-3.5 h-3.5 rounded bg-pink-500/10 text-pink-400 text-[8px] font-bold flex items-center justify-center shrink-0 mt-0.5">{s.n}</span>
@@ -503,7 +503,7 @@ export function SocialPostsModal({ onClose }: Props) {
                         type="url"
                         value={imageUrls[idx] ?? ""}
                         onChange={(e) => setImageUrls((p) => ({ ...p, [idx]: e.target.value }))}
-                        placeholder="URL público da imagem"
+                        placeholder="Public image URL"
                         className="flex-1 bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-pink-500/40 transition-colors"
                       />
                       <button
@@ -512,15 +512,15 @@ export function SocialPostsModal({ onClose }: Props) {
                         className="px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 disabled:opacity-50 shrink-0 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-400 hover:to-purple-400 text-white flex items-center gap-1.5"
                       >
                         {publishedIdx === idx ? (
-                          <><CheckIcon /> Publicado!</>
+                          <><CheckIcon /> Published!</>
                         ) : publishingIdx === idx ? (
                           <>
                             <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg>
-                            A publicar...
+                            Publishing...
                           </>
                         ) : (
                           <>
-                            <InstagramIcon /> Publicar
+                            <InstagramIcon /> Publish
                           </>
                         )}
                       </button>
@@ -534,7 +534,7 @@ export function SocialPostsModal({ onClose }: Props) {
                 onClick={() => { setPosts([]); setStep("form"); }}
                 className="w-full py-2.5 rounded-xl text-sm text-gray-500 border border-[#1e1e1e] hover:border-[#2a2a2a] hover:text-gray-400 transition-all duration-200"
               >
-                Gerar novos posts
+                Generate new posts
               </button>
             </div>
           )}
@@ -551,7 +551,7 @@ export function SocialPostsModal({ onClose }: Props) {
               <svg viewBox="0 0 16 16" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M2 8h9M8 5l3 3-3 3" /><circle cx="13" cy="8" r="2" />
               </svg>
-              Gerar {count} Post{count > 1 ? "s" : ""}
+              Generate {count} Post{count > 1 ? "s" : ""}
             </button>
           </div>
         )}

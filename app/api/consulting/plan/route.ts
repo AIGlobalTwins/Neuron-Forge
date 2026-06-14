@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
+import { extractJsonObject } from "@/lib/json-extract";
 import fs from "fs";
 import path from "path";
 
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
     const { area, problem, questions, answers } = body;
 
     if (!area || !problem || !questions || !answers) {
-      return NextResponse.json({ error: "Dados incompletos." }, { status: 400 });
+      return NextResponse.json({ error: "Incomplete data." }, { status: 400 });
     }
 
     let userId: string | null = null;
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
     const anthropicKey = getAnthropicKey(userId);
     const claudeModel = getClaudeModel(userId);
     if (!anthropicKey) {
-      return NextResponse.json({ error: "Anthropic API Key não configurada. Adiciona em Configurações." }, { status: 500 });
+      return NextResponse.json({ error: "Anthropic API Key not configured. Add it in Settings." }, { status: 500 });
     }
 
     const forgeToolsMd = loadForgeTools();
@@ -116,26 +117,22 @@ Notas:
 
     const res = await anthropic.messages.create({
       model: claudeModel,
-      max_tokens: 3000,
+      max_tokens: 4000,
       messages: [{ role: "user", content: prompt }],
     });
 
     const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "{}";
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) return NextResponse.json({ error: "Erro ao gerar plano — tenta novamente." }, { status: 500 });
-
-    try {
-      const plan: ConsultingPlan = JSON.parse(match[0]);
-      return NextResponse.json({ plan });
-    } catch {
-      return NextResponse.json({ error: "Resposta inválida — tenta novamente." }, { status: 500 });
+    const plan = extractJsonObject<ConsultingPlan>(raw);
+    if (!plan || !Array.isArray(plan.actions)) {
+      return NextResponse.json({ error: "Failed to generate plan — please try again." }, { status: 500 });
     }
+    return NextResponse.json({ plan });
   } catch (err) {
     console.error("[consulting/plan] error:", err);
     const msg = (err as Error).message || "";
     if (msg.includes("API Key") || msg.includes("authentication") || msg.includes("401")) {
-      return NextResponse.json({ error: "API Key inválida. Verifica as configurações." }, { status: 500 });
+      return NextResponse.json({ error: "Invalid API Key. Check your settings." }, { status: 500 });
     }
-    return NextResponse.json({ error: "Erro inesperado — tenta novamente." }, { status: 500 });
+    return NextResponse.json({ error: "Unexpected error — please try again." }, { status: 500 });
   }
 }

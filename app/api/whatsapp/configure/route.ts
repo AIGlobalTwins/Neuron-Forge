@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Save bot config
+  // Save bot config — WhatsApp credentials are persisted separately, strip them here.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { whatsappPhoneNumberId, whatsappAccessToken, whatsappVerifyToken, ...botFields } = body;
   if (Object.keys(botFields).length > 0) {
     writeBotConfig({ ...botFields, createdAt: botFields.createdAt || new Date().toISOString() });

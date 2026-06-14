@@ -58,10 +58,10 @@ function EyeIcon({ open }: { open: boolean }) {
 }
 
 const stepLabels: Record<Step, string> = {
-  connect: "Credenciais",
-  configure: "Configurar Agente",
-  webhook: "Ativar",
-  live: "Agente Ativo",
+  connect: "Credentials",
+  configure: "Configure Agent",
+  webhook: "Activate",
+  live: "Agent Live",
 };
 
 const STEPS: Step[] = ["connect", "configure", "webhook", "live"];
@@ -76,19 +76,19 @@ export function WhatsAppModal({ onClose }: Props) {
   const [accessToken, setAccessToken] = useState("");
   const [verifyToken, setVerifyToken] = useState("");
   const [showAccessToken, setShowAccessToken] = useState(false);
-  const [hasCredentials, setHasCredentials] = useState(false);
+  const [, setHasCredentials] = useState(false);
 
   // Configure
-  const [agentName, setAgentName] = useState("Assistente Virtual");
+  const [agentName, setAgentName] = useState("Virtual Assistant");
   const [businessName, setBusinessName] = useState("");
-  const [category, setCategory] = useState("Negócio");
+  const [category, setCategory] = useState("Business");
   const [description, setDescription] = useState("");
   const [hours, setHours] = useState("");
   const [services, setServices] = useState<string[]>([""]);
   const [faqs, setFaqs] = useState<Faq[]>([{ question: "", answer: "" }]);
-  const [personality, setPersonality] = useState("simpático");
+  const [personality, setPersonality] = useState("friendly");
   const [language, setLanguage] = useState("pt");
-  const [fallback, setFallback] = useState("Não tenho essa informação de momento, mas podes entrar em contacto diretamente connosco.");
+  const [fallback, setFallback] = useState("I don't have that information right now, but you can contact us directly.");
 
   // Live
   const [status, setStatus] = useState<{ active: boolean; totalConversations: number; recentConversations: { phone: string; lastMessage: string; ts: number }[] } | null>(null);
@@ -120,7 +120,7 @@ export function WhatsAppModal({ onClose }: Props) {
 
   async function handleSaveCredentials() {
     if (!phoneNumberId.trim() || !accessToken.trim() || !verifyToken.trim()) {
-      setError("Preenche todos os campos.");
+      setError("Fill in all fields.");
       return;
     }
     setSaving(true);
@@ -139,7 +139,7 @@ export function WhatsAppModal({ onClose }: Props) {
       setHasCredentials(true);
       setStep("configure");
     } catch {
-      setError("Erro ao guardar. Tenta novamente.");
+      setError("Failed to save. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -147,7 +147,7 @@ export function WhatsAppModal({ onClose }: Props) {
 
   async function handleSaveConfigure() {
     if (!businessName.trim() || !description.trim()) {
-      setError("Nome e descrição são obrigatórios.");
+      setError("Name and description are required.");
       return;
     }
     setSaving(true);
@@ -163,7 +163,7 @@ export function WhatsAppModal({ onClose }: Props) {
       if (!res.ok) throw new Error();
       setStep("webhook");
     } catch {
-      setError("Erro ao guardar. Tenta novamente.");
+      setError("Failed to save. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -183,7 +183,7 @@ export function WhatsAppModal({ onClose }: Props) {
       setStatus(statusRes);
       setStep("live");
     } catch {
-      setError("Erro ao ativar. Tenta novamente.");
+      setError("Failed to activate. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -266,14 +266,14 @@ export function WhatsAppModal({ onClose }: Props) {
           {step === "connect" && (
             <div className="px-6 py-6 space-y-5">
               <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4 space-y-3">
-                <p className="text-xs font-semibold text-gray-300 uppercase tracking-widest">Como obter as credenciais</p>
+                <p className="text-xs font-semibold text-gray-300 uppercase tracking-widest">How to get your credentials</p>
                 <ol className="space-y-2 text-xs text-gray-500 leading-relaxed">
                   {[
-                    "Vai a developers.facebook.com e cria uma app do tipo \"Business\"",
-                    "Adiciona o produto \"WhatsApp\" à tua app",
-                    "Em WhatsApp → API Setup, encontras o Phone Number ID",
-                    "Gera um Access Token temporário (ou configura um permanente em System Users)",
-                    "O Verify Token és tu que defines — já geramos um para ti em baixo",
+                    "Go to developers.facebook.com and create a \"Business\" type app",
+                    "Add the \"WhatsApp\" product to your app",
+                    "Under WhatsApp → API Setup, you'll find the Phone Number ID",
+                    "Generate a temporary Access Token (or set up a permanent one under System Users)",
+                    "The Verify Token is up to you — we've already generated one for you below",
                   ].map((s, i) => (
                     <li key={i} className="flex items-start gap-2.5">
                       <span className="w-4 h-4 rounded-full bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] text-[9px] flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
@@ -305,7 +305,7 @@ export function WhatsAppModal({ onClose }: Props) {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1.5">
-                    Verify Token <span className="text-gray-600">(gerado automaticamente — podes alterar)</span>
+                    Verify Token <span className="text-gray-600">(generated automatically — you can change it)</span>
                   </label>
                   <input type="text" value={verifyToken} onChange={(e) => setVerifyToken(e.target.value)} className={inputClass} />
                 </div>
@@ -320,20 +320,20 @@ export function WhatsAppModal({ onClose }: Props) {
             <div className="px-6 py-6 space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Nome do agente</label>
-                  <input type="text" value={agentName} onChange={(e) => setAgentName(e.target.value)} placeholder="Assistente Virtual" className={inputClass} />
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Agent name</label>
+                  <input type="text" value={agentName} onChange={(e) => setAgentName(e.target.value)} placeholder="Virtual Assistant" className={inputClass} />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Nome do negócio</label>
-                  <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="Ex: Barbearia do João" className={inputClass} />
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Business name</label>
+                  <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="e.g. John's Barbershop" className={inputClass} />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Categoria</label>
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">Category</label>
                 <div className="relative">
                   <select value={category} onChange={(e) => setCategory(e.target.value)} className={selectClass}>
-                    {["Restaurante / Café", "Barbearia / Salão", "Clínica / Saúde", "Fitness / Ginásio", "Loja / Comércio", "Serviços / Consultoria", "Hotelaria", "Construção / Remodelação", "Outro"].map((c) => (
+                    {["Restaurant / Café", "Barbershop / Salon", "Clinic / Healthcare", "Fitness / Gym", "Shop / Retail", "Services / Consulting", "Hospitality", "Construction / Renovation", "Other"].map((c) => (
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
@@ -342,27 +342,27 @@ export function WhatsAppModal({ onClose }: Props) {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Descrição do negócio</label>
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ex: Barbearia especializada em cortes clássicos e modernos, no centro de Lisboa. Atendimento com hora marcada." rows={2} className={`${inputClass} resize-none`} />
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">Business description</label>
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Barbershop specializing in classic and modern cuts, in downtown Lisbon. By appointment only." rows={2} className={`${inputClass} resize-none`} />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Horário de funcionamento</label>
-                <input type="text" value={hours} onChange={(e) => setHours(e.target.value)} placeholder="Ex: Seg-Sáb 9h-19h, Dom fechado" className={inputClass} />
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">Opening hours</label>
+                <input type="text" value={hours} onChange={(e) => setHours(e.target.value)} placeholder="e.g. Mon-Sat 9am-7pm, Sun closed" className={inputClass} />
               </div>
 
               {/* Services */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-medium text-gray-400">Serviços / Produtos</label>
+                  <label className="text-xs font-medium text-gray-400">Services / Products</label>
                   <button onClick={addService} className="flex items-center gap-1 text-[10px] text-[#25D366] hover:text-[#1db954] transition-colors">
-                    <PlusIcon /> Adicionar
+                    <PlusIcon /> Add
                   </button>
                 </div>
                 <div className="space-y-2">
                   {services.map((s, i) => (
                     <div key={i} className="flex gap-2">
-                      <input type="text" value={s} onChange={(e) => updateService(i, e.target.value)} placeholder={`Serviço ${i + 1}`} className={inputClass} />
+                      <input type="text" value={s} onChange={(e) => updateService(i, e.target.value)} placeholder={`Service ${i + 1}`} className={inputClass} />
                       {services.length > 1 && (
                         <button onClick={() => removeService(i)} className="text-gray-600 hover:text-red-400 transition-colors shrink-0">
                           <TrashIcon />
@@ -376,9 +376,9 @@ export function WhatsAppModal({ onClose }: Props) {
               {/* FAQs */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-medium text-gray-400">Perguntas Frequentes (FAQ)</label>
+                  <label className="text-xs font-medium text-gray-400">Frequently Asked Questions (FAQ)</label>
                   <button onClick={addFaq} className="flex items-center gap-1 text-[10px] text-[#25D366] hover:text-[#1db954] transition-colors">
-                    <PlusIcon /> Adicionar
+                    <PlusIcon /> Add
                   </button>
                 </div>
                 <div className="space-y-3">
@@ -392,8 +392,8 @@ export function WhatsAppModal({ onClose }: Props) {
                           </button>
                         )}
                       </div>
-                      <input type="text" value={f.question} onChange={(e) => updateFaq(i, "question", e.target.value)} placeholder="Pergunta do cliente..." className={`${inputClass} py-2 text-xs`} />
-                      <textarea value={f.answer} onChange={(e) => updateFaq(i, "answer", e.target.value)} placeholder="Resposta do agente..." rows={2} className={`${inputClass} py-2 text-xs resize-none`} />
+                      <input type="text" value={f.question} onChange={(e) => updateFaq(i, "question", e.target.value)} placeholder="Customer question..." className={`${inputClass} py-2 text-xs`} />
+                      <textarea value={f.answer} onChange={(e) => updateFaq(i, "answer", e.target.value)} placeholder="Agent answer..." rows={2} className={`${inputClass} py-2 text-xs resize-none`} />
                     </div>
                   ))}
                 </div>
@@ -401,24 +401,24 @@ export function WhatsAppModal({ onClose }: Props) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Personalidade</label>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Personality</label>
                   <div className="relative">
                     <select value={personality} onChange={(e) => setPersonality(e.target.value)} className={selectClass}>
-                      <option value="simpático">Simpático</option>
-                      <option value="profissional">Profissional</option>
-                      <option value="direto">Direto</option>
-                      <option value="descontraído">Descontraído</option>
+                      <option value="friendly">Friendly</option>
+                      <option value="professional">Professional</option>
+                      <option value="direct">Direct</option>
+                      <option value="relaxed">Relaxed</option>
                     </select>
                     <svg viewBox="0 0 16 16" className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 6l4 4 4-4" /></svg>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Língua</label>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Language</label>
                   <div className="relative">
                     <select value={language} onChange={(e) => setLanguage(e.target.value)} className={selectClass}>
-                      <option value="pt">Português</option>
+                      <option value="pt">Portuguese</option>
                       <option value="en">English</option>
-                      <option value="es">Español</option>
+                      <option value="es">Spanish</option>
                     </select>
                     <svg viewBox="0 0 16 16" className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 6l4 4 4-4" /></svg>
                   </div>
@@ -426,7 +426,7 @@ export function WhatsAppModal({ onClose }: Props) {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Mensagem quando não sabe responder</label>
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">Message when it can&apos;t answer</label>
                 <textarea value={fallback} onChange={(e) => setFallback(e.target.value)} rows={2} className={`${inputClass} resize-none`} />
               </div>
 
@@ -438,38 +438,38 @@ export function WhatsAppModal({ onClose }: Props) {
           {step === "webhook" && (
             <div className="px-6 py-6 space-y-5">
               <div className="bg-[#25D366]/5 border border-[#25D366]/20 rounded-xl p-4">
-                <p className="text-xs font-semibold text-[#25D366] mb-1">Quase lá! Cola estes valores no Meta Dashboard.</p>
-                <p className="text-xs text-gray-500">Vai a developers.facebook.com → A tua app → WhatsApp → Configuration → Webhooks.</p>
+                <p className="text-xs font-semibold text-[#25D366] mb-1">Almost there! Paste these values into the Meta Dashboard.</p>
+                <p className="text-xs text-gray-500">Go to developers.facebook.com → Your app → WhatsApp → Configuration → Webhooks.</p>
               </div>
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Callback URL (cola no Meta)</label>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Callback URL (paste into Meta)</label>
                   <div className="flex gap-2">
                     <input readOnly value={webhookUrl} className="flex-1 bg-[#111] border border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-gray-400 font-mono" />
                     <button onClick={() => navigator.clipboard.writeText(webhookUrl)} className="px-3 py-2 rounded-xl bg-[#1a1a1a] border border-[#2a2a2a] text-gray-500 hover:text-gray-300 text-xs transition-colors shrink-0">
-                      Copiar
+                      Copy
                     </button>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Verify Token (cola no Meta)</label>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Verify Token (paste into Meta)</label>
                   <div className="flex gap-2">
                     <input readOnly value={verifyToken} className="flex-1 bg-[#111] border border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-gray-400 font-mono" />
                     <button onClick={() => navigator.clipboard.writeText(verifyToken)} className="px-3 py-2 rounded-xl bg-[#1a1a1a] border border-[#2a2a2a] text-gray-500 hover:text-gray-300 text-xs transition-colors shrink-0">
-                      Copiar
+                      Copy
                     </button>
                   </div>
                 </div>
               </div>
 
               <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4 space-y-2">
-                <p className="text-xs font-semibold text-gray-300 uppercase tracking-widest">Passos no Meta Dashboard</p>
+                <p className="text-xs font-semibold text-gray-300 uppercase tracking-widest">Steps in the Meta Dashboard</p>
                 {[
-                  "Cola a Callback URL e o Verify Token",
-                  "Clica em \"Verify and Save\"",
-                  "Em Webhook Fields, ativa o campo \"messages\"",
-                  "Clica em \"Ativar Agente\" abaixo",
+                  "Paste the Callback URL and the Verify Token",
+                  "Click \"Verify and Save\"",
+                  "Under Webhook Fields, enable the \"messages\" field",
+                  "Click \"Activate Agent\" below",
                 ].map((s, i) => (
                   <div key={i} className="flex items-start gap-2.5 text-xs text-gray-500">
                     <span className="w-4 h-4 rounded-full bg-[#25D366]/10 border border-[#25D366]/30 text-[#25D366] text-[9px] flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
@@ -481,7 +481,7 @@ export function WhatsAppModal({ onClose }: Props) {
               <div className="bg-[#111] border border-yellow-500/20 rounded-xl p-3 flex items-start gap-2.5">
                 <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 text-yellow-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="8" cy="8" r="6.5" /><path d="M8 7v4M8 5.5v.5" /></svg>
                 <p className="text-xs text-gray-500 leading-relaxed">
-                  O webhook precisa de estar acessível publicamente. Em produção usa o teu domínio Vercel. Em desenvolvimento usa <span className="text-yellow-500">ngrok</span> para expor o localhost.
+                  The webhook must be publicly accessible. In production, use your Vercel domain. In development, use <span className="text-yellow-500">ngrok</span> to expose localhost.
                 </p>
               </div>
 
@@ -497,34 +497,34 @@ export function WhatsAppModal({ onClose }: Props) {
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full ${status?.active ? "bg-[#25D366] animate-pulse" : "bg-gray-600"}`} />
-                    <span className="text-sm font-semibold text-white">{agentName || "Assistente Virtual"}</span>
+                    <span className="text-sm font-semibold text-white">{agentName || "Virtual Assistant"}</span>
                   </div>
                   <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${status?.active ? "bg-[#25D366]/10 border-[#25D366]/30 text-[#25D366]" : "bg-[#1e1e1e] border-[#2a2a2a] text-gray-500"}`}>
-                    {status?.active ? "Ativo" : "Inativo"}
+                    {status?.active ? "Active" : "Inactive"}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500">{businessName || "—"} · {status?.totalConversations ?? 0} conversas</p>
+                <p className="text-xs text-gray-500">{businessName || "—"} · {status?.totalConversations ?? 0} conversations</p>
               </div>
 
               {/* Toggle */}
               <div className="flex gap-3">
                 {status?.active ? (
                   <button onClick={handleDeactivate} className="flex-1 py-2.5 rounded-xl text-sm border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all duration-200">
-                    Desativar agente
+                    Deactivate agent
                   </button>
                 ) : (
                   <button onClick={() => setStep("webhook")} className="flex-1 py-2.5 rounded-xl text-sm border border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/10 transition-all duration-200">
-                    Ativar agente
+                    Activate agent
                   </button>
                 )}
                 <button onClick={() => setStep("configure")} className="flex-1 py-2.5 rounded-xl text-sm border border-[#2a2a2a] text-gray-400 hover:border-[#3a3a3a] transition-all duration-200">
-                  Editar configuração
+                  Edit configuration
                 </button>
               </div>
 
               {/* Recent conversations */}
               <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-widest mb-3">Conversas recentes</p>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-widest mb-3">Recent conversations</p>
                 {status?.recentConversations?.length ? (
                   <div className="space-y-2">
                     {status.recentConversations.map((c, i) => (
@@ -536,21 +536,21 @@ export function WhatsAppModal({ onClose }: Props) {
                           <p className="text-xs text-gray-400 font-mono">+{c.phone}</p>
                           <p className="text-xs text-gray-600 truncate">{c.lastMessage}</p>
                         </div>
-                        <span className="text-[10px] text-gray-700 shrink-0">{new Date(c.ts).toLocaleDateString("pt-PT", { day: "2-digit", month: "short" })}</span>
+                        <span className="text-[10px] text-gray-700 shrink-0">{new Date(c.ts).toLocaleDateString("en-US", { day: "2-digit", month: "short" })}</span>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="space-y-3">
                     <div className="text-center py-4 text-gray-600 text-xs">
-                      Ainda sem conversas. O agente responde automaticamente quando receber a primeira mensagem.
+                      No conversations yet. The agent replies automatically as soon as it receives the first message.
                     </div>
                     <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-3 space-y-2">
-                      <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Como testar</p>
+                      <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">How to test</p>
                       {[
-                        { n: "1", text: "Abre o WhatsApp no teu telemóvel" },
-                        { n: "2", text: `Envia uma mensagem para o número associado ao Phone Number ID` },
-                        { n: "3", text: "O agente deve responder em segundos — verifica se o webhook está ativo" },
+                        { n: "1", text: "Open WhatsApp on your phone" },
+                        { n: "2", text: `Send a message to the number linked to the Phone Number ID` },
+                        { n: "3", text: "The agent should reply within seconds — check that the webhook is active" },
                       ].map((s) => (
                         <div key={s.n} className="flex items-start gap-2">
                           <span className="w-4 h-4 rounded bg-[#25D366]/10 border border-[#25D366]/20 text-[#25D366] text-[9px] font-bold flex items-center justify-center shrink-0 mt-0.5">{s.n}</span>
@@ -574,7 +574,7 @@ export function WhatsAppModal({ onClose }: Props) {
               className="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-[#25D366] hover:bg-[#1db954] text-black flex items-center justify-center gap-2"
             >
               {saving ? <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg> : <WhatsAppIcon />}
-              {saving ? "A guardar..." : "Guardar e Continuar"}
+              {saving ? "Saving..." : "Save and Continue"}
             </button>
           </div>
         )}
@@ -586,7 +586,7 @@ export function WhatsAppModal({ onClose }: Props) {
               className="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-[#25D366] hover:bg-[#1db954] text-black flex items-center justify-center gap-2"
             >
               {saving ? <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg> : null}
-              {saving ? "A guardar..." : "Guardar Configuração →"}
+              {saving ? "Saving..." : "Save Configuration →"}
             </button>
           </div>
         )}
@@ -598,7 +598,7 @@ export function WhatsAppModal({ onClose }: Props) {
               className="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-[#25D366] hover:bg-[#1db954] text-black flex items-center justify-center gap-2"
             >
               {saving ? <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" /></svg> : <WhatsAppIcon />}
-              {saving ? "A ativar..." : "Ativar Agente"}
+              {saving ? "Activating..." : "Activate Agent"}
             </button>
           </div>
         )}

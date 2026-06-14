@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     const anthropic = new Anthropic({ apiKey: anthropicKey });
     const res = await anthropic.messages.create({
       model: claudeModel,
-      max_tokens: 400,
+      max_tokens: 700,
       system: buildSystemPrompt(config),
       messages: [
         ...history.map((m) => ({ role: m.role, content: m.content })),
@@ -62,7 +62,10 @@ export async function POST(req: NextRequest) {
       ],
     });
 
-    const reply = res.content[0].type === "text" ? res.content[0].text.trim() : config.fallback;
+    let reply = res.content[0].type === "text" ? res.content[0].text.trim() : config.fallback;
+    if (!reply) reply = config.fallback;
+    // WhatsApp hard-limits text bodies to 4096 chars.
+    if (reply.length > 4000) reply = reply.slice(0, 3997) + "…";
     appendHistory(from, { role: "assistant", content: reply, ts: Date.now() });
 
     // Send reply via WhatsApp

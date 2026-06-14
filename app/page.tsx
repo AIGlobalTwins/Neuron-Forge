@@ -271,7 +271,7 @@ export default function Home() {
   const [showHistory, setShowHistory] = useState(false);
   const [demoTool, setDemoTool] = useState<DemoTool | null>(null);
   const [hasKey, setHasKey] = useState(true); // optimistic — avoids flash
-  const [lang, setLang] = useState<"pt" | "en">("pt");
+  const [lang, setLang] = useState<"pt" | "en">("en");
 
   // Check API key + onboarding on mount
   useEffect(() => {
@@ -427,7 +427,7 @@ export default function Home() {
         {/* Option cards */}
         {(() => {
           const c = T[lang].cards;
-          const icons = [<SearchIcon />, <MapPinIcon />, <InstagramCardIcon />, <WhatsAppCardIcon />, <ConsultingIcon />, <SeoIcon />, <SecurityIcon />, <EmailIcon />, <AdsIcon />, <CalendarIcon />];
+          const icons = [<SearchIcon key="0" />, <MapPinIcon key="1" />, <InstagramCardIcon key="2" />, <WhatsAppCardIcon key="3" />, <ConsultingIcon key="4" />, <SeoIcon key="5" />, <SecurityIcon key="6" />, <EmailIcon key="7" />, <AdsIcon key="8" />, <CalendarIcon key="9" />];
           const accents = ["#a855f7", "#3b82f6", "#ec4899", "#22c55e", "#E8622A", "#10b981", "#ef4444", "#06b6d4", "#f59e0b", "#8b5cf6"];
           const clicks = [() => setShowAnalyzeModal(true), () => setShowMapsModal(true), () => setShowSocialPosts(true), () => setShowWhatsApp(true), () => setShowConsulting(true), () => setShowSeo(true), () => setShowSecurity(true), () => setShowEmail(true), () => setShowAds(true), () => setShowCalendar(true)];
           const demos: DemoTool[] = ["analyze", "maps", "instagram", "whatsapp", "consulting", "seo", "security", "email", "ads", "calendar"];

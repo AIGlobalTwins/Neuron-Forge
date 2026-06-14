@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { chromium } from "playwright";
 import Anthropic from "@anthropic-ai/sdk";
 import { randomUUID } from "crypto";
-import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 
@@ -10,6 +9,9 @@ import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 import { deployToVercel } from "@/lib/vercel-deploy";
 import { searchUnsplashImages, buildImageSearchQuery } from "@/lib/image-search";
 import { deriveDesignDirection } from "@/lib/website-planner";
+import { buildDesignBrief, formatDesignBriefForPrompt, darkThemeInstruction } from "@/lib/design-engine";
+import { REVEAL_CSS, MOTION_SCRIPT, MOTION_PROMPT } from "@/lib/motion";
+import { extractJsonObject } from "@/lib/json-extract";
 
 const REDESIGN_DIR = "./outputs/redesigns";
 
@@ -222,7 +224,7 @@ async function analyzeWithVision(
 
   const res = await anthropic.messages.create({
     model,
-    max_tokens: 1024,
+    max_tokens: 1500,
     messages: [{
       role: "user",
       content: [
@@ -271,9 +273,8 @@ JSON:
   });
 
   const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "{}";
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error("Vision returned invalid JSON");
-  const p = JSON.parse(match[0]) as Partial<SiteAnalysis>;
+  const p = extractJsonObject<Partial<SiteAnalysis>>(raw);
+  if (!p) throw new Error("Vision returned invalid JSON");
 
   return {
     businessName: p.businessName || name || "Business",
@@ -329,17 +330,6 @@ function getCategoryMeta(category: string): CategoryMeta {
   return { ctaPrimary: "Contactar-nos", ctaSecondary: "Ver Serviços", navCta: "Contactar", contactTitle: "Fale Connosco", contactBtn: "Enviar Mensagem" };
 }
 
-// ── UI/UX Skill ───────────────────────────────────────────────────────────
-const SKILL_SCRIPT = path.join(process.cwd(), ".claude/skills/ui-ux-pro-max/scripts/search.py");
-
-function queryUiSkill(query: string): string {
-  try {
-    return execSync(`python3 "${SKILL_SCRIPT}" "${query}"`, { timeout: 8000 }).toString().trim();
-  } catch {
-    return "";
-  }
-}
-
 // ── Step 4: Generate redesign ─────────────────────────────────────────────
 async function generateRedesign(
   anthropic: Anthropic,
@@ -349,8 +339,11 @@ async function generateRedesign(
   category: string,
   instructions: string = "",
   model: string = "claude-sonnet-4-6",
+  designType: string = "auto",
 ): Promise<string> {
-  const skillRec = queryUiSkill(category.toLowerCase().replace(/[^a-z0-9 ]/g, ""));
+  // Design brief routes the ui-ux-pro-max + taste skills by the chosen type.
+  const brief = buildDesignBrief(designType, category, instructions);
+  console.log(`[analyze] design type="${designType}" → style="${brief.styleName}" theme=${brief.theme}`);
 
   // CTAs: prefer what was detected on the original site, fall back to category defaults
   const meta = getCategoryMeta(category);
@@ -412,9 +405,12 @@ async function generateRedesign(
     ? remainingUnsplash
     : [...remainingUnsplash, ...catalog.content];
 
-  const fonts = analysis.fontStyle === "serif"
-    ? { heading: "Playfair Display", body: "Lora", import: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lora:wght@400;500&display=swap" }
-    : { heading: "Poppins", body: "Inter", import: "https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500&display=swap" };
+  // Chosen design type dictates the pairing; "auto" follows the detected style.
+  const fonts = brief.isCustom
+    ? brief.fonts
+    : analysis.fontStyle === "serif"
+      ? { heading: "Playfair Display", body: "Lora", import: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lora:wght@400;500&display=swap" }
+      : { heading: "Poppins", body: "Inter", import: "https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500&display=swap" };
 
   const showTeam = ["dental", "denti", "clínica", "clinica", "legal", "law", "advog", "fitness", "gym", "ginás", "salon", "beauty", "barber", "médico", "medico"].some(k => category.toLowerCase().includes(k));
 
@@ -461,10 +457,14 @@ ${s.content || "(generate relevant content based on business type)"}
     ? `Início, Sobre, Menu, Porquê Nós${showTeam ? ", Equipa" : ""}, Contacto`
     : `Início, Serviços, Porquê Nós${showTeam ? ", Equipa" : ""}, Contacto`;
 
-  const direction = deriveDesignDirection(instructions);
+  // Chosen design type overrides the keyword-derived direction.
+  const direction = brief.isCustom
+    ? { tone: brief.aestheticKeywords, visualStyle: brief.effects || brief.fontPairingNote, spacingScale: brief.spacingScale, cornerRadius: brief.cornerRadius }
+    : deriveDesignDirection(instructions);
   const spacingClass = direction.spacingScale === "compact" ? "py-16 px-6" : direction.spacingScale === "generous" ? "py-32 px-6" : "py-24 px-6";
   const radiusDefault = direction.cornerRadius === "sharp" ? "rounded-md" : direction.cornerRadius === "pill" ? "rounded-3xl" : "rounded-2xl";
   const btnRadius = direction.cornerRadius === "sharp" ? "rounded-md" : "rounded-full";
+  const darkBlock = darkThemeInstruction(brief);
 
   const prompt = `You are a world-class web designer creating a premium redesign of a real business site. Produce the highest quality HTML possible — Lovable-level design with flawless typography, generous spacing, and polished visual hierarchy. Wow the viewer on first impression. This is a SINGLE-PAGE website where every nav link scrolls to a section.
 ${instructions ? `\n🎯 USER REQUIREMENTS — these override everything, implement them exactly:\n${instructions}\n` : ""}
@@ -476,8 +476,10 @@ Default card/image radius: ${radiusDefault}
 Default button radius: ${btnRadius}
 ═════════════════════════════════════════════════
 
-## UI/UX SKILL GUIDANCE
-${skillRec || "Apply Soft UI Evolution + Minimalism, generous whitespace, strong visual hierarchy."}
+${formatDesignBriefForPrompt(brief)}
+${darkBlock}
+
+${MOTION_PROMPT}
 
 ## CRITICAL LAYOUT RULES
 - NEVER add vertical text, writing-mode, rotated text, or decorative side text
@@ -508,7 +510,7 @@ HEAD:
 - <link href="${fonts.import}" rel="stylesheet">
 - <script src="https://cdn.tailwindcss.com"></script>
 - <script>tailwind.config={theme:{extend:{colors:{primary:"${analysis.primaryColor}",accent:"${analysis.accentColor}"},fontFamily:{heading:["${fonts.heading}"],body:["${fonts.body}"]}}}}</script>
-- <style>*,*::before,*::after{box-sizing:border-box}html{scroll-behavior:smooth}body{overflow-x:hidden}img{max-width:100%;height:auto}p,h1,h2,h3,h4,li,span{overflow-wrap:break-word;word-break:break-word}</style>
+- <style>*,*::before,*::after{box-sizing:border-box}html{scroll-behavior:smooth}body{overflow-x:hidden}img{max-width:100%;height:auto}p,h1,h2,h3,h4,li,span{overflow-wrap:break-word;word-break:break-word}${REVEAL_CSS}</style>
 - <body class="font-body bg-white antialiased">
 
 NAV (id="navbar") — <nav id="navbar" class="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-100 shadow-sm">:
@@ -541,7 +543,7 @@ WHY US (id="why") — <section id="why" class="py-24 px-6 bg-white">:
 - <div class="max-w-6xl mx-auto">
 - Text center: <p class="tracking-[0.25em] text-xs uppercase mb-3" style="color:${analysis.accentColor}">PORQUÊ NÓS</p> + H2 font-heading text-4xl font-bold text-slate-900 mb-4 "Porquê escolher a ${analysis.businessName}?" + p text-slate-500 text-lg max-w-2xl mx-auto mb-16
 - <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16"> — 4 cards each:
-  <div class="flex items-start gap-5 p-7 bg-slate-50 rounded-2xl border border-slate-100 hover:border-primary/30 transition">
+  <div data-reveal class="flex items-start gap-5 p-7 bg-slate-50 rounded-2xl border border-slate-100 hover:border-primary/30 transition duration-300 hover:-translate-y-1 hover:shadow-xl">
   * <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary"> + SVG icon
   * <div> — <h3 class="font-heading font-semibold text-lg text-slate-900 mb-2"> + <p class="text-slate-500 text-sm leading-relaxed">
   * Reasons specific to ${category}: ${analysis.keyMessages.join(" | ")}
@@ -597,6 +599,10 @@ OUTPUT: ONLY the complete HTML starting with <!DOCTYPE html>. No markdown fences
   const lastStyleOpen = html.lastIndexOf("<style");
   const lastStyleClose = html.lastIndexOf("</style>");
   if (lastStyleOpen > -1 && lastStyleClose < lastStyleOpen) html += "\n}</style>";
+
+  // Inject the deterministic motion layer before closing the body.
+  html += "\n" + MOTION_SCRIPT;
+
   if (!html.includes("</body>")) html += "\n</body>";
   if (!html.includes("</html>")) html += "\n</html>";
 
@@ -607,7 +613,7 @@ OUTPUT: ONLY the complete HTML starting with <!DOCTYPE html>. No markdown fences
 export async function POST(req: NextRequest) {
   try {
   const body = await req.json().catch(() => ({}));
-  const { url, name = "", category = "Business", address = "", phone = "", email = "", instructions = "" } = body;
+  const { url, name = "", category = "Business", address = "", phone = "", email = "", instructions = "", designType = "auto" } = body;
 
   if (!url) return NextResponse.json({ error: "url required" }, { status: 400 });
   let userId: string | null = null;
@@ -653,7 +659,7 @@ export async function POST(req: NextRequest) {
   // 4. Generate redesign
   let html = "";
   try {
-    html = await generateRedesign(anthropic, analysis, crawlResult.pages, url, category, instructions, claudeModel);
+    html = await generateRedesign(anthropic, analysis, crawlResult.pages, url, category, instructions, claudeModel, designType);
   } catch (err) {
     return NextResponse.json({ error: `Redesign failed: ${(err as Error).message}` }, { status: 500 });
   }
@@ -690,6 +696,6 @@ export async function POST(req: NextRequest) {
   });
   } catch (err) {
     console.error("[analyze] unhandled error:", err);
-    return NextResponse.json({ error: (err as Error).message || "Erro inesperado — tenta novamente" }, { status: 500 });
+    return NextResponse.json({ error: (err as Error).message || "Unexpected error — please try again" }, { status: 500 });
   }
 }

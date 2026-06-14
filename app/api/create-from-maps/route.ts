@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { chromium } from "playwright";
 import Anthropic from "@anthropic-ai/sdk";
 import { randomUUID } from "crypto";
-import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 
@@ -10,10 +9,11 @@ import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 import { deployToVercel } from "@/lib/vercel-deploy";
 import { searchUnsplashImages, buildImageSearchQuery } from "@/lib/image-search";
 import { planWebsite, formatPlanForPrompt } from "@/lib/website-planner";
+import { buildDesignBrief, formatDesignBriefForPrompt, darkThemeInstruction } from "@/lib/design-engine";
+import { REVEAL_CSS, MOTION_SCRIPT, MOTION_PROMPT } from "@/lib/motion";
 
 const REDESIGN_DIR = "./outputs/redesigns";
 const UPLOADS_DIR = "./public/uploads";
-const SKILL_SCRIPT = path.join(process.cwd(), ".claude/skills/ui-ux-pro-max/scripts/search.py");
 
 // ── Photo catalog by category ──────────────────────────────────────────────
 // hero: full-screen background (1600px wide)
@@ -130,66 +130,6 @@ function getCatalog(category: string): { hero: string[]; content: string[] } {
 }
 
 
-interface PhotoAnalysis {
-  primaryColor: string;
-  accentColor: string;
-  bgColor: string;
-  fontStyle: "serif" | "sans-serif";
-  brandPersonality: string;
-  suggestedTagline: string;
-}
-
-async function analyzePhotos(anthropic: Anthropic, imageBlocks: Anthropic.ImageBlockParam[], businessName: string, category: string, model: string): Promise<PhotoAnalysis> {
-  const defaults: PhotoAnalysis = {
-    primaryColor: "#1a1a2e",
-    accentColor: "#e94560",
-    bgColor: "#ffffff",
-    fontStyle: "sans-serif",
-    brandPersonality: "professional and welcoming",
-    suggestedTagline: "",
-  };
-  if (imageBlocks.length === 0) return defaults;
-
-  try {
-    const res = await anthropic.messages.create({
-      model,
-      max_tokens: 512,
-      messages: [{
-        role: "user",
-        content: [
-          ...imageBlocks,
-          {
-            type: "text",
-            text: `Analyze these business photos for "${businessName}" (${category}).
-Extract visual identity to inform a NEW website design. Return ONLY a JSON object:
-{
-  "primaryColor": "#hex — dominant brand/decor color from the photos",
-  "accentColor": "#hex — complementary highlight color",
-  "bgColor": "#hex — suggested clean background (usually light)",
-  "fontStyle": "serif or sans-serif based on brand feel",
-  "brandPersonality": "one sentence about brand tone and atmosphere",
-  "suggestedTagline": "a short compelling tagline inspired by what you see"
-}`,
-          },
-        ],
-      }],
-    });
-    const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "{}";
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) return defaults;
-    const p = JSON.parse(match[0]) as Partial<PhotoAnalysis>;
-    return {
-      primaryColor: p.primaryColor || defaults.primaryColor,
-      accentColor: p.accentColor || defaults.accentColor,
-      bgColor: p.bgColor || defaults.bgColor,
-      fontStyle: p.fontStyle === "serif" ? "serif" : "sans-serif",
-      brandPersonality: p.brandPersonality || defaults.brandPersonality,
-      suggestedTagline: p.suggestedTagline || "",
-    };
-  } catch {
-    return defaults;
-  }
-}
 
 interface CategoryMeta {
   ctaPrimary: string;   // hero primary button
@@ -220,14 +160,6 @@ function getCategoryMeta(category: string): CategoryMeta {
   if (c.includes("auto") || c.includes("oficina") || c.includes("garage") || c.includes("mechanic") || c.includes("revisão"))
     return { ctaPrimary: "Marcar Revisão", ctaSecondary: "Ver Serviços", navCta: "Marcar", contactTitle: "Marcar Serviço", contactBtn: "Confirmar Marcação" };
   return { ctaPrimary: "Contactar-nos", ctaSecondary: "Ver Serviços", navCta: "Contactar", contactTitle: "Fale Connosco", contactBtn: "Enviar Mensagem" };
-}
-
-function queryUiSkill(query: string): string {
-  try {
-    return execSync(`python3 "${SKILL_SCRIPT}" "${query.replace(/[^a-z0-9 ]/gi, "")}"`, { timeout: 8000 }).toString().trim();
-  } catch {
-    return "";
-  }
 }
 
 /** Extract business name from Google Maps URL — e.g. /place/O+Barril/@... → "O Barril" */
@@ -318,6 +250,9 @@ function fixHtml(part1: string, part2: string): string {
   const lastStyleClose = html.lastIndexOf("</style>");
   if (lastStyleOpen > -1 && lastStyleClose < lastStyleOpen) html += "\n}</style>";
 
+  // Inject the deterministic motion layer before closing the body.
+  html += "\n" + MOTION_SCRIPT;
+
   if (!html.includes("</body>")) html += "\n</body>";
   if (!html.includes("</html>")) html += "\n</html>";
 
@@ -327,7 +262,7 @@ function fixHtml(part1: string, part2: string): string {
 export async function POST(req: NextRequest) {
   try {
   const body = await req.json().catch(() => ({}));
-  const { mapsUrl = "", name = "", category = "Business", address = "", phone = "", email = "", images = [], instructions = "" } = body;
+  const { mapsUrl = "", name = "", category = "Business", address = "", phone = "", email = "", images = [], instructions = "", designType = "auto" } = body;
 
   let userId: string | null = null;
   try { const { auth } = await import("@clerk/nextjs/server"); const a = await auth(); userId = a.userId; } catch {}
@@ -371,8 +306,9 @@ export async function POST(req: NextRequest) {
 
   const catalog = getCatalog(finalCategory);
 
-  // ── UI/UX Skill ────────────────────────────────────────────────────────
-  const skillRec = queryUiSkill(finalCategory);
+  // ── Design brief (routes ui-ux-pro-max + taste skills by chosen type) ────
+  const brief = buildDesignBrief(designType, finalCategory, instructions);
+  console.log(`[maps] design type="${designType}" → style="${brief.styleName}" theme=${brief.theme}`);
 
 
   // ── Category-aware CTAs ────────────────────────────────────────────────
@@ -408,17 +344,21 @@ export async function POST(req: NextRequest) {
   const showTeam = ["dental", "denti", "clínica", "clinica", "legal", "law", "advog", "fitness", "gym", "ginás", "salon", "beauty", "barber", "médico", "medico"].some(k => finalCategory.toLowerCase().includes(k));
 
   // ── Plan website first (produces business-specific image queries) ──────
-  const plan = await planWebsite({ anthropic, imageBlocks, businessName: finalName, category: finalCategory, instructions, isFood, showTeam, model: claudeModel });
+  const plan = await planWebsite({ anthropic, imageBlocks, businessName: finalName, category: finalCategory, instructions, isFood, showTeam, model: claudeModel, designBrief: brief });
   console.log(`[maps] plan: ${plan.tone} | hero="${plan.heroImageQuery}" content="${plan.contentImageQuery}"`);
 
   // Alias for existing code that still references photoAnalysis fields
   const photoAnalysis = plan;
 
   // ── Search Unsplash with plan's business-specific queries (parallel) ───
+  // Bias the search toward the chosen design vibe (e.g. "minimal bright airy").
   const fallbackQuery = buildImageSearchQuery(finalCategory);
+  const vibe = brief.isCustom ? brief.vibeKeywords : "";
+  const heroQ = [vibe, plan.heroImageQuery || fallbackQuery].filter(Boolean).join(" ").trim();
+  const contentQ = [vibe, plan.contentImageQuery || fallbackQuery].filter(Boolean).join(" ").trim();
   const [heroPool, contentPool] = await Promise.all([
-    searchUnsplashImages(plan.heroImageQuery || fallbackQuery, 3, "landscape"),
-    searchUnsplashImages(plan.contentImageQuery || fallbackQuery, 6, "landscape"),
+    searchUnsplashImages(heroQ, 3, "landscape"),
+    searchUnsplashImages(contentQ, 6, "landscape"),
   ]);
   console.log(`[maps] unsplash hero→${heroPool.length} content→${contentPool.length}`);
 
@@ -428,17 +368,26 @@ export async function POST(req: NextRequest) {
     ? contentPool
     : [...contentPool, ...catalog.content];
   const isSerif = plan.fontStyle === "serif";
-  const fonts = isSerif
-    ? { heading: "Playfair Display", body: "Lora",   import: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lora:wght@400;500&display=swap" }
-    : { heading: "Poppins",          body: "Inter",  import: "https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500&display=swap" };
+  // Chosen design type dictates the font pairing; "auto" keeps the serif/sans default.
+  const fonts = brief.isCustom
+    ? brief.fonts
+    : isSerif
+      ? { heading: "Playfair Display", body: "Lora",   import: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lora:wght@400;500&display=swap" }
+      : { heading: "Poppins",          body: "Inter",  import: "https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Inter:wght@400;500&display=swap" };
 
   const heroCity = finalAddress ? (finalAddress.split(",").slice(-1)[0]?.trim() ?? "") : "";
   const heroOverline = [finalCategory, heroCity].filter(Boolean).join(" · ").toUpperCase();
 
   const planBlock = formatPlanForPrompt(plan);
 
+  const designBlock = formatDesignBriefForPrompt(brief);
+
   const sharedContext = `
-${instructions ? `USER INSTRUCTIONS (highest priority — follow these above all else): ${instructions}\n` : ""}${planBlock}
+${instructions ? `USER INSTRUCTIONS (highest priority — follow these above all else): ${instructions}\n` : ""}${designBlock}
+
+${MOTION_PROMPT}
+
+${planBlock}
 
 BUSINESS: ${finalName} | ${finalCategory}
 Address: ${finalAddress || "—"} | Phone: ${finalPhone || "—"} | Email: ${email || "—"}
@@ -447,8 +396,9 @@ Brand colors: primary=${plan.primaryColor} accent=${plan.accentColor} bg=${plan.
 Brand personality: ${plan.brandPersonality}
 Hero image: ${heroImage}
 Fonts: heading="${fonts.heading}" body="${fonts.body}"
-UI/UX: ${skillRec.slice(0, 300) || "Soft UI Evolution + Minimalism"}
 `.trim();
+
+  const darkBlock = darkThemeInstruction(brief);
 
   // ── Precomputed section variants ────────────────────────────────────────
   const foodAboutSection = isFood
@@ -536,6 +486,7 @@ CRITICAL LAYOUT RULES:
 - NEVER change the grid column counts specified below (grid-cols-3 means 3, grid-cols-2 means 2)
 - ALL text must flow horizontally, left-to-right
 - Use ONLY Tailwind utility classes — no custom CSS
+${darkBlock}
 
 ${sharedContext}
 
@@ -554,7 +505,7 @@ ${heroImage.startsWith("http") ? `<meta property="og:image" content="${heroImage
 <link href="${fonts.import}" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{primary:"${plan.primaryColor}",accent:"${plan.accentColor}"},fontFamily:{heading:["${fonts.heading}"],body:["${fonts.body}"]}}}}</script>
-<style>*,*::before,*::after{box-sizing:border-box}html{scroll-behavior:smooth}body{overflow-x:hidden}img{max-width:100%;height:auto}p,h1,h2,h3,h4,li,span{overflow-wrap:break-word;word-break:break-word}</style>
+<style>*,*::before,*::after{box-sizing:border-box}html{scroll-behavior:smooth}body{overflow-x:hidden}img{max-width:100%;height:auto}p,li,span{overflow-wrap:break-word}a,.truncate-email{overflow-wrap:anywhere}h1,h2,h3,h4{overflow-wrap:normal;word-break:normal;hyphens:none}${REVEAL_CSS}</style>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -598,10 +549,11 @@ ${!isFood ? `WHY US (id="why") — <section id="why" class="py-24 px-6 bg-white"
   * <p class="text-slate-500 text-lg max-w-2xl mx-auto">short intro sentence</p>
   </div>
 - <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16 items-stretch"> — 4 cards, each:
-  <div class="flex items-start gap-5 p-7 bg-slate-50 rounded-2xl border border-slate-100 hover:border-primary/30 transition h-full">
+  <div data-reveal class="flex items-start gap-5 p-7 bg-slate-50 rounded-2xl border border-slate-100 hover:border-primary/30 transition duration-300 hover:-translate-y-1 hover:shadow-xl h-full">
   * <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary"> + SVG icon
-  * <div> — <h3 class="font-heading font-semibold text-lg text-slate-900 mb-2"> + <p class="text-slate-500 text-sm leading-relaxed">
+  * <div class="min-w-0 flex-1"> — <h3 class="font-heading font-semibold text-lg text-slate-900 mb-2">[2-4 word title]</h3> + <p class="text-slate-500 text-sm leading-relaxed">[1-2 sentences max, 140 chars max]</p>
   * Reasons specific to ${finalCategory} and personality: ${photoAnalysis.brandPersonality}
+  * CRITICAL: keep each card's description to 1-2 short sentences — never let a card get much taller than the others.
 - Stats bar: <div class="bg-slate-900 rounded-2xl p-10 grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
   Each: <div> — <div class="font-heading text-4xl font-bold text-white mb-1"> + <div class="text-slate-400 text-sm">` : ""}
 
@@ -626,6 +578,7 @@ CRITICAL LAYOUT RULES:
 - NEVER change the grid column counts specified below
 - ALL text must flow horizontally, left-to-right
 - Use ONLY Tailwind utility classes — no custom CSS
+${darkBlock}
 
 ${sharedContext}
 
@@ -643,17 +596,22 @@ ${showTeam ? `TEAM (id="team") — <section id="team" class="py-24 px-6 bg-white
 
 ${isFood ? foodContactSection : `CONTACT (id="contact") — <section id="contact" class="py-24 px-6 ${showTeam ? "bg-slate-50" : "bg-white"}">:
 - <div class="max-w-6xl mx-auto">
-- <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-start">
-- Left <div>: <h2 class="font-heading text-4xl font-bold text-slate-900 mb-4"> + <p class="text-slate-500 mb-8">
-  Contact items each: <div class="flex items-center gap-3 mb-4 text-slate-600">
-  * Map pin SVG w-5 h-5 + <span>${finalAddress || "Endereço disponível em breve"}</span>
-  * Phone SVG w-5 h-5 + <a href="tel:${finalPhone || ""}" class="text-primary hover:underline">${finalPhone || "—"}</a>
-  * Mail SVG w-5 h-5 + <a href="mailto:${email || ""}" class="text-primary hover:underline">${email || "—"}</a>
-- Right <div>: <form class="space-y-4 bg-white rounded-2xl p-8 shadow-sm border border-slate-100">
+- Centered header FIRST (full width, not inside the grid):
+  <div class="text-center mb-16">
+    * <p class="tracking-[0.3em] text-xs uppercase mb-3" style="color:${photoAnalysis.accentColor}">CONTACTO</p>
+    * <h2 class="font-heading text-3xl md:text-4xl font-bold text-slate-900 mb-4 whitespace-normal">short centered heading (max 4 words, e.g. "Fale Connosco" or "Entre em Contacto")</h2>
+    * <p class="text-slate-500 max-w-xl mx-auto">1 short sentence inviting contact</p>
+  </div>
+- Then grid below: <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+- Left <div class="space-y-5">:
+  * <div class="flex items-start gap-4"><div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary"><svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div><div class="min-w-0 flex-1"><p class="font-semibold text-slate-900 mb-1">Morada</p><p class="text-slate-500 text-sm">${finalAddress || "Endereço disponível em breve"}</p></div></div>
+  * <div class="flex items-start gap-4"><div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary"><svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 11.5 19.79 19.79 0 01.18 2.88 2 2 0 012.18 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.57a16 16 0 006.54 6.54l1.52-1.52a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div><div class="min-w-0 flex-1"><p class="font-semibold text-slate-900 mb-1">Telefone</p><a href="tel:${finalPhone || ""}" class="text-primary hover:underline text-sm">${finalPhone || "—"}</a></div></div>
+  * <div class="flex items-start gap-4"><div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary"><svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 2,6 12,13 22,6"/></svg></div><div class="min-w-0 flex-1"><p class="font-semibold text-slate-900 mb-1">Email</p><a href="mailto:${email || ""}" class="text-primary hover:underline text-sm break-all">${email || "—"}</a></div></div>
+- Right <div>: <form class="space-y-4 bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-slate-100">
   * <input type="text" placeholder="O seu nome" class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition">
   * <input type="email" placeholder="O seu email" same class>
   * <textarea placeholder="A sua mensagem" rows="4" same class></textarea>
-  * <button type="submit" class="w-full bg-primary hover:opacity-90 text-white font-semibold py-4 rounded-xl transition">${meta.contactBtn}</button>`}
+  * <button type="submit" class="w-full bg-primary hover:opacity-90 text-white font-semibold py-3 rounded-xl transition">${meta.contactBtn}</button>`}
 
 FOOTER — <footer class="bg-slate-900 text-white py-16 px-6">:
 - <div class="max-w-6xl mx-auto">
@@ -678,7 +636,7 @@ Output ONLY raw HTML. No markdown. No explanations.`;
   part2 = part2.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
 
   // ── Combine parts ──────────────────────────────────────────────────────
-  let html = fixHtml(part1, part2);
+  const html = fixHtml(part1, part2);
 
   if (html.length < 3000) {
     return NextResponse.json({ error: "Generated HTML too short — try again" }, { status: 500 });
@@ -698,10 +656,10 @@ Output ONLY raw HTML. No markdown. No explanations.`;
   } catch (err) {
     console.error("[maps] unhandled error:", err);
     const raw = (err as Error).message || "";
-    let friendly = "Erro inesperado — tenta novamente.";
-    if (raw.includes("image exceeds")) friendly = "Uma das imagens é demasiado grande. Remove-a e tenta novamente.";
-    else if (raw.includes("ENOTFOUND") || raw.includes("Connection error") || raw.includes("ECONNREFUSED") || raw.includes("Could not connect")) friendly = "Não foi possível ligar à API da Anthropic. Verifica a tua ligação à internet.";
-    else if (raw.includes("API Key") || raw.includes("authentication") || raw.includes("401")) friendly = "API Key inválida. Verifica as configurações.";
+    let friendly = "Unexpected error — please try again.";
+    if (raw.includes("image exceeds")) friendly = "One of the images is too large. Remove it and try again.";
+    else if (raw.includes("ENOTFOUND") || raw.includes("Connection error") || raw.includes("ECONNREFUSED") || raw.includes("Could not connect")) friendly = "Could not connect to the Anthropic API. Check your internet connection.";
+    else if (raw.includes("API Key") || raw.includes("authentication") || raw.includes("401")) friendly = "Invalid API Key. Check your settings.";
     return NextResponse.json({ error: friendly }, { status: 500 });
   }
 }

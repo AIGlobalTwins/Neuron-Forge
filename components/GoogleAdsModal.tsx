@@ -11,16 +11,16 @@ interface Props {
 type Step = "form" | "loading" | "result";
 
 const CAMPAIGNS: { id: CampaignType; label: string; desc: string }[] = [
-  { id: "search",      label: "Search",          desc: "Anúncios de texto na pesquisa Google" },
-  { id: "pmax",        label: "Performance Max",  desc: "Multi-plataforma automatizada" },
-  { id: "display",     label: "Display",          desc: "Banners na rede de display" },
-  { id: "remarketing", label: "Remarketing",      desc: "Recuperar visitantes do site" },
+  { id: "search",      label: "Search",          desc: "Text ads on Google Search" },
+  { id: "pmax",        label: "Performance Max",  desc: "Automated multi-platform" },
+  { id: "display",     label: "Display",          desc: "Banners on the display network" },
+  { id: "remarketing", label: "Remarketing",      desc: "Win back site visitors" },
 ];
 
 const LOADING_STEPS = [
-  { label: "A analisar o teu negócio...", duration: 2500 },
-  { label: "A criar headlines e descriptions...", duration: 4500 },
-  { label: "A adicionar extensões...", duration: 0 },
+  { label: "Analyzing your business...", duration: 2500 },
+  { label: "Creating headlines and descriptions...", duration: 4500 },
+  { label: "Adding extensions...", duration: 0 },
 ];
 
 function AdsIcon({ className = "w-5 h-5" }: { className?: string }) {
@@ -33,19 +33,10 @@ function AdsIcon({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
-function CopyIcon() {
-  return (
-    <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="5" y="5" width="9" height="9" rx="1.5" />
-      <path d="M11 5V3.5A1.5 1.5 0 009.5 2H3.5A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5" />
-    </svg>
-  );
-}
-
 export function GoogleAdsModal({ onClose }: Props) {
   const [step, setStep] = useState<Step>("form");
   const [businessName, setBusinessName] = useState("");
-  const [category, setCategory] = useState("Negócio");
+  const [category, setCategory] = useState("Business");
   const [description, setDescription] = useState("");
   const [campaignType, setCampaignType] = useState<CampaignType>("search");
   const [targetAudience, setTargetAudience] = useState("");
@@ -89,7 +80,7 @@ export function GoogleAdsModal({ onClose }: Props) {
         body: JSON.stringify({ businessName, category, description, campaignType, targetAudience, location }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Erro desconhecido");
+      if (!res.ok) throw new Error(data.error || "Unknown error");
       setAdGroups(data.adGroups);
       setNegativeKeywords(data.negativeKeywords);
       setTips(data.tips);
@@ -125,7 +116,7 @@ export function GoogleAdsModal({ onClose }: Props) {
             <div>
               <h2 className="text-white font-semibold text-sm">Google Ads Agent</h2>
               <p className="text-gray-600 text-xs">
-                {step === "form" && "Cria copy para campanhas Google Ads"}
+                {step === "form" && "Create copy for Google Ads campaigns"}
                 {step === "loading" && LOADING_STEPS[loadingStep]?.label}
                 {step === "result" && `${adGroups.length} ad groups · ${adGroups.reduce((a, g) => a + g.headlines.length, 0)} headlines`}
               </p>
@@ -143,16 +134,16 @@ export function GoogleAdsModal({ onClose }: Props) {
           {step === "form" && (
             <div className="px-6 py-6 space-y-5">
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Nome do negócio *</label>
-                <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="Ex: Clínica Dental Lisboa" className={inputClass} />
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">Business name *</label>
+                <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="E.g. Lisbon Dental Clinic" className={inputClass} />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Categoria</label>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Category</label>
                   <div className="relative">
                     <select value={category} onChange={(e) => setCategory(e.target.value)} className={selectClass}>
-                      {["Restaurante / Café", "Saúde / Clínica", "Fitness / Ginásio", "E-commerce / Loja", "Serviços / Consultoria", "SaaS / Tecnologia", "Educação", "Imobiliário", "Construção", "Outro"].map((c) => (
+                      {["Restaurant / Café", "Health / Clinic", "Fitness / Gym", "E-commerce / Store", "Services / Consulting", "SaaS / Technology", "Education", "Real Estate", "Construction", "Other"].map((c) => (
                         <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
@@ -160,23 +151,23 @@ export function GoogleAdsModal({ onClose }: Props) {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Localização</label>
-                  <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Ex: Lisboa, Portugal" className={inputClass} />
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Location</label>
+                  <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="E.g. Lisbon, Portugal" className={inputClass} />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Sobre o negócio</label>
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="O que fazem, serviços principais, diferenciadores..." rows={3} className={`${inputClass} resize-none`} />
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">About the business</label>
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What you do, main services, differentiators..." rows={3} className={`${inputClass} resize-none`} />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Público-alvo</label>
-                <input type="text" value={targetAudience} onChange={(e) => setTargetAudience(e.target.value)} placeholder="Ex: Adultos 25-45, zona de Lisboa, preocupados com saúde oral" className={inputClass} />
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">Target audience</label>
+                <input type="text" value={targetAudience} onChange={(e) => setTargetAudience(e.target.value)} placeholder="E.g. Adults 25-45, Lisbon area, focused on oral health" className={inputClass} />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-3 uppercase tracking-widest">Tipo de Campanha</label>
+                <label className="block text-xs font-medium text-gray-400 mb-3 uppercase tracking-widest">Campaign Type</label>
                 <div className="grid grid-cols-2 gap-2">
                   {CAMPAIGNS.map((c) => (
                     <button key={c.id} onClick={() => setCampaignType(c.id)} className={`text-left px-4 py-3 rounded-xl border transition-all duration-200 ${campaignType === c.id ? "border-amber-500/60 bg-amber-500/5 text-white" : "border-[#1e1e1e] text-gray-500 hover:border-[#2a2a2a] hover:text-gray-400"}`}>
@@ -204,7 +195,7 @@ export function GoogleAdsModal({ onClose }: Props) {
               </div>
               <div className="text-center space-y-1">
                 <p className="text-white font-medium text-sm">{LOADING_STEPS[loadingStep]?.label}</p>
-                <p className="text-gray-600 text-xs">Claude está a criar os teus anúncios...</p>
+                <p className="text-gray-600 text-xs">Claude is creating your ads...</p>
               </div>
               <div className="flex gap-1.5">
                 {LOADING_STEPS.map((_, i) => (
@@ -239,7 +230,7 @@ export function GoogleAdsModal({ onClose }: Props) {
 
                 {/* Restart */}
                 <div className="mt-auto px-4 py-4 border-t border-[#1e1e1e]">
-                  <button onClick={() => { setAdGroups([]); setStep("form"); }} className="w-full py-2 rounded-xl text-xs text-gray-600 border border-[#1e1e1e] hover:border-[#2a2a2a] hover:text-gray-400 transition-all">Nova campanha</button>
+                  <button onClick={() => { setAdGroups([]); setStep("form"); }} className="w-full py-2 rounded-xl text-xs text-gray-600 border border-[#1e1e1e] hover:border-[#2a2a2a] hover:text-gray-400 transition-all">New campaign</button>
                 </div>
               </div>
 
@@ -253,7 +244,7 @@ export function GoogleAdsModal({ onClose }: Props) {
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Headlines ({g.headlines.length})</p>
-                          <button onClick={() => copy(g.headlines.join("\n"), `h-${activeGroup}`)} className={`text-[10px] ${copiedKey === `h-${activeGroup}` ? "text-amber-400" : "text-gray-600 hover:text-gray-400"}`}>{copiedKey === `h-${activeGroup}` ? "Copiado" : "Copiar todas"}</button>
+                          <button onClick={() => copy(g.headlines.join("\n"), `h-${activeGroup}`)} className={`text-[10px] ${copiedKey === `h-${activeGroup}` ? "text-amber-400" : "text-gray-600 hover:text-gray-400"}`}>{copiedKey === `h-${activeGroup}` ? "Copied" : "Copy all"}</button>
                         </div>
                         <div className="grid grid-cols-2 gap-1.5">
                           {g.headlines.map((h, i) => (
@@ -269,7 +260,7 @@ export function GoogleAdsModal({ onClose }: Props) {
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Descriptions ({g.descriptions.length})</p>
-                          <button onClick={() => copy(g.descriptions.join("\n"), `d-${activeGroup}`)} className={`text-[10px] ${copiedKey === `d-${activeGroup}` ? "text-amber-400" : "text-gray-600 hover:text-gray-400"}`}>{copiedKey === `d-${activeGroup}` ? "Copiado" : "Copiar todas"}</button>
+                          <button onClick={() => copy(g.descriptions.join("\n"), `d-${activeGroup}`)} className={`text-[10px] ${copiedKey === `d-${activeGroup}` ? "text-amber-400" : "text-gray-600 hover:text-gray-400"}`}>{copiedKey === `d-${activeGroup}` ? "Copied" : "Copy all"}</button>
                         </div>
                         <div className="space-y-1.5">
                           {g.descriptions.map((d, i) => (
@@ -311,7 +302,7 @@ export function GoogleAdsModal({ onClose }: Props) {
                       {/* Negative keywords */}
                       {negativeKeywords.length > 0 && (
                         <div>
-                          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">Keywords Negativas</p>
+                          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">Negative Keywords</p>
                           <div className="flex flex-wrap gap-1.5">
                             {negativeKeywords.map((k, i) => (
                               <span key={i} className="text-[10px] px-2 py-0.5 bg-red-500/10 border border-red-500/20 rounded-full text-red-400">{k}</span>
@@ -323,7 +314,7 @@ export function GoogleAdsModal({ onClose }: Props) {
                       {/* Tips */}
                       {tips.length > 0 && (
                         <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4">
-                          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Dicas de Otimização</p>
+                          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Optimization Tips</p>
                           <div className="space-y-2">
                             {tips.map((tip, i) => (
                               <div key={i} className="flex items-start gap-2 text-xs text-gray-400 leading-relaxed">
@@ -346,7 +337,7 @@ export function GoogleAdsModal({ onClose }: Props) {
           <div className="px-6 pb-6 pt-4 border-t border-[#1e1e1e] shrink-0">
             <button onClick={handleGenerate} disabled={!businessName.trim()} className="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-amber-600 hover:bg-amber-500 text-white flex items-center justify-center gap-2">
               <AdsIcon className="w-4 h-4" />
-              Gerar Campanha
+              Generate Campaign
             </button>
           </div>
         )}

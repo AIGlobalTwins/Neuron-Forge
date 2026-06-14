@@ -17,21 +17,21 @@ const DOCS = [
         <circle cx="10" cy="7" r="1.8" />
       </svg>
     ),
-    title: "Criar Website",
+    title: "Create Website",
     subtitle: "Google Maps",
-    tag: "Sem website",
-    what: "Cria um website profissional completo para qualquer negócio em ~90 segundos, sem escrever uma linha de código.",
-    needs: ["URL do Google Maps do negócio (ou preenches manualmente)", "Fotos do negócio (opcional — melhora o resultado)", "API Key da Anthropic nas Configurações"],
+    tag: "No website",
+    what: "Creates a complete professional website for any business in ~90 seconds, without writing a single line of code.",
+    needs: ["Business Google Maps URL (or fill it in manually)", "Business photos (optional — improves the result)", "Anthropic API Key in Settings"],
     steps: [
-      "Clica em 'Create from Google Maps'",
-      "Cola o URL do Google Maps (ex: maps.google.com/place/...)",
-      "O Forge extrai automaticamente: nome, morada, telefone e categoria",
-      "Adiciona 1-3 fotos do espaço para personalizar as cores e o estilo",
-      "Clica 'Generate Website' e aguarda ~90 segundos",
-      "Vê o preview, descarrega o HTML ou publica diretamente no Vercel",
+      "Click 'Create from Google Maps'",
+      "Paste the Google Maps URL (e.g. maps.google.com/place/...)",
+      "Forge automatically extracts: name, address, phone, and category",
+      "Add 1-3 photos of the space to personalize the colors and style",
+      "Click 'Generate Website' and wait ~90 seconds",
+      "View the preview, download the HTML, or publish directly to Vercel",
     ],
-    tip: "Funciona com qualquer tipo de negócio: restaurantes, clínicas, salões de beleza, advogados, ginásios e muito mais.",
-    example: "Restaurante La Vecchia Roma → website com menu, testemunhos, secção 'Porquê Nós', formulário de reserva e footer — tudo gerado automaticamente.",
+    tip: "Works with any type of business: restaurants, clinics, beauty salons, lawyers, gyms, and much more.",
+    example: "La Vecchia Roma restaurant → website with menu, testimonials, 'Why Us' section, reservation form, and footer — all generated automatically.",
   },
   {
     id: "analyze",
@@ -44,21 +44,21 @@ const DOCS = [
         <path d="M6 9h6M9 6v6" />
       </svg>
     ),
-    title: "Analisar & Redesenhar",
-    subtitle: "Website existente",
-    tag: "Tem website",
-    what: "Analisa qualquer website existente com IA, identifica problemas de design e gera uma versão moderna e profissional.",
-    needs: ["URL de um website público", "API Key da Anthropic nas Configurações"],
+    title: "Analyze & Redesign",
+    subtitle: "Existing website",
+    tag: "Has website",
+    what: "Analyzes any existing website with AI, identifies design problems, and generates a modern, professional version.",
+    needs: ["URL of a public website", "Anthropic API Key in Settings"],
     steps: [
-      "Clica em 'Analyze & Redesign'",
-      "Cola o URL do website que queres melhorar",
-      "O Forge tira screenshots e lê o código fonte da página",
-      "A IA analisa: design, hierarquia visual, cores, tipografia e UX",
-      "Recebe um relatório de pontos fortes e fracos",
-      "O Forge gera uma versão completamente redesenhada",
+      "Click 'Analyze & Redesign'",
+      "Paste the URL of the website you want to improve",
+      "Forge takes screenshots and reads the page source code",
+      "The AI analyzes: design, visual hierarchy, colors, typography, and UX",
+      "Receive a report of strengths and weaknesses",
+      "Forge generates a completely redesigned version",
     ],
-    tip: "Ideal para mostrar a clientes com websites desatualizados. Em 2 minutos tens uma proposta visual pronta.",
-    example: "Website de clínica dentária dos anos 2000 → redesign moderno com cores profissionais, layout limpo e CTAs otimizados.",
+    tip: "Ideal for showing clients with outdated websites. In 2 minutes you have a visual proposal ready.",
+    example: "Dental clinic website from the 2000s → modern redesign with professional colors, clean layout, and optimized CTAs.",
   },
   {
     id: "instagram",
@@ -69,22 +69,22 @@ const DOCS = [
         <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
       </svg>
     ),
-    title: "Posts para Instagram",
+    title: "Instagram Posts",
     subtitle: "Social media",
     tag: "Social Media",
-    what: "Gera captions profissionais, hashtags otimizadas e ideias de imagem para o Instagram do teu negócio.",
-    needs: ["Informação básica sobre o negócio", "API Key da Anthropic", "(Opcional) Token do Instagram para publicação direta"],
+    what: "Generates professional captions, optimized hashtags, and image ideas for your business's Instagram.",
+    needs: ["Basic information about the business", "Anthropic API Key", "(Optional) Instagram Token for direct publishing"],
     steps: [
-      "Clica em 'Posts para Instagram'",
-      "Preenche: nome do negócio, categoria e descrição breve",
-      "Escolhe o tipo de post: promoção, produto, bastidores ou testemunho",
-      "Seleciona o tom: simpático, profissional, inspirador ou divertido",
-      "Escolhe quantos posts (1, 2 ou 3)",
-      "Copia o caption e as hashtags geradas",
-      "(Opcional) Cola o URL de uma imagem para publicar diretamente",
+      "Click 'Instagram Posts'",
+      "Fill in: business name, category, and a brief description",
+      "Choose the post type: promotion, product, behind-the-scenes, or testimonial",
+      "Select the tone: friendly, professional, inspiring, or fun",
+      "Choose how many posts (1, 2, or 3)",
+      "Copy the generated caption and hashtags",
+      "(Optional) Paste an image URL to publish directly",
     ],
-    tip: "Para publicação direta, precisas de conectar o teu Instagram Business nas Configurações. O processo leva 2 minutos.",
-    example: "Restaurante + tom simpático + post de produto → caption de 3 parágrafos com emojis, call-to-action de reserva e 10 hashtags relevantes.",
+    tip: "For direct publishing, you need to connect your Instagram Business in Settings. The process takes 2 minutes.",
+    example: "Restaurant + friendly tone + product post → a 3-paragraph caption with emojis, a reservation call-to-action, and 10 relevant hashtags.",
   },
   {
     id: "whatsapp",
@@ -95,23 +95,23 @@ const DOCS = [
         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
       </svg>
     ),
-    title: "Agente WhatsApp",
-    subtitle: "Atendimento automático",
-    tag: "Atendimento 24/7",
-    what: "Cria um assistente de IA para o teu WhatsApp Business que responde automaticamente a clientes, qualquer hora do dia.",
-    needs: ["Conta WhatsApp Business", "Acesso ao Meta Business Manager", "API Key da Anthropic", "Servidor ou Vercel (para o webhook ficar acessível)"],
+    title: "WhatsApp Agent",
+    subtitle: "Automated support",
+    tag: "24/7 support",
+    what: "Creates an AI assistant for your WhatsApp Business that automatically replies to customers, any time of day.",
+    needs: ["WhatsApp Business account", "Access to Meta Business Manager", "Anthropic API Key", "Server or Vercel (so the webhook is reachable)"],
     steps: [
-      "Clica em 'Agente WhatsApp'",
-      "Vai ao Meta Business Manager → WhatsApp → API Setup e copia o Phone Number ID e Access Token",
-      "Cola as credenciais no Forge",
-      "Configura o agente: nome, descrição do negócio, horários, serviços e FAQs",
-      "Escolhe personalidade (simpático, profissional, direto) e idioma",
-      "Copia o Webhook URL do Forge para o Meta Dashboard",
-      "Ativa o campo 'messages' e verifica o webhook",
-      "O agente fica ativo — testa enviando uma mensagem",
+      "Click 'WhatsApp Agent'",
+      "Go to Meta Business Manager → WhatsApp → API Setup and copy the Phone Number ID and Access Token",
+      "Paste the credentials into Forge",
+      "Configure the agent: name, business description, hours, services, and FAQs",
+      "Choose a personality (friendly, professional, direct) and language",
+      "Copy the Webhook URL from Forge into the Meta Dashboard",
+      "Enable the 'messages' field and verify the webhook",
+      "The agent goes live — test it by sending a message",
     ],
-    tip: "O agente usa as tuas FAQs para responder às perguntas mais comuns. Quanto mais detalhas, melhores são as respostas.",
-    example: "Clínica dentária → agente responde sobre horários, marca consultas, esclarece dúvidas sobre tratamentos e encaminha casos urgentes.",
+    tip: "The agent uses your FAQs to answer the most common questions. The more detail you provide, the better the responses.",
+    example: "Dental clinic → the agent answers about hours, books appointments, clarifies questions about treatments, and escalates urgent cases.",
   },
   {
     id: "seo",
@@ -125,21 +125,21 @@ const DOCS = [
       </svg>
     ),
     title: "SEO Content Agent",
-    subtitle: "Conteúdo orgânico",
+    subtitle: "Organic content",
     tag: "SEO",
-    what: "Gera conteúdo otimizado para motores de pesquisa em 5 formatos: artigos de blog, landing page copy, meta tags, FAQs e descrições de serviços — tudo pronto a publicar.",
-    needs: ["Informação básica sobre o negócio", "Keywords alvo (opcional — o agente sugere as melhores)", "API Key da Anthropic nas Configurações"],
+    what: "Generates search-engine-optimized content in 5 formats: blog articles, landing page copy, meta tags, FAQs, and service descriptions — all ready to publish.",
+    needs: ["Basic information about the business", "Target keywords (optional — the agent suggests the best ones)", "Anthropic API Key in Settings"],
     steps: [
-      "Clica em 'SEO Content Agent'",
-      "Escolhe o tipo de conteúdo: Blog, Landing Page, Meta Tags, FAQs ou Serviços",
-      "Preenche o nome do negócio, categoria e descrição breve",
-      "Adiciona keywords alvo (opcional) e público-alvo",
-      "Escolhe o tom e idioma",
-      "Clica 'Gerar' e aguarda ~15 segundos",
-      "Copia cada secção individualmente ou descarrega tudo em .txt",
+      "Click 'SEO Content Agent'",
+      "Choose the content type: Blog, Landing Page, Meta Tags, FAQs, or Services",
+      "Fill in the business name, category, and a brief description",
+      "Add target keywords (optional) and target audience",
+      "Choose the tone and language",
+      "Click 'Generate' and wait ~15 seconds",
+      "Copy each section individually or download everything as .txt",
     ],
-    tip: "Para melhores resultados no Blog e Landing Page, descreve bem o público-alvo. Para Meta Tags, usa as keywords exatas que os teus clientes pesquisam no Google.",
-    example: "Restaurante italiano em Lisboa → artigo de blog de 350 palavras com H1, 3 H2s, introdução, conclusão, meta title de 58 chars, meta description de 155 chars, slug SEO e 5 keywords principais.",
+    tip: "For best results in Blog and Landing Page, describe the target audience well. For Meta Tags, use the exact keywords your customers search for on Google.",
+    example: "Italian restaurant in Lisbon → a 350-word blog article with H1, 3 H2s, intro, conclusion, a 58-char meta title, a 155-char meta description, an SEO slug, and 5 main keywords.",
   },
   {
     id: "consulting",
@@ -152,20 +152,20 @@ const DOCS = [
       </svg>
     ),
     title: "Consulting Agent",
-    subtitle: "Plano de negócio",
-    tag: "Estratégia",
-    what: "Faz um diagnóstico inteligente do teu negócio através de perguntas adaptadas e gera um plano de ação profissional em PDF.",
-    needs: ["API Key da Anthropic", "10-15 minutos para responder às perguntas"],
+    subtitle: "Business plan",
+    tag: "Strategy",
+    what: "Runs an intelligent diagnosis of your business through tailored questions and generates a professional action plan as a PDF.",
+    needs: ["Anthropic API Key", "10-15 minutes to answer the questions"],
     steps: [
-      "Clica em 'Consulting Agent'",
-      "Escolhe a área: Estratégia, Marketing, Operações, Finanças, RH, Tecnologia, Produto ou Vendas",
-      "Descreve brevemente o teu problema ou objetivo",
-      "Responde a 7 perguntas diagnóstico (texto, escala ou múltipla escolha)",
-      "O Forge gera um plano estruturado com: resumo, diagnóstico, objetivos SMART, plano de ação, KPIs e riscos",
-      "Descarrega o plano completo em PDF profissional",
+      "Click 'Consulting Agent'",
+      "Choose the area: Strategy, Marketing, Operations, Finance, HR, Technology, Product, or Sales",
+      "Briefly describe your problem or goal",
+      "Answer 7 diagnostic questions (text, scale, or multiple choice)",
+      "Forge generates a structured plan with: summary, diagnosis, SMART goals, action plan, KPIs, and risks",
+      "Download the complete plan as a professional PDF",
     ],
-    tip: "No final do plano, o Forge recomenda automaticamente outros agentes relevantes para o teu caso. Por exemplo, se o problema for de marketing, sugere criar um website ou automatizar o Instagram.",
-    example: "Problema de captação de clientes + área Marketing → plano com 3 fases, 5 objetivos SMART, 12 ações concretas, 4 KPIs e 3 riscos mitigados. PDF pronto para apresentar.",
+    tip: "At the end of the plan, Forge automatically recommends other agents relevant to your case. For example, if the problem is marketing, it suggests creating a website or automating Instagram.",
+    example: "Customer acquisition problem + Marketing area → a plan with 3 phases, 5 SMART goals, 12 concrete actions, 4 KPIs, and 3 mitigated risks. PDF ready to present.",
   },
   {
     id: "security",
@@ -178,20 +178,20 @@ const DOCS = [
       </svg>
     ),
     title: "Security Agent",
-    subtitle: "Auditoria de segurança",
-    tag: "Segurança",
-    what: "Faz uma auditoria passiva de segurança de qualquer website: analisa headers HTTP, formulários, scripts, caminhos expostos e tecnologias detetadas — sem tocar no servidor.",
-    needs: ["URL do website a auditar (público)", "API Key da Anthropic nas Configurações"],
+    subtitle: "Security audit",
+    tag: "Security",
+    what: "Runs a passive security audit of any website: analyzes HTTP headers, forms, scripts, exposed paths, and detected technologies — without touching the server.",
+    needs: ["URL of the website to audit (public)", "Anthropic API Key in Settings"],
     steps: [
-      "Clica em 'Security Agent'",
-      "Cola o URL do website que queres auditar",
-      "O Forge analisa passivamente: headers HTTP, formulários, scripts externos, paths comuns e tecnologias",
-      "A IA classifica cada problema por severidade: Critical, High, Medium, Low, Info",
-      "Recebe um score de 0-100 com rating (Crítico, Fraco, Razoável, Bom, Excelente)",
-      "Descarrega o relatório completo em PDF para entregar ao cliente",
+      "Click 'Security Agent'",
+      "Paste the URL of the website you want to audit",
+      "Forge passively analyzes: HTTP headers, forms, external scripts, common paths, and technologies",
+      "The AI classifies each issue by severity: Critical, High, Medium, Low, Info",
+      "Receive a score from 0-100 with a rating (Critical, Weak, Fair, Good, Excellent)",
+      "Download the complete report as a PDF to deliver to the client",
     ],
-    tip: "A auditoria é 100% passiva — não faz requests intrusivos, não testa vulnerabilidades ativas, não viola a lei. É uma análise de superfície baseada em headers e código público.",
-    example: "Website de restaurante → score 42/100 (Fraco) — ausência de Content-Security-Policy, formulário de contacto sem CSRF protection, jQuery desatualizado e path /admin acessível.",
+    tip: "The audit is 100% passive — it makes no intrusive requests, tests no active vulnerabilities, and breaks no laws. It is a surface-level analysis based on headers and public code.",
+    example: "Restaurant website → score 42/100 (Weak) — missing Content-Security-Policy, contact form without CSRF protection, outdated jQuery, and an accessible /admin path.",
   },
   {
     id: "email",
@@ -204,21 +204,21 @@ const DOCS = [
       </svg>
     ),
     title: "Email Marketing",
-    subtitle: "Sequências de email",
+    subtitle: "Email sequences",
     tag: "Email",
-    what: "Gera sequências completas de email marketing para 5 cenários: boas-vindas, nutrição de leads, promoção, reativação de clientes e recuperação de carrinho abandonado.",
-    needs: ["Informação básica sobre o negócio", "API Key da Anthropic nas Configurações"],
+    what: "Generates complete email marketing sequences for 5 scenarios: welcome, lead nurturing, promotion, customer re-engagement, and abandoned cart recovery.",
+    needs: ["Basic information about the business", "Anthropic API Key in Settings"],
     steps: [
-      "Clica em 'Email Marketing'",
-      "Preenche o nome do negócio, categoria e descrição",
-      "Escolhe o tipo de sequência: Welcome (5 emails), Nurture (6), Promoção (5), Reengagement (4) ou Abandoned (4)",
-      "Define o produto ou serviço principal e o tom de comunicação",
-      "Clica 'Gerar Sequência' e aguarda ~20 segundos",
-      "Cada email inclui: assunto, pré-header, corpo, CTA e dia de envio",
-      "Copia diretamente para o teu ESP (Mailchimp, ActiveCampaign, etc.)",
+      "Click 'Email Marketing'",
+      "Fill in the business name, category, and description",
+      "Choose the sequence type: Welcome (5 emails), Nurture (6), Promotion (5), Reengagement (4), or Abandoned (4)",
+      "Define the main product or service and the communication tone",
+      "Click 'Generate Sequence' and wait ~20 seconds",
+      "Each email includes: subject, pre-header, body, CTA, and send day",
+      "Copy directly into your ESP (Mailchimp, ActiveCampaign, etc.)",
     ],
-    tip: "O agente gera variantes A/B para os assuntos de cada email — testa as duas versões para identificar qual converte mais. Os assuntos têm menos de 60 caracteres para não serem cortados em mobile.",
-    example: "Clínica dentária + Welcome sequence → 5 emails: boas-vindas + oferta primeira consulta (dia 0), dicas de higiene oral (dia 3), testemunho de paciente (dia 7), serviços premium (dia 14), call urgente (dia 21).",
+    tip: "The agent generates A/B variants for each email's subject line — test both versions to find which converts more. Subjects are under 60 characters so they aren't cut off on mobile.",
+    example: "Dental clinic + Welcome sequence → 5 emails: welcome + first-appointment offer (day 0), oral hygiene tips (day 3), patient testimonial (day 7), premium services (day 14), urgent call (day 21).",
   },
   {
     id: "ads",
@@ -232,21 +232,21 @@ const DOCS = [
       </svg>
     ),
     title: "Google Ads",
-    subtitle: "Copy para campanhas",
+    subtitle: "Campaign copy",
     tag: "Paid Ads",
-    what: "Gera copy completo para campanhas Google Ads em 4 formatos: Search, Performance Max, Display e Remarketing — com headlines, descriptions, sitelinks e callouts dentro dos limites de caracteres.",
-    needs: ["Informação básica sobre o negócio", "API Key da Anthropic nas Configurações"],
+    what: "Generates complete copy for Google Ads campaigns in 4 formats: Search, Performance Max, Display, and Remarketing — with headlines, descriptions, sitelinks, and callouts within the character limits.",
+    needs: ["Basic information about the business", "Anthropic API Key in Settings"],
     steps: [
-      "Clica em 'Google Ads'",
-      "Preenche o nome do negócio, categoria, URL do website e serviço principal",
-      "Escolhe o tipo de campanha: Search, PMax, Display ou Remarketing",
-      "Define o objetivo (tráfego, leads, vendas) e o público-alvo",
-      "Clica 'Gerar Copy' e aguarda ~15 segundos",
-      "Recebe 2-3 ad groups com headlines (≤30 chars), descriptions (≤90 chars), sitelinks e callouts",
-      "Copia diretamente para o Google Ads Editor ou interface do Google Ads",
+      "Click 'Google Ads'",
+      "Fill in the business name, category, website URL, and main service",
+      "Choose the campaign type: Search, PMax, Display, or Remarketing",
+      "Define the goal (traffic, leads, sales) and the target audience",
+      "Click 'Generate Copy' and wait ~15 seconds",
+      "Receive 2-3 ad groups with headlines (≤30 chars), descriptions (≤90 chars), sitelinks, and callouts",
+      "Copy directly into Google Ads Editor or the Google Ads interface",
     ],
-    tip: "Headlines e descriptions a vermelho indicam que excedem os limites do Google (30 e 90 caracteres respetivamente). Edita antes de publicar — o Google rejeita copy fora dos limites.",
-    example: "Ginásio em Lisboa + Search → 3 ad groups: Personal Training (15 headlines, 4 descriptions, 4 sitelinks), Musculação (15+4+4) e Aulas de Grupo (15+4+4) + lista de negative keywords.",
+    tip: "Headlines and descriptions shown in red exceed Google's limits (30 and 90 characters respectively). Edit them before publishing — Google rejects copy that is over the limits.",
+    example: "Gym in Lisbon + Search → 3 ad groups: Personal Training (15 headlines, 4 descriptions, 4 sitelinks), Strength Training (15+4+4), and Group Classes (15+4+4) + a list of negative keywords.",
   },
   {
     id: "calendar",
@@ -260,21 +260,21 @@ const DOCS = [
       </svg>
     ),
     title: "Content Calendar",
-    subtitle: "Calendário editorial",
-    tag: "Conteúdo",
-    what: "Gera um calendário editorial completo de 30 dias com temas, captions prontas, hashtags, horários de publicação e ideias de imagem — para qualquer rede social.",
-    needs: ["Informação básica sobre o negócio", "API Key da Anthropic nas Configurações"],
+    subtitle: "Editorial calendar",
+    tag: "Content",
+    what: "Generates a complete 30-day editorial calendar with themes, ready-to-use captions, hashtags, posting times, and image ideas — for any social network.",
+    needs: ["Basic information about the business", "Anthropic API Key in Settings"],
     steps: [
-      "Clica em 'Content Calendar'",
-      "Preenche o nome do negócio, categoria e redes sociais alvo",
-      "Escolhe a frequência: Diário (30 posts), Dias úteis (~22) ou 3x/semana (~13)",
-      "Define os temas prioritários e o tom de comunicação",
-      "Clica 'Gerar Calendário' e aguarda ~30 segundos",
-      "Navega pelo calendário em grelha semanal (7 colunas, vista mensal completa)",
-      "Clica em qualquer dia para ver a caption, hashtags, hora ideal e ideia de imagem",
+      "Click 'Content Calendar'",
+      "Fill in the business name, category, and target social networks",
+      "Choose the frequency: Daily (30 posts), Weekdays (~22), or 3x/week (~13)",
+      "Define the priority themes and the communication tone",
+      "Click 'Generate Calendar' and wait ~30 seconds",
+      "Browse the calendar in a weekly grid (7 columns, full monthly view)",
+      "Click any day to see the caption, hashtags, ideal time, and image idea",
     ],
-    tip: "Usa os filtros por tipo de conteúdo (Educativo, Promocional, Entretenimento, Testemunho, Bastidores) para identificar o equilíbrio certo para o teu negócio. O ideal é 40% educativo, 20% promocional, 40% outros.",
-    example: "Salão de beleza + diário + Instagram → 30 dias com temas semanais fixos: segunda (dica de beleza), quarta (antes/depois), sexta (promoção fim de semana), domingo (inspiração). Cada post com caption + 10 hashtags + hora ideal.",
+    tip: "Use the content-type filters (Educational, Promotional, Entertainment, Testimonial, Behind-the-scenes) to find the right balance for your business. The ideal is 40% educational, 20% promotional, 40% other.",
+    example: "Beauty salon + daily + Instagram → 30 days with fixed weekly themes: Monday (beauty tip), Wednesday (before/after), Friday (weekend promotion), Sunday (inspiration). Each post with a caption + 10 hashtags + ideal time.",
   },
 ];
 
@@ -300,8 +300,8 @@ export function DocsModal({ onClose }: Props) {
               </svg>
             </div>
             <div>
-              <h2 className="text-white font-semibold text-sm">Documentação</h2>
-              <p className="text-gray-600 text-xs">Como usar cada agente do Forge</p>
+              <h2 className="text-white font-semibold text-sm">Documentation</h2>
+              <p className="text-gray-600 text-xs">How to use each Forge agent</p>
             </div>
           </div>
           <button onClick={onClose} className="text-gray-600 hover:text-gray-400 transition-colors">
@@ -314,7 +314,7 @@ export function DocsModal({ onClose }: Props) {
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar */}
           <div className="w-52 flex-shrink-0 border-r border-[#1e1e1e] py-3 overflow-y-auto bg-[#080808]">
-            <p className="text-[10px] uppercase tracking-widest text-gray-700 font-medium px-4 mb-2">Agentes</p>
+            <p className="text-[10px] uppercase tracking-widest text-gray-700 font-medium px-4 mb-2">Agents</p>
             {DOCS.map((d, i) => (
               <button
                 key={d.id}
@@ -357,7 +357,7 @@ export function DocsModal({ onClose }: Props) {
             <div className="px-6 py-5 space-y-5">
               {/* What you need */}
               <div>
-                <h3 className="text-[10px] uppercase tracking-widest text-gray-600 font-medium mb-3">O que precisas</h3>
+                <h3 className="text-[10px] uppercase tracking-widest text-gray-600 font-medium mb-3">What you need</h3>
                 <div className="space-y-2">
                   {doc.needs.map((n, i) => (
                     <div key={i} className="flex items-start gap-2.5">
@@ -372,7 +372,7 @@ export function DocsModal({ onClose }: Props) {
 
               {/* Steps */}
               <div>
-                <h3 className="text-[10px] uppercase tracking-widest text-gray-600 font-medium mb-3">Passo a passo</h3>
+                <h3 className="text-[10px] uppercase tracking-widest text-gray-600 font-medium mb-3">Step by step</h3>
                 <div className="space-y-2.5">
                   {doc.steps.map((s, i) => (
                     <div key={i} className="flex items-start gap-3">
@@ -392,7 +392,7 @@ export function DocsModal({ onClose }: Props) {
                     <circle cx="8" cy="8" r="6" />
                     <path d="M8 5v3M8 11v.5" />
                   </svg>
-                  <span className={`text-[10px] uppercase tracking-widest font-semibold ${c.text}`}>Dica</span>
+                  <span className={`text-[10px] uppercase tracking-widest font-semibold ${c.text}`}>Tip</span>
                 </div>
                 <p className="text-sm text-gray-400 leading-relaxed">{doc.tip}</p>
               </div>
@@ -403,7 +403,7 @@ export function DocsModal({ onClose }: Props) {
                   <svg viewBox="0 0 16 16" className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M2 4h12M2 8h8M2 12h5" />
                   </svg>
-                  <span className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Exemplo real</span>
+                  <span className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Real example</span>
                 </div>
                 <p className="text-sm text-gray-400 leading-relaxed">{doc.example}</p>
               </div>

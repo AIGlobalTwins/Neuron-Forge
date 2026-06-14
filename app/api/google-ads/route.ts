@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
+import { extractJsonObject } from "@/lib/json-extract";
 
 export type CampaignType = "search" | "pmax" | "display" | "remarketing";
 
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     const { businessName, category, description, campaignType = "search", targetAudience, location, language = "pt" } = body;
 
     if (!businessName?.trim()) {
-      return NextResponse.json({ error: "Nome do negócio obrigatório." }, { status: 400 });
+      return NextResponse.json({ error: "Business name is required." }, { status: 400 });
     }
 
     let userId: string | null = null;
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
     const anthropicKey = getAnthropicKey(userId);
     const claudeModel = getClaudeModel(userId);
     if (!anthropicKey) {
-      return NextResponse.json({ error: "Anthropic API Key não configurada. Adiciona em Configurações." }, { status: 500 });
+      return NextResponse.json({ error: "Anthropic API Key not configured. Add it in Settings." }, { status: 500 });
     }
 
     const campaign = CAMPAIGN_LABELS[campaignType as CampaignType] ?? CAMPAIGN_LABELS.search;
@@ -105,33 +106,40 @@ Notas:
 
     const res = await anthropic.messages.create({
       model: claudeModel,
-      max_tokens: 4000,
+      max_tokens: 6000,
       messages: [{ role: "user", content: prompt }],
     });
 
     const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "{}";
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) return NextResponse.json({ error: "Erro ao gerar anúncios — tenta novamente." }, { status: 500 });
-
-    try {
-      const parsed = JSON.parse(match[0]);
-      const result: GoogleAdsResult = {
-        campaignType: campaignType as CampaignType,
-        adGroups: parsed.adGroups || [],
-        negativeKeywords: parsed.negativeKeywords || [],
-        tips: parsed.tips || [],
-        budgetSuggestion: parsed.budgetSuggestion || "",
-      };
-      return NextResponse.json(result);
-    } catch {
-      return NextResponse.json({ error: "Resposta inválida — tenta novamente." }, { status: 500 });
+    const parsed = extractJsonObject<GoogleAdsResult>(raw);
+    if (!parsed || !Array.isArray(parsed.adGroups) || parsed.adGroups.length === 0) {
+      return NextResponse.json({ error: "Failed to generate ads — please try again." }, { status: 500 });
     }
+
+    // Enforce Google's hard character limits so nothing gets rejected on upload.
+    const cap = (s: string, n: number) => (typeof s === "string" ? (s.length > n ? s.slice(0, n).trim() : s) : "");
+    const adGroups: AdGroup[] = parsed.adGroups.map((g) => ({
+      theme: g.theme || "",
+      headlines: (g.headlines || []).map((h) => cap(h, 30)).filter(Boolean),
+      descriptions: (g.descriptions || []).map((d) => cap(d, 90)).filter(Boolean),
+      sitelinks: (g.sitelinks || []).map((s) => ({ title: cap(s?.title, 25), description: cap(s?.description, 35) })).filter((s) => s.title),
+      callouts: (g.callouts || []).map((c) => cap(c, 25)).filter(Boolean),
+    }));
+
+    const result: GoogleAdsResult = {
+      campaignType: campaignType as CampaignType,
+      adGroups,
+      negativeKeywords: Array.isArray(parsed.negativeKeywords) ? parsed.negativeKeywords : [],
+      tips: Array.isArray(parsed.tips) ? parsed.tips : [],
+      budgetSuggestion: parsed.budgetSuggestion || "",
+    };
+    return NextResponse.json(result);
   } catch (err) {
     console.error("[google-ads] error:", err);
     const msg = (err as Error).message || "";
     if (msg.includes("API Key") || msg.includes("authentication") || msg.includes("401")) {
-      return NextResponse.json({ error: "API Key inválida. Verifica as configurações." }, { status: 500 });
+      return NextResponse.json({ error: "Invalid API Key. Check your settings." }, { status: 500 });
     }
-    return NextResponse.json({ error: "Erro inesperado — tenta novamente." }, { status: 500 });
+    return NextResponse.json({ error: "Unexpected error — please try again." }, { status: 500 });
   }
 }

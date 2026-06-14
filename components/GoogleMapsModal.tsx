@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { saveToHistory } from "@/lib/history";
+import { DesignTypePicker } from "@/components/DesignTypePicker";
+import type { BusinessLocation } from "@/lib/google-api";
 
 interface Props {
   onClose: () => void;
@@ -40,10 +42,50 @@ export function GoogleMapsModal({ onClose }: Props) {
   const [images, setImages] = useState<string[]>([]); // base64 data URLs
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [instructions, setInstructions] = useState("");
+  const [designType, setDesignType] = useState("auto");
   const [loadingStep, setLoadingStep] = useState(0);
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Google Business Profile import
+  const [gbAvailable, setGbAvailable] = useState(false);
+  const [gbBusy, setGbBusy] = useState(false);
+  const [gbMsg, setGbMsg] = useState("");
+  const [gbLocations, setGbLocations] = useState<BusinessLocation[]>([]);
+
+  useEffect(() => {
+    fetch("/api/settings").then((r) => r.json()).then((d) => {
+      setGbAvailable(Array.isArray(d.googleProducts) && d.googleProducts.includes("business"));
+    }).catch(() => {});
+  }, []);
+
+  async function importBusiness() {
+    setGbBusy(true); setGbMsg(""); setGbLocations([]);
+    try {
+      const r = await fetch("/api/google/business/locations");
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "Failed to load locations");
+      const locs: BusinessLocation[] = d.items || [];
+      if (locs.length === 0) { setGbMsg("No business locations found."); return; }
+      if (locs.length === 1) { applyLocation(locs[0]); return; }
+      setGbLocations(locs);
+    } catch (e) {
+      setGbMsg((e as Error).message);
+    } finally {
+      setGbBusy(false);
+    }
+  }
+
+  function applyLocation(loc: BusinessLocation) {
+    if (loc.title) setName(loc.title);
+    if (loc.address) setAddress(loc.address);
+    if (loc.phone) setPhone(loc.phone);
+    if (loc.mapsUri) setMapsUrl(loc.mapsUri);
+    if (loc.category && CATEGORIES.includes(loc.category)) setCategory(loc.category);
+    setGbLocations([]);
+    setGbMsg(`Imported "${loc.title}" from Google Business Profile.`);
+  }
 
   function compressImage(file: File): Promise<string> {
     return new Promise((resolve) => {
@@ -118,6 +160,7 @@ export function GoogleMapsModal({ onClose }: Props) {
           email: email.trim(),
           images,
           instructions: instructions.trim(),
+          designType,
         }),
       });
 
@@ -165,6 +208,39 @@ export function GoogleMapsModal({ onClose }: Props) {
               </div>
             )}
 
+            {/* Google Business Profile import */}
+            {gbAvailable && (
+              <div className="bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs text-gray-400">Import details from your connected Google Business Profile.</p>
+                  <button
+                    type="button"
+                    onClick={importBusiness}
+                    disabled={gbBusy}
+                    className="shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg border border-[#2a2a2a] text-gray-300 hover:border-[#E8622A]/50 hover:text-white transition-all disabled:opacity-50"
+                  >
+                    {gbBusy ? "Loading…" : "Import from Google Business"}
+                  </button>
+                </div>
+                {gbLocations.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {gbLocations.map((loc) => (
+                      <button
+                        key={loc.id}
+                        type="button"
+                        onClick={() => applyLocation(loc)}
+                        className="w-full text-left px-3 py-2 rounded-lg bg-[#111] border border-[#2a2a2a] hover:border-[#E8622A]/50 transition-all"
+                      >
+                        <div className="text-xs text-white font-medium">{loc.title || "(untitled)"}</div>
+                        <div className="text-[10px] text-gray-500">{[loc.category, loc.address].filter(Boolean).join(" · ")}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {gbMsg && <p className={`text-[10px] mt-2 ${gbMsg.includes("Imported") ? "text-green-500" : "text-gray-500"}`}>{gbMsg}</p>}
+              </div>
+            )}
+
             {/* Maps URL */}
             <div>
               <label className="block text-xs text-gray-500 mb-1.5 uppercase tracking-wide">Google Maps URL</label>
@@ -176,7 +252,7 @@ export function GoogleMapsModal({ onClose }: Props) {
                 placeholder="https://maps.google.com/maps/place/..."
                 autoFocus
               />
-              <p className="text-xs text-gray-600 mt-1">We'll extract name, address and phone automatically</p>
+              <p className="text-xs text-gray-600 mt-1">We&apos;ll extract name, address and phone automatically</p>
             </div>
 
             <div className="flex items-center gap-3 text-xs text-gray-600">
@@ -296,17 +372,20 @@ export function GoogleMapsModal({ onClose }: Props) {
               />
             </div>
 
+            {/* Design type */}
+            <DesignTypePicker value={designType} onChange={setDesignType} />
+
             {/* Instructions */}
             <div>
               <label className="block text-xs text-gray-500 mb-1.5 uppercase tracking-wide">
-                Instruções adicionais <span className="normal-case text-gray-700">— opcional</span>
+                Additional instructions <span className="normal-case text-gray-700">— opcional</span>
               </label>
               <textarea
                 value={instructions}
                 onChange={(e) => setInstructions(e.target.value)}
                 rows={3}
                 className="w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#E8622A] transition-colors placeholder-gray-600 resize-none"
-                placeholder="Ex: Usa tons de azul escuro. O site deve ter um estilo minimalista e moderno. Destaca o serviço de entrega ao domicílio..."
+                placeholder="E.g. Use dark blue tones. The site should have a minimal, modern style. Highlight the home delivery service..."
               />
             </div>
 
@@ -468,12 +547,12 @@ export function GoogleMapsModal({ onClose }: Props) {
             {/* Next steps */}
             {!result.deployUrl && (
               <div className="px-6 py-4 border-t border-[#1e1e1e] bg-[#080808]">
-                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Como publicar o teu site</p>
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">How to publish your site</p>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { step: "1", label: "Vercel (grátis)", detail: "vercel.com/new → arrastra o HTML → deploy em 30s" },
-                    { step: "2", label: "Netlify Drop", detail: "app.netlify.com/drop → arrasta o ficheiro → URL imediato" },
-                    { step: "3", label: "GitHub Pages", detail: "Commit o HTML → Settings → Pages → publicar" },
+                    { step: "1", label: "Vercel (free)", detail: "vercel.com/new → drag the HTML → deploy in 30s" },
+                    { step: "2", label: "Netlify Drop", detail: "app.netlify.com/drop → drag the file → instant URL" },
+                    { step: "3", label: "GitHub Pages", detail: "Commit the HTML → Settings → Pages → publish" },
                   ].map((s) => (
                     <div key={s.step} className="bg-[#111] border border-[#1e1e1e] rounded-lg p-3">
                       <div className="flex items-center gap-1.5 mb-1.5">

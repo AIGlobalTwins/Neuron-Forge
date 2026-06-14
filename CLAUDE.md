@@ -68,6 +68,7 @@ Repo: https://github.com/AIGlobalTwins/Neuron-Forge
 1. **Tailwind CDN obrigatório** — Nunca usar blocos `<style>` custom no HTML gerado.
    - Razão: Claude esgota tokens a gerar CSS → `<style>` nunca fecha → browser interpreta HTML como CSS → página branca.
    - Sempre: `<script src="https://cdn.tailwindcss.com"></script>` + `tailwind.config` inline.
+   - **Motion:** o dinamismo (scroll-reveal, counters, hover-lift) vem de `lib/motion.ts` injetado por CÓDIGO (`REVEAL_CSS` no reset `<style>` + `MOTION_SCRIPT` antes de `</body>`). O modelo só adiciona hooks (`data-reveal`, `data-reveal-delay`, `data-count`) — NUNCA gerar `<style>`/`@keyframes`. Não reverter isto para CSS gerado pelo modelo.
 
 2. **Zero botões mortos** — Nunca `href="#"` solto.
    - `<a>` → sempre `href="#section-id"`, `href="tel:..."`, ou `href="mailto:..."`
@@ -145,6 +146,12 @@ components/
 
 lib/
   settings.ts                     # getAnthropicKey, getVercelToken, getClaudeModel, AVAILABLE_MODELS
+  design-engine.ts                # DESIGN_TYPES, buildDesignBrief, formatDesignBriefForPrompt, darkThemeInstruction (rotea skills por tipo)
+  json-extract.ts                 # extractJsonObject/Array — parsing robusto (fences, truncação) usado por todas as rotas
+  google.ts                       # OAuth 2.0 (scopes por produto, auth URL, code exchange, refresh, getGoogleAccessToken)
+  google-api.ts                   # REST clients: Business locations, Search Console sites/queries, Analytics props, Ads customers
+  motion.ts                       # Camada de motion DETERMINÍSTICA (REVEAL_CSS + MOTION_SCRIPT + MOTION_PROMPT) injetada nos sites gerados
+  website-planner.ts              # planWebsite (aceita designBrief), formatPlanForPrompt, deriveDesignDirection
   vercel-deploy.ts
   whatsapp-bot.ts
   history.ts                      # Client-side (localStorage), 10 tipos: maps, analyze, seo, instagram, consulting, security, email, ads, calendar
@@ -174,9 +181,28 @@ Não editar estes ficheiros. Não os referenciar em novo código.
 
 ## Skills (.claude/skills/)
 
-- **ui-ux-pro-max** — Python script (`scripts/search.py`) consultado via `execSync` para recomendações UI/UX por categoria. Resultado injetado no `sharedContext` dos prompts (máx 300 chars).
-- **taste-skill** — Ficheiros Markdown de referência de design (anti-AI patterns, tipografia, layout). Existem como referência mas **não são carregados em runtime** — as regras estão inlined nos prompts.
+Skills de design roteados em runtime por `lib/design-engine.ts` consoante o **tipo de design escolhido pelo utilizador**.
+
+- **ui-ux-pro-max** — `scripts/search.py` (BM25 sobre 67 styles, 57 font pairings, 96 palettes). Consultado via `execSync` por `lib/design-engine.ts` (domínios `style` e `typography`) para enriquecer o design brief (AI prompt keywords, effects, font pairing). Cada design type aponta para uma `Style Category` EXACTA para evitar enriquecimento conflituoso (ex: nada de neon/glass num estilo de luxo).
+- **taste-skill** — Anti-AI-slop, tipografia, cor, minimalismo. **Agora carregadas em runtime** como `ANTI_SLOP` + `MINIMALIST` em `lib/design-engine.ts`, injetadas em todos os prompts de geração.
 - **seo-forge** — Skill unificada para o SEO Agent. Combina GEO (Generative Engine Optimization com dados Princeton 2024), E-E-A-T e auditoria técnica. Regras inlined nos prompts de `app/api/seo/route.ts`.
+
+### Tipo de design escolhido pelo utilizador (NOVO)
+
+- `components/DesignTypePicker.tsx` (em `GoogleMapsModal` + `AnalyzeModal`) → campo `designType` no POST. Opções: `auto`, `minimal`, `elegant`, `luxury`, `warm`, `bold`, `playful`, `tech`, `dark`.
+- `buildDesignBrief()` resolve o tipo num `DesignBrief` e roteia os skills certos; `auto` mantém comportamento antigo (plano/fotos decidem). `dark` traduz classes light→dark via `darkThemeInstruction()` (inclui regra de contraste dos botões).
+- Brief passado a `planWebsite({ designBrief })` e usado nas fontes/Unsplash query de `analyze` e `create-from-maps`.
+
+### Integração Google (OAuth) (NOVO)
+
+- Ligar contas Google em **Settings → Google accounts**. Uma OAuth app (`GOOGLE_CLIENT_ID/SECRET` em env ou settings), refresh token por user. Fluxo: `/api/google/connect` → consent → `/api/google/callback` (CSRF nonce cookie). Guia: `GOOGLE_SETUP.md`.
+- **Consumido pelos agents:** Maps agent (`GoogleMapsModal`) tem "Import from Google Business" (`/api/google/business/locations` → prefill nome/morada/telefone/categoria/mapsUrl); SEO agent (`SeoModal`) tem "Import from Search Console" (`/api/google/searchconsole/queries` → preenche keywords reais).
+- **Login com Google:** ativar Google no dashboard Clerk (sem código).
+- Analytics/Search Console funcionam após ativar API + consent. Business Profile + Ads precisam de aprovação Google (quota / developer token).
+
+### Parsing robusto (NOVO)
+
+- `lib/json-extract.ts` substitui `raw.match(/\{[\s\S]*\}/)` em todas as rotas: remove fences, slice balanceado string-aware e **repara JSON truncado** — recupera output cortado por `max_tokens`. `google-ads` faz clamp dos limites de caracteres do Google; `social/email/calendar` normalizam saída.
 
 ---
 

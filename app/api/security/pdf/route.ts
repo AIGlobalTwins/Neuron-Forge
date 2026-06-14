@@ -216,7 +216,7 @@ export async function POST(req: NextRequest) {
   const { result } = body as { result: SecurityResult };
 
   if (!result?.url) {
-    return NextResponse.json({ error: "result é obrigatório" }, { status: 400 });
+    return NextResponse.json({ error: "result is required" }, { status: 400 });
   }
 
   const html = buildHtml(result);
@@ -231,7 +231,7 @@ export async function POST(req: NextRequest) {
       margin: { top: "0", right: "0", bottom: "20px", left: "0" },
     });
     const hostname = new URL(result.url).hostname.replace(/^www\./, "");
-    return new NextResponse(pdf, {
+    return new NextResponse(new Uint8Array(pdf), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="security-audit-${hostname}.pdf"`,

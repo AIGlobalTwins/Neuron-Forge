@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
+import { extractJsonArray } from "@/lib/json-extract";
 
 export interface Question {
   id: string;
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
     const { area, problem } = body;
 
     if (!area || !problem?.trim()) {
-      return NextResponse.json({ error: "Área e descrição do problema são obrigatórios." }, { status: 400 });
+      return NextResponse.json({ error: "Area and problem description are required." }, { status: 400 });
     }
 
     let userId: string | null = null;
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
     const anthropicKey = getAnthropicKey(userId);
     const claudeModel = getClaudeModel(userId);
     if (!anthropicKey) {
-      return NextResponse.json({ error: "Anthropic API Key não configurada. Adiciona em Configurações." }, { status: 500 });
+      return NextResponse.json({ error: "Anthropic API Key not configured. Add it in Settings." }, { status: 500 });
     }
 
     const anthropic = new Anthropic({ apiKey: anthropicKey });
@@ -73,21 +74,26 @@ Responde APENAS com JSON array (sem markdown):
     });
 
     const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "[]";
-    const match = raw.match(/\[[\s\S]*\]/);
-    if (!match) return NextResponse.json({ error: "Erro ao gerar perguntas — tenta novamente." }, { status: 500 });
-
-    try {
-      const questions: Question[] = JSON.parse(match[0]);
-      return NextResponse.json({ questions });
-    } catch {
-      return NextResponse.json({ error: "Resposta inválida — tenta novamente." }, { status: 500 });
+    const parsed = extractJsonArray<Question>(raw);
+    if (!parsed || parsed.length === 0) {
+      return NextResponse.json({ error: "Failed to generate questions — please try again." }, { status: 500 });
     }
+
+    // Keep only well-formed questions; choice needs options, scale needs bounds.
+    const questions: Question[] = parsed
+      .filter((q) => q && q.id && q.text && q.type)
+      .filter((q) => q.type !== "choice" || (Array.isArray(q.options) && q.options.length >= 2))
+      .filter((q) => q.type !== "scale" || (q.scaleMin && q.scaleMax));
+    if (questions.length === 0) {
+      return NextResponse.json({ error: "Invalid response — please try again." }, { status: 500 });
+    }
+    return NextResponse.json({ questions });
   } catch (err) {
     console.error("[consulting/questions] error:", err);
     const msg = (err as Error).message || "";
     if (msg.includes("API Key") || msg.includes("authentication") || msg.includes("401")) {
-      return NextResponse.json({ error: "API Key inválida. Verifica as configurações." }, { status: 500 });
+      return NextResponse.json({ error: "Invalid API Key. Check your settings." }, { status: 500 });
     }
-    return NextResponse.json({ error: "Erro inesperado — tenta novamente." }, { status: 500 });
+    return NextResponse.json({ error: "Unexpected error — please try again." }, { status: 500 });
   }
 }

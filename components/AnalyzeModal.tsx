@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { saveToHistory } from "@/lib/history";
+import { DesignTypePicker } from "@/components/DesignTypePicker";
 
 interface Props {
   onClose: () => void;
@@ -45,6 +46,7 @@ export function AnalyzeModal({ onClose }: Props) {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Business");
   const [instructions, setInstructions] = useState("");
+  const [designType, setDesignType] = useState("auto");
   const [loadingStep, setLoadingStep] = useState(0);
   const [result, setResult] = useState<AnalyzeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +77,7 @@ export function AnalyzeModal({ onClose }: Props) {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: url.trim(), name: name.trim() || url, category, instructions: instructions.trim() }),
+        body: JSON.stringify({ url: url.trim(), name: name.trim() || url, category, instructions: instructions.trim(), designType }),
       });
 
       const data = await res.json();
@@ -169,16 +171,19 @@ export function AnalyzeModal({ onClose }: Props) {
               </select>
             </div>
 
+            {/* Design type */}
+            <DesignTypePicker value={designType} onChange={setDesignType} />
+
             <div>
               <label className="block text-xs text-gray-500 mb-1.5 uppercase tracking-wide">
-                Instruções adicionais <span className="normal-case text-gray-700">— opcional</span>
+                Additional instructions <span className="normal-case text-gray-700">— opcional</span>
               </label>
               <textarea
                 value={instructions}
                 onChange={(e) => setInstructions(e.target.value)}
                 rows={3}
                 className="w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#E8622A] transition-colors placeholder-gray-600 resize-none"
-                placeholder="Ex: Usa tons de verde e dourado. Adiciona uma secção de galeria. O tom deve ser sofisticado e elegante..."
+                placeholder="E.g. Use green and gold tones. Add a gallery section. The tone should be sophisticated and elegant..."
               />
             </div>
 
@@ -360,12 +365,12 @@ export function AnalyzeModal({ onClose }: Props) {
             {/* Next steps */}
             {!result.deployUrl && (
               <div className="px-6 py-4 border-t border-[#1e1e1e] bg-[#080808]">
-                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Como publicar o teu redesign</p>
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">How to publish your redesign</p>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { step: "1", label: "Vercel (grátis)", detail: "vercel.com/new → arrastra o HTML → deploy em 30s" },
-                    { step: "2", label: "Netlify Drop", detail: "app.netlify.com/drop → arrasta o ficheiro → URL imediato" },
-                    { step: "3", label: "GitHub Pages", detail: "Commit o HTML → Settings → Pages → publicar" },
+                    { step: "1", label: "Vercel (free)", detail: "vercel.com/new → drag the HTML → deploy in 30s" },
+                    { step: "2", label: "Netlify Drop", detail: "app.netlify.com/drop → drag the file → instant URL" },
+                    { step: "3", label: "GitHub Pages", detail: "Commit the HTML → Settings → Pages → publish" },
                   ].map((s) => (
                     <div key={s.step} className="bg-[#111] border border-[#1e1e1e] rounded-lg p-3">
                       <div className="flex items-center gap-1.5 mb-1.5">

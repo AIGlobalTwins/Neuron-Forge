@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
+import { extractJsonObject } from "@/lib/json-extract";
 
 async function getUserId(): Promise<string | null> {
   try {
@@ -37,59 +38,59 @@ const HEADER_RULES: Record<string, { severity: SecurityFinding["severity"]; cate
   "content-security-policy": {
     severity: "high",
     category: "Headers",
-    title: "Content-Security-Policy ausente",
-    description: "Sem CSP, o browser não tem restrições sobre onde pode carregar scripts, estilos e outros recursos. Facilita ataques XSS.",
-    recommendation: "Adiciona o header Content-Security-Policy. Mínimo recomendado: default-src 'self'; script-src 'self'.",
+    title: "Content-Security-Policy missing",
+    description: "Without CSP, the browser has no restrictions on where it can load scripts, styles and other resources. This makes XSS attacks easier.",
+    recommendation: "Add the Content-Security-Policy header. Recommended minimum: default-src 'self'; script-src 'self'.",
   },
   "strict-transport-security": {
     severity: "high",
     category: "SSL/TLS",
-    title: "HSTS (HTTP Strict Transport Security) ausente",
-    description: "Sem HSTS, o browser pode ser forçado a usar HTTP em vez de HTTPS, expondo o tráfego a ataques man-in-the-middle.",
+    title: "HSTS (HTTP Strict Transport Security) missing",
+    description: "Without HSTS, the browser can be forced to use HTTP instead of HTTPS, exposing traffic to man-in-the-middle attacks.",
     recommendation: "Adiciona: Strict-Transport-Security: max-age=31536000; includeSubDomains",
   },
   "x-frame-options": {
     severity: "medium",
     category: "Headers",
-    title: "X-Frame-Options ausente",
-    description: "O website pode ser embebido em iframes noutros domínios, permitindo ataques de clickjacking.",
-    recommendation: "Adiciona: X-Frame-Options: SAMEORIGIN — ou usa Content-Security-Policy: frame-ancestors 'self'",
+    title: "X-Frame-Options missing",
+    description: "The website can be embedded in iframes on other domains, allowing clickjacking attacks.",
+    recommendation: "Add: X-Frame-Options: SAMEORIGIN — or use Content-Security-Policy: frame-ancestors 'self'",
   },
   "x-content-type-options": {
     severity: "low",
     category: "Headers",
-    title: "X-Content-Type-Options ausente",
-    description: "O browser pode tentar adivinhar o tipo MIME de recursos, o que pode levar a execução de conteúdo inesperado.",
-    recommendation: "Adiciona: X-Content-Type-Options: nosniff",
+    title: "X-Content-Type-Options missing",
+    description: "The browser may try to guess the MIME type of resources, which can lead to unexpected content execution.",
+    recommendation: "Add: X-Content-Type-Options: nosniff",
   },
   "referrer-policy": {
     severity: "low",
     category: "Privacy",
-    title: "Referrer-Policy ausente",
-    description: "O browser envia o URL completo como Referer em pedidos externos, podendo expor paths internos ou tokens em URLs.",
-    recommendation: "Adiciona: Referrer-Policy: strict-origin-when-cross-origin",
+    title: "Referrer-Policy missing",
+    description: "The browser sends the full URL as the Referer on external requests, potentially exposing internal paths or tokens in URLs.",
+    recommendation: "Add: Referrer-Policy: strict-origin-when-cross-origin",
   },
   "permissions-policy": {
     severity: "low",
     category: "Privacy",
-    title: "Permissions-Policy ausente",
-    description: "Sem este header, o website não restringe o acesso a funcionalidades sensíveis do browser (câmara, microfone, geolocalização).",
-    recommendation: "Adiciona: Permissions-Policy: camera=(), microphone=(), geolocation=()",
+    title: "Permissions-Policy missing",
+    description: "Without this header, the website does not restrict access to sensitive browser features (camera, microphone, geolocation).",
+    recommendation: "Add: Permissions-Policy: camera=(), microphone=(), geolocation=()",
   },
   "x-powered-by": {
     severity: "low",
     category: "Information Disclosure",
-    title: "X-Powered-By expõe tecnologia do servidor",
-    description: "O header X-Powered-By revela a framework/plataforma utilizada, facilitando ataques dirigidos a versões vulneráveis.",
-    recommendation: "Remove o header X-Powered-By na configuração do servidor (ex: Express: app.disable('x-powered-by'))",
+    title: "X-Powered-By exposes server technology",
+    description: "The X-Powered-By header reveals the framework/platform in use, making it easier to target vulnerable versions.",
+    recommendation: "Remove the X-Powered-By header in the server configuration (e.g. Express: app.disable('x-powered-by'))",
     presentIsBad: true,
   },
   "server": {
     severity: "info",
     category: "Information Disclosure",
-    title: "Header Server expõe software do servidor",
-    description: "O header Server revela o software e possivelmente a versão do servidor web, o que pode ajudar atacantes.",
-    recommendation: "Configura o servidor para omitir ou generalizar o header Server (ex: nginx: server_tokens off)",
+    title: "Server header exposes server software",
+    description: "The Server header reveals the software and possibly the version of the web server, which can help attackers.",
+    recommendation: "Configure the server to omit or generalize the Server header (e.g. nginx: server_tokens off)",
     presentIsBad: true,
   },
 };
@@ -190,14 +191,14 @@ export async function POST(req: NextRequest) {
     const anthropicKey = getAnthropicKey(userId);
     const claudeModel = getClaudeModel(userId);
     if (!anthropicKey) {
-      return NextResponse.json({ error: "Anthropic API Key não configurada." }, { status: 500 });
+      return NextResponse.json({ error: "Anthropic API Key not configured." }, { status: 500 });
     }
 
     const body = await req.json().catch(() => ({}));
     const { url } = body;
 
     if (!url?.trim()) {
-      return NextResponse.json({ error: "URL obrigatório." }, { status: 400 });
+      return NextResponse.json({ error: "URL is required." }, { status: 400 });
     }
 
     let targetUrl = url.trim();
@@ -205,20 +206,18 @@ export async function POST(req: NextRequest) {
 
     // 1. Fetch main page
     let html = "";
-    let responseHeaders: Record<string, string> = {};
+    const responseHeaders: Record<string, string> = {};
     let finalUrl = targetUrl;
-    let httpToHttpsRedirect = false;
 
     try {
       const res = await fetchWithTimeout(targetUrl);
       html = await res.text();
       finalUrl = res.url;
-      httpToHttpsRedirect = targetUrl.startsWith("http://") && res.url.startsWith("https://");
       res.headers.forEach((value, key) => {
         responseHeaders[key.toLowerCase()] = value;
       });
     } catch {
-      return NextResponse.json({ error: "Não foi possível aceder ao website. Verifica o URL e tenta novamente." }, { status: 400 });
+      return NextResponse.json({ error: "Could not access the website. Check the URL and try again." }, { status: 400 });
     }
 
     // 2. Generate deterministic header findings server-side
@@ -312,6 +311,10 @@ ${comments.join(" | ") || "none"}
 ${libraries.join(", ") || "none"}
 </libraries_detected>
 
+<meta_tags>
+${metaInfo || "none"}
+</meta_tags>
+
 <html_snippet>
 ${htmlStripped}
 </html_snippet>
@@ -341,16 +344,12 @@ Rules:
     });
 
     const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "";
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error("Resposta inválida do modelo");
 
-    let parsed;
-    try {
-      parsed = JSON.parse(match[0]);
-    } catch {
-      const findingsMatch = match[0].match(/"findings"\s*:\s*(\[[\s\S]*?\])/);
-      const summaryMatch = match[0].match(/"summary"\s*:\s*"([^"]*)"/);
-      const techMatch = match[0].match(/"techDetected"\s*:\s*(\[[^\]]*\])/);
+    let parsed = extractJsonObject<{ findings: SecurityFinding[]; summary: string; techDetected: string[] }>(raw);
+    if (!parsed || !Array.isArray(parsed.findings)) {
+      const findingsMatch = raw.match(/"findings"\s*:\s*(\[[\s\S]*?\])/);
+      const summaryMatch = raw.match(/"summary"\s*:\s*"([^"]*)"/);
+      const techMatch = raw.match(/"techDetected"\s*:\s*(\[[^\]]*\])/);
       if (!findingsMatch) throw new Error("Não foi possível processar a resposta. Tenta novamente.");
       parsed = {
         findings: JSON.parse(findingsMatch[1]),
@@ -359,9 +358,11 @@ Rules:
       };
     }
 
-    // Combine server-side header findings + Claude content findings
+    // Combine server-side header findings + Claude content findings.
+    // Validate severity/category enums so a hallucinated value can't slip through.
+    const VALID_SEV = ["critical", "high", "medium", "low", "info"];
     const contentFindings: SecurityFinding[] = (parsed.findings || []).filter(
-      (f: SecurityFinding) => f.severity && f.title && f.description
+      (f: SecurityFinding) => f.severity && f.title && f.description && VALID_SEV.includes(f.severity)
     );
     const allFindings = [...headerFindings, ...contentFindings];
 
@@ -371,7 +372,7 @@ Rules:
       rating: calculateRating(allFindings),
       summary: parsed.summary || "",
       headersChecked: SECURITY_HEADERS,
-      techDetected: parsed.techDetected || [],
+      techDetected: Array.from(new Set((parsed.techDetected || []).map((t) => String(t).trim()).filter(Boolean))).slice(0, 12),
     };
 
     return NextResponse.json(result);

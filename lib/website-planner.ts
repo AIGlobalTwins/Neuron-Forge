@@ -1,4 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
+import type { DesignBrief } from "@/lib/design-engine";
+import { extractJsonObject } from "@/lib/json-extract";
 
 /**
  * A structured plan that drives website generation.
@@ -59,6 +61,26 @@ const DEFAULT_PLAN: WebsitePlan = {
   contentImageQuery: "modern business interior",
 };
 
+const SERIF_FONTS = ["playfair", "cormorant", "fraunces", "lora", "newsreader", "dm serif", "instrument serif", "merriweather", "garamond", "spectral"];
+function isSerifFont(name = ""): boolean {
+  const n = name.toLowerCase();
+  return SERIF_FONTS.some((f) => n.includes(f));
+}
+
+/** Fallback plan that still honors the chosen design style when the API fails. */
+function brandedDefault(brief: DesignBrief): WebsitePlan {
+  return {
+    ...DEFAULT_PLAN,
+    primaryColor: brief.palette.primary,
+    accentColor: brief.palette.accent,
+    bgColor: brief.palette.bg,
+    fontStyle: isSerifFont(brief.fonts.heading) ? "serif" : "sans-serif",
+    spacingScale: brief.spacingScale,
+    cornerRadius: brief.cornerRadius,
+    tone: brief.aestheticKeywords || DEFAULT_PLAN.tone,
+  };
+}
+
 interface PlanInput {
   anthropic: Anthropic;
   imageBlocks: Anthropic.ImageBlockParam[];
@@ -68,6 +90,7 @@ interface PlanInput {
   isFood: boolean;
   showTeam: boolean;
   model: string;
+  designBrief?: DesignBrief;
 }
 
 /**
@@ -75,9 +98,10 @@ interface PlanInput {
  * Falls back silently to sensible defaults on any error.
  */
 export async function planWebsite(input: PlanInput): Promise<WebsitePlan> {
-  const { anthropic, imageBlocks, businessName, category, instructions, isFood, showTeam, model } = input;
+  const { anthropic, imageBlocks, businessName, category, instructions, isFood, showTeam, model, designBrief } = input;
 
   const hasPhotos = imageBlocks.length > 0;
+  const styleLocked = !!designBrief?.isCustom;
 
   const sectionsNeeded = [
     "hero",
@@ -98,7 +122,12 @@ ${showTeam ? "Team section will be included." : ""}
 ${instructions ? `🎯 USER REQUIREMENTS (highest priority — ALL design decisions must reflect these):\n${instructions}\n` : ""}
 ${hasPhotos ? "Business photos are attached — extract brand colors and personality from them." : "No photos provided — base decisions on the business name and category."}
 
-Translate any aesthetic keywords from the user (modern, rustic, luxury, minimal, cozy, elegant, industrial, warm, playful, sophisticated) into CONCRETE design choices: colors, fonts, spacing, corner radius.
+${styleLocked && designBrief ? `🎨 CHOSEN DESIGN STYLE — "${designBrief.label}" (${designBrief.styleName}). Honor it precisely:
+- Aesthetic: ${designBrief.aestheticKeywords}
+- Baseline palette: primary ${designBrief.palette.primary}, accent ${designBrief.palette.accent}, bg ${designBrief.palette.bg}. ${hasPhotos ? "Refine these from the photos ONLY if the brand colors are clearly different; keep the chosen mood." : "Use these unless the business name strongly implies otherwise."}
+- Typography mood: ${designBrief.fonts.heading} headings + ${designBrief.fonts.body} body (fontStyle "${isSerifFont(designBrief.fonts.heading) ? "serif" : "sans-serif"}").
+- Spacing scale: ${designBrief.spacingScale}. Corner radius: ${designBrief.cornerRadius}. Theme: ${designBrief.theme}.
+` : "Translate any aesthetic keywords from the user (modern, rustic, luxury, minimal, cozy, elegant, industrial, warm, playful, sophisticated) into CONCRETE design choices: colors, fonts, spacing, corner radius."}
 
 Output a JSON plan with this exact shape:
 {
@@ -142,29 +171,37 @@ Rules:
     });
 
     const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "{}";
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) {
+    const parsed = extractJsonObject<Partial<WebsitePlan>>(raw);
+    if (!parsed) {
       console.warn("[planner] no JSON found in response");
-      return DEFAULT_PLAN;
+      return styleLocked && designBrief ? brandedDefault(designBrief) : DEFAULT_PLAN;
     }
 
-    const parsed = JSON.parse(match[0]) as Partial<WebsitePlan>;
+    // When the user locked a design style, its baseline wins for the structural
+    // knobs (fonts/spacing/radius) and for colors when no photos override them.
+    const lockColors = styleLocked && !hasPhotos && designBrief;
 
     return {
-      primaryColor: parsed.primaryColor || DEFAULT_PLAN.primaryColor,
-      accentColor: parsed.accentColor || DEFAULT_PLAN.accentColor,
-      bgColor: parsed.bgColor || DEFAULT_PLAN.bgColor,
-      fontStyle: parsed.fontStyle === "serif" ? "serif" : "sans-serif",
+      primaryColor: (lockColors ? designBrief!.palette.primary : parsed.primaryColor) || DEFAULT_PLAN.primaryColor,
+      accentColor: (lockColors ? designBrief!.palette.accent : parsed.accentColor) || DEFAULT_PLAN.accentColor,
+      bgColor: (lockColors ? designBrief!.palette.bg : parsed.bgColor) || DEFAULT_PLAN.bgColor,
+      fontStyle: styleLocked && designBrief
+        ? (isSerifFont(designBrief.fonts.heading) ? "serif" : "sans-serif")
+        : (parsed.fontStyle === "serif" ? "serif" : "sans-serif"),
       brandPersonality: parsed.brandPersonality || DEFAULT_PLAN.brandPersonality,
       suggestedTagline: parsed.suggestedTagline || "",
       tone: parsed.tone || DEFAULT_PLAN.tone,
       visualStyle: parsed.visualStyle || DEFAULT_PLAN.visualStyle,
-      spacingScale: ["compact", "comfortable", "generous"].includes(parsed.spacingScale as string)
-        ? (parsed.spacingScale as WebsitePlan["spacingScale"])
-        : "comfortable",
-      cornerRadius: ["sharp", "soft", "pill"].includes(parsed.cornerRadius as string)
-        ? (parsed.cornerRadius as WebsitePlan["cornerRadius"])
-        : "soft",
+      spacingScale: styleLocked && designBrief
+        ? designBrief.spacingScale
+        : (["compact", "comfortable", "generous"].includes(parsed.spacingScale as string)
+          ? (parsed.spacingScale as WebsitePlan["spacingScale"])
+          : "comfortable"),
+      cornerRadius: styleLocked && designBrief
+        ? designBrief.cornerRadius
+        : (["sharp", "soft", "pill"].includes(parsed.cornerRadius as string)
+          ? (parsed.cornerRadius as WebsitePlan["cornerRadius"])
+          : "soft"),
       sectionHints: {
         hero: parsed.sectionHints?.hero || DEFAULT_PLAN.sectionHints.hero,
         about: parsed.sectionHints?.about || DEFAULT_PLAN.sectionHints.about,
@@ -180,7 +217,7 @@ Rules:
     };
   } catch (err) {
     console.warn("[planner] failed, using defaults:", (err as Error).message);
-    return DEFAULT_PLAN;
+    return styleLocked && designBrief ? brandedDefault(designBrief) : DEFAULT_PLAN;
   }
 }
 

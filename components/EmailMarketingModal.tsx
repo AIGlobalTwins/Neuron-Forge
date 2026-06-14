@@ -11,23 +11,23 @@ interface Props {
 type Step = "form" | "loading" | "result";
 
 const SEQUENCES: { id: SequenceType; label: string; desc: string; icon: string }[] = [
-  { id: "welcome",      label: "Boas-vindas",         desc: "Onboarding de novos subscritores",        icon: "👋" },
-  { id: "nurture",      label: "Nurturing",           desc: "Nutrição de leads até à conversão",        icon: "🌱" },
-  { id: "promotion",    label: "Promoção",            desc: "Campanha com urgência e escassez",          icon: "🔥" },
-  { id: "reengagement", label: "Re-engagement",       desc: "Reativar contactos inativos",              icon: "💫" },
-  { id: "abandoned",    label: "Carrinho abandonado",  desc: "Recuperar leads/carrinhos perdidos",       icon: "🛒" },
+  { id: "welcome",      label: "Welcome",             desc: "Onboarding for new subscribers",           icon: "👋" },
+  { id: "nurture",      label: "Nurturing",           desc: "Nurture leads toward conversion",          icon: "🌱" },
+  { id: "promotion",    label: "Promotion",           desc: "Campaign with urgency and scarcity",        icon: "🔥" },
+  { id: "reengagement", label: "Re-engagement",       desc: "Reactivate inactive contacts",             icon: "💫" },
+  { id: "abandoned",    label: "Abandoned cart",       desc: "Recover lost leads/carts",                 icon: "🛒" },
 ];
 
 const TONES = [
-  { id: "professional", label: "Profissional" },
-  { id: "friendly",     label: "Simpático" },
-  { id: "bold",         label: "Direto" },
+  { id: "professional", label: "Professional" },
+  { id: "friendly",     label: "Friendly" },
+  { id: "bold",         label: "Bold" },
 ];
 
 const LOADING_STEPS = [
-  { label: "A analisar o teu negócio...", duration: 2500 },
-  { label: "A criar a sequência de emails...", duration: 5000 },
-  { label: "A refinar o copywriting...", duration: 0 },
+  { label: "Analyzing your business...", duration: 2500 },
+  { label: "Creating the email sequence...", duration: 5000 },
+  { label: "Refining the copywriting...", duration: 0 },
 ];
 
 function MailIcon({ className = "w-5 h-5" }: { className?: string }) {
@@ -51,7 +51,7 @@ function CopyIcon() {
 export function EmailMarketingModal({ onClose }: Props) {
   const [step, setStep] = useState<Step>("form");
   const [businessName, setBusinessName] = useState("");
-  const [category, setCategory] = useState("Negócio");
+  const [category, setCategory] = useState("Business");
   const [description, setDescription] = useState("");
   const [sequenceType, setSequenceType] = useState<SequenceType>("welcome");
   const [tone, setTone] = useState("professional");
@@ -93,7 +93,7 @@ export function EmailMarketingModal({ onClose }: Props) {
         body: JSON.stringify({ businessName, category, description, sequenceType, tone }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Erro desconhecido");
+      if (!res.ok) throw new Error(data.error || "Unknown error");
       setEmails(data.emails);
       setTips(data.tips);
       setSubjectVariants(data.subjectLineVariants);
@@ -128,9 +128,9 @@ export function EmailMarketingModal({ onClose }: Props) {
             <div>
               <h2 className="text-white font-semibold text-sm">Email Marketing Agent</h2>
               <p className="text-gray-600 text-xs">
-                {step === "form" && "Cria sequências de email profissionais"}
+                {step === "form" && "Create professional email sequences"}
                 {step === "loading" && LOADING_STEPS[loadingStep]?.label}
-                {step === "result" && `${emails.length} emails gerados`}
+                {step === "result" && `${emails.length} emails generated`}
               </p>
             </div>
           </div>
@@ -146,16 +146,16 @@ export function EmailMarketingModal({ onClose }: Props) {
           {step === "form" && (
             <div className="px-6 py-6 space-y-5">
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Nome do negócio *</label>
-                <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="Ex: Clínica Dental Lisboa" className={inputClass} />
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">Business name *</label>
+                <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="E.g. Lisbon Dental Clinic" className={inputClass} />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Categoria</label>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Category</label>
                   <div className="relative">
                     <select value={category} onChange={(e) => setCategory(e.target.value)} className={selectClass}>
-                      {["Restaurante / Café", "Saúde / Clínica", "Fitness / Ginásio", "E-commerce / Loja", "Serviços / Consultoria", "SaaS / Tecnologia", "Educação", "Imobiliário", "Outro"].map((c) => (
+                      {["Restaurant / Café", "Health / Clinic", "Fitness / Gym", "E-commerce / Store", "Services / Consulting", "SaaS / Technology", "Education", "Real Estate", "Other"].map((c) => (
                         <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
@@ -163,7 +163,7 @@ export function EmailMarketingModal({ onClose }: Props) {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Tom</label>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Tone</label>
                   <div className="flex gap-2">
                     {TONES.map((t) => (
                       <button key={t.id} onClick={() => setTone(t.id)} className={`flex-1 py-2.5 rounded-xl text-xs font-medium border transition-all ${tone === t.id ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-400" : "border-[#2a2a2a] text-gray-500 hover:border-[#3a3a3a]"}`}>{t.label}</button>
@@ -173,12 +173,12 @@ export function EmailMarketingModal({ onClose }: Props) {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Sobre o negócio</label>
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="O que fazem, o que vos diferencia, público-alvo..." rows={3} className={`${inputClass} resize-none`} />
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">About the business</label>
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What you do, what sets you apart, target audience..." rows={3} className={`${inputClass} resize-none`} />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-3 uppercase tracking-widest">Tipo de Sequência</label>
+                <label className="block text-xs font-medium text-gray-400 mb-3 uppercase tracking-widest">Sequence Type</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {SEQUENCES.map((s) => (
                     <button key={s.id} onClick={() => setSequenceType(s.id)} className={`text-left px-4 py-3 rounded-xl border transition-all duration-200 ${sequenceType === s.id ? "border-cyan-500/60 bg-cyan-500/5 text-white" : "border-[#1e1e1e] text-gray-500 hover:border-[#2a2a2a] hover:text-gray-400"}`}>
@@ -206,7 +206,7 @@ export function EmailMarketingModal({ onClose }: Props) {
               </div>
               <div className="text-center space-y-1">
                 <p className="text-white font-medium text-sm">{LOADING_STEPS[loadingStep]?.label}</p>
-                <p className="text-gray-600 text-xs">Claude está a escrever os teus emails...</p>
+                <p className="text-gray-600 text-xs">Claude is writing your emails...</p>
               </div>
               <div className="flex gap-1.5">
                 {LOADING_STEPS.map((_, i) => (
@@ -251,7 +251,7 @@ export function EmailMarketingModal({ onClose }: Props) {
                         <div>
                           <div className="flex items-center justify-between mb-1">
                             <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Body</p>
-                            <button onClick={() => copy(email.body, `body-${i}`)} className={`text-[10px] ${copiedKey === `body-${i}` ? "text-cyan-400" : "text-gray-600 hover:text-gray-400"}`}>{copiedKey === `body-${i}` ? "Copiado" : "Copiar"}</button>
+                            <button onClick={() => copy(email.body, `body-${i}`)} className={`text-[10px] ${copiedKey === `body-${i}` ? "text-cyan-400" : "text-gray-600 hover:text-gray-400"}`}>{copiedKey === `body-${i}` ? "Copied" : "Copy"}</button>
                           </div>
                           <div className="bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-4 py-3">
                             <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{email.body}</p>
@@ -263,7 +263,7 @@ export function EmailMarketingModal({ onClose }: Props) {
                             <span className="inline-block px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-xs text-cyan-400 font-semibold">{email.cta}</span>
                           </div>
                           <div>
-                            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1">Envio</p>
+                            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1">Send</p>
                             <span className="text-xs text-gray-400">{email.sendDay}</span>
                           </div>
                         </div>
@@ -276,7 +276,7 @@ export function EmailMarketingModal({ onClose }: Props) {
               {/* Subject variants */}
               {subjectVariants.length > 0 && (
                 <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4">
-                  <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Variantes A/B de Subject Lines</p>
+                  <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">A/B Subject Line Variants</p>
                   <div className="space-y-2">
                     {subjectVariants.map((v, i) => (
                       <div key={i} className="flex items-center gap-2 text-xs text-gray-400">
@@ -290,7 +290,7 @@ export function EmailMarketingModal({ onClose }: Props) {
               {/* Tips */}
               {tips.length > 0 && (
                 <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4">
-                  <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Dicas de Implementação</p>
+                  <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3">Implementation Tips</p>
                   <div className="space-y-2">
                     {tips.map((tip, i) => (
                       <div key={i} className="flex items-start gap-2 text-xs text-gray-400 leading-relaxed">
@@ -302,7 +302,7 @@ export function EmailMarketingModal({ onClose }: Props) {
               )}
 
               <button onClick={() => { setEmails([]); setTips([]); setSubjectVariants([]); setStep("form"); }} className="w-full py-2.5 rounded-xl text-sm text-gray-500 border border-[#1e1e1e] hover:border-[#2a2a2a] hover:text-gray-400 transition-all">
-                Nova sequência
+                New sequence
               </button>
             </div>
           )}
@@ -313,7 +313,7 @@ export function EmailMarketingModal({ onClose }: Props) {
           <div className="px-6 pb-6 pt-4 border-t border-[#1e1e1e] shrink-0">
             <button onClick={handleGenerate} disabled={!businessName.trim()} className="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-cyan-600 hover:bg-cyan-500 text-white flex items-center justify-center gap-2">
               <MailIcon className="w-4 h-4" />
-              Gerar Sequência
+              Generate Sequence
             </button>
           </div>
         )}

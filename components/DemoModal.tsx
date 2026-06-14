@@ -35,7 +35,7 @@ export function DemoModal({ tool, onClose, onSetupKey }: Props) {
             <span className="text-xs bg-[#E8622A]/20 text-[#E8622A] px-2 py-0.5 rounded-full font-medium border border-[#E8622A]/30">DEMO</span>
             <div>
               <div className="font-bold text-white text-sm">{TOOL_TITLES[tool]}</div>
-              <div className="text-xs text-gray-500">Exemplo pré-gerado — sem API Key necessária</div>
+              <div className="text-xs text-gray-500">Pre-generated example — no API Key required</div>
             </div>
           </div>
           <button onClick={onClose} className="text-gray-500 hover:text-white text-xl transition-colors">×</button>
@@ -58,9 +58,9 @@ export function DemoModal({ tool, onClose, onSetupKey }: Props) {
 const TOOL_TITLES: Record<DemoTool, string> = {
   maps: "Create from Google Maps",
   analyze: "Analyze & Redesign",
-  instagram: "Posts para Instagram",
+  instagram: "Instagram Posts",
   consulting: "Consulting Agent",
-  whatsapp: "Agente WhatsApp",
+  whatsapp: "WhatsApp Agent",
   seo: "SEO Content Agent",
   security: "Security Auditor",
   email: "Email Marketing Agent",
@@ -73,7 +73,7 @@ function DemoWebsite({ id, onSetupKey }: { id: string; onSetupKey: () => void })
   return (
     <div>
       <div className="px-6 py-3 border-b border-[#1e1e1e] bg-[#0d0d0d] text-xs text-gray-500">
-        Website gerado para: <span className="text-white">La Vecchia Roma II</span> · Restaurante Italiano · Lisboa
+        Website generated for: <span className="text-white">La Vecchia Roma II</span> · Italian Restaurant · Lisbon
       </div>
       <div className="h-72 overflow-hidden border-b border-[#1e1e1e]">
         <iframe
@@ -84,16 +84,16 @@ function DemoWebsite({ id, onSetupKey }: { id: string; onSetupKey: () => void })
       </div>
       <div className="p-6">
         <div className="bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl p-4 mb-4">
-          <div className="text-xs text-gray-500 mb-3">O que foi gerado automaticamente:</div>
+          <div className="text-xs text-gray-500 mb-3">What was generated automatically:</div>
           <div className="grid grid-cols-2 gap-2">
-            {["Navbar com menu", "Hero com foto de fundo", "Secção de Serviços", "Porquê Nos", "Testemunhos", "Formulário de Reserva", "Mapa integrado", "Footer completo"].map((f) => (
+            {["Navbar with menu", "Hero with background photo", "Services section", "Why Us", "Testimonials", "Reservation form", "Embedded map", "Complete footer"].map((f) => (
               <div key={f} className="flex items-center gap-2 text-xs text-gray-400">
                 <span className="text-green-400">✓</span> {f}
               </div>
             ))}
           </div>
         </div>
-        <SetupCTA onSetupKey={onSetupKey} label="Gerar o meu próprio website" />
+        <SetupCTA onSetupKey={onSetupKey} label="Generate my own website" />
       </div>
     </div>
   );
@@ -108,7 +108,7 @@ function DemoPosts({ posts, copiedIdx, onCopy, onSetupKey }: {
 }) {
   return (
     <div className="p-6 space-y-5">
-      <div className="text-xs text-gray-500 mb-2">3 posts gerados para <span className="text-white">La Vecchia Roma</span> · tom simpático</div>
+      <div className="text-xs text-gray-500 mb-2">3 posts generated for <span className="text-white">La Vecchia Roma</span> · friendly tone</div>
       {posts.map((post, i) => (
         <div key={i} className="bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2 border-b border-[#1e1e1e]">
@@ -117,20 +117,20 @@ function DemoPosts({ posts, copiedIdx, onCopy, onSetupKey }: {
               onClick={() => onCopy(post.caption + "\n\n" + post.hashtags, i)}
               className="text-xs text-gray-500 hover:text-[#E8622A] transition flex items-center gap-1"
             >
-              {copiedIdx === i ? "✓ Copiado" : "Copiar"}
+              {copiedIdx === i ? "✓ Copied" : "Copy"}
             </button>
           </div>
           <div className="p-4 space-y-3">
             <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">{post.caption}</p>
             <p className="text-xs text-[#E8622A]/80 leading-relaxed">{post.hashtags}</p>
             <div className="bg-[#1a1a1a] rounded-lg p-3">
-              <div className="text-xs text-gray-600 mb-1">Sugestão de imagem:</div>
+              <div className="text-xs text-gray-600 mb-1">Image suggestion:</div>
               <p className="text-xs text-gray-400 italic">{post.imagePrompt}</p>
             </div>
           </div>
         </div>
       ))}
-      <SetupCTA onSetupKey={onSetupKey} label="Gerar posts para o meu negócio" />
+      <SetupCTA onSetupKey={onSetupKey} label="Generate posts for my business" />
     </div>
   );
 }
@@ -140,12 +140,12 @@ function DemoConsulting({ plan, onSetupKey }: { plan: typeof DEMO_CONSULTING_PLA
   return (
     <div className="p-6 space-y-5">
       <div className="bg-[#E8622A]/5 border border-[#E8622A]/20 rounded-xl p-4">
-        <div className="text-xs text-[#E8622A] font-medium mb-1">Resumo Executivo</div>
+        <div className="text-xs text-[#E8622A] font-medium mb-1">Executive Summary</div>
         <p className="text-sm text-gray-300 leading-relaxed">{plan.executiveSummary}</p>
       </div>
 
       <div>
-        <div className="text-xs text-gray-500 uppercase tracking-widest mb-3">Diagnóstico</div>
+        <div className="text-xs text-gray-500 uppercase tracking-widest mb-3">Diagnosis</div>
         <ul className="space-y-2">
           {plan.diagnosis.map((d, i) => (
             <li key={i} className="flex items-start gap-2 text-sm text-gray-400">
@@ -156,7 +156,7 @@ function DemoConsulting({ plan, onSetupKey }: { plan: typeof DEMO_CONSULTING_PLA
       </div>
 
       <div>
-        <div className="text-xs text-gray-500 uppercase tracking-widest mb-3">Plano de Ação</div>
+        <div className="text-xs text-gray-500 uppercase tracking-widest mb-3">Action Plan</div>
         <div className="space-y-3">
           {plan.actions.map((phase, i) => (
             <div key={i} className="bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl p-4">
@@ -173,7 +173,7 @@ function DemoConsulting({ plan, onSetupKey }: { plan: typeof DEMO_CONSULTING_PLA
         </div>
       </div>
 
-      <SetupCTA onSetupKey={onSetupKey} label="Criar o meu plano de negócio" />
+      <SetupCTA onSetupKey={onSetupKey} label="Create my business plan" />
     </div>
   );
 }
@@ -181,18 +181,18 @@ function DemoConsulting({ plan, onSetupKey }: { plan: typeof DEMO_CONSULTING_PLA
 /* ── WhatsApp Demo ── */
 function DemoWhatsApp({ onSetupKey }: { onSetupKey: () => void }) {
   const conversation = [
-    { from: "client", text: "Olá! Quais são os horários de funcionamento?" },
-    { from: "agent", text: "Olá! 😊 Estamos abertos de segunda a sexta das 9h às 20h, e aos sábados das 10h às 18h. Posso ajudar com mais alguma coisa?" },
-    { from: "client", text: "Sim! Gostava de saber os preços dos serviços de massagem." },
-    { from: "agent", text: "Claro! Temos as seguintes opções:\n\n• Massagem relaxante (60 min) — €45\n• Massagem desportiva (60 min) — €55\n• Massagem de pedras quentes (90 min) — €75\n\nDeseja marcar uma sessão? 🙏" },
-    { from: "client", text: "Sim! Pode ser amanhã às 15h?" },
-    { from: "agent", text: "Vou verificar a disponibilidade! Para confirmar a marcação, preciso do seu nome completo e número de telefone. Pode partilhar aqui? 📅" },
+    { from: "client", text: "Hi! What are your opening hours?" },
+    { from: "agent", text: "Hi! 😊 We're open Monday to Friday from 9am to 8pm, and Saturdays from 10am to 6pm. Can I help with anything else?" },
+    { from: "client", text: "Yes! I'd like to know the prices for your massage services." },
+    { from: "agent", text: "Of course! We have the following options:\n\n• Relaxing massage (60 min) — €45\n• Sports massage (60 min) — €55\n• Hot stone massage (90 min) — €75\n\nWould you like to book a session? 🙏" },
+    { from: "client", text: "Yes! Could it be tomorrow at 3pm?" },
+    { from: "agent", text: "I'll check availability! To confirm the booking, I need your full name and phone number. Could you share them here? 📅" },
   ];
 
   return (
     <div className="p-6">
       <div className="text-xs text-gray-500 mb-4">
-        Exemplo de conversa — Spa & Bem-Estar · Agente: <span className="text-white">Sofia</span>
+        Sample conversation — Spa & Wellness · Agent: <span className="text-white">Sofia</span>
       </div>
       <div className="bg-[#075E54] rounded-2xl overflow-hidden mb-5">
         <div className="bg-[#075E54] px-4 py-3 flex items-center gap-3 border-b border-[#128C7E]">
@@ -217,16 +217,16 @@ function DemoWhatsApp({ onSetupKey }: { onSetupKey: () => void }) {
         </div>
       </div>
       <div className="bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl p-4 mb-5">
-        <div className="text-xs text-gray-500 mb-2">O agente foi configurado com:</div>
+        <div className="text-xs text-gray-500 mb-2">The agent was configured with:</div>
         <div className="space-y-1">
-          {["Nome e personalidade do negócio", "Horários de funcionamento", "Lista de serviços e preços", "FAQs personalizadas", "Idioma: Português"].map((f) => (
+          {["Business name and personality", "Opening hours", "List of services and prices", "Custom FAQs", "Language: English"].map((f) => (
             <div key={f} className="flex items-center gap-2 text-xs text-gray-400">
               <span className="text-green-400">✓</span> {f}
             </div>
           ))}
         </div>
       </div>
-      <SetupCTA onSetupKey={onSetupKey} label="Criar o meu agente WhatsApp" />
+      <SetupCTA onSetupKey={onSetupKey} label="Create my WhatsApp agent" />
     </div>
   );
 }
@@ -242,14 +242,14 @@ function DemoSeo({ data, onSetupKey }: { data: typeof DEMO_SEO; onSetupKey: () =
   return (
     <div className="p-6 space-y-4">
       <div className="text-xs text-gray-500 mb-2">
-        Artigo de Blog gerado para <span className="text-white">La Vecchia Roma</span> · ~{data.wordCount} palavras
+        Blog article generated for <span className="text-white">La Vecchia Roma</span> · ~{data.wordCount} words
       </div>
       {data.sections.map((s, i) => (
         <div key={i} className="bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl overflow-hidden group">
           <div className="flex items-center justify-between px-4 py-2 border-b border-[#1e1e1e]">
             <span className="text-xs font-semibold text-[#E8622A]">{s.title}</span>
             <button onClick={() => copy(s.content, i)} className="text-xs text-gray-600 hover:text-[#E8622A] transition opacity-0 group-hover:opacity-100">
-              {copied === i ? "✓" : "Copiar"}
+              {copied === i ? "✓" : "Copy"}
             </button>
           </div>
           <p className="px-4 py-3 text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{s.content}</p>
@@ -260,7 +260,7 @@ function DemoSeo({ data, onSetupKey }: { data: typeof DEMO_SEO; onSetupKey: () =
           <span key={i} className="text-xs px-2 py-1 bg-[#E8622A]/10 border border-[#E8622A]/20 text-[#E8622A] rounded-full">{kw}</span>
         ))}
       </div>
-      <SetupCTA onSetupKey={onSetupKey} label="Gerar conteúdo SEO para o meu negócio" />
+      <SetupCTA onSetupKey={onSetupKey} label="Generate SEO content for my business" />
     </div>
   );
 }
@@ -270,9 +270,9 @@ function DemoSetupKey({ label, onSetupKey }: { label: string; onSetupKey: () => 
   return (
     <div className="p-6 space-y-4">
       <p className="text-sm text-gray-400 leading-relaxed">
-        O <span className="text-white font-medium">{label}</span> analisa qualquer website em tempo real — verifica headers de segurança, paths expostos, scripts inline, formulários e libraries desatualizadas.
+        The <span className="text-white font-medium">{label}</span> analyzes any website in real time — it checks security headers, exposed paths, inline scripts, forms, and outdated libraries.
       </p>
-      <SetupCTA onSetupKey={onSetupKey} label={`Experimentar o ${label}`} />
+      <SetupCTA onSetupKey={onSetupKey} label={`Try the ${label}`} />
     </div>
   );
 }
@@ -281,8 +281,8 @@ function DemoSetupKey({ label, onSetupKey }: { label: string; onSetupKey: () => 
 function SetupCTA({ onSetupKey, label }: { onSetupKey: () => void; label: string }) {
   return (
     <div className="bg-[#0d0d0d] border border-[#E8622A]/20 rounded-xl p-4">
-      <div className="text-sm text-white font-medium mb-1">Pronto para usar?</div>
-      <p className="text-xs text-gray-500 mb-3">Adiciona a tua API Key da Anthropic (grátis para começar) e gera o teu próprio resultado em minutos.</p>
+      <div className="text-sm text-white font-medium mb-1">Ready to get started?</div>
+      <p className="text-xs text-gray-500 mb-3">Add your Anthropic API Key (free to start) and generate your own result in minutes.</p>
       <button
         onClick={onSetupKey}
         className="w-full py-2.5 bg-[#E8622A] hover:bg-[#d4561f] text-white text-sm font-semibold rounded-xl transition"

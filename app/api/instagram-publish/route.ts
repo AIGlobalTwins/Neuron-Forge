@@ -8,17 +8,17 @@ export async function POST(req: NextRequest) {
   const { caption, imageUrl } = body;
 
   if (!caption) {
-    return NextResponse.json({ error: "caption é obrigatório" }, { status: 400 });
+    return NextResponse.json({ error: "caption is required" }, { status: 400 });
   }
   if (!imageUrl) {
-    return NextResponse.json({ error: "imageUrl é obrigatório para publicar no Instagram" }, { status: 400 });
+    return NextResponse.json({ error: "imageUrl is required to publish to Instagram" }, { status: 400 });
   }
 
   const token = getInstagramToken();
   const accountId = getInstagramAccountId();
 
   if (!token || !accountId) {
-    return NextResponse.json({ error: "Instagram não configurado. Adiciona o Access Token e Account ID nas Configurações." }, { status: 400 });
+    return NextResponse.json({ error: "Instagram not configured. Add the Access Token and Account ID in Settings." }, { status: 400 });
   }
 
   // Step 1: Create media container

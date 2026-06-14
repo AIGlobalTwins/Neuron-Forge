@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
+import { extractJsonArray } from "@/lib/json-extract";
 
 export interface GeneratedPost {
   caption: string;
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
   const { businessName, category, description, postType, tone, count = 1 } = body;
 
   if (!businessName || !description) {
-    return NextResponse.json({ error: "businessName e description são obrigatórios" }, { status: 400 });
+    return NextResponse.json({ error: "businessName and description are required" }, { status: 400 });
   }
 
   let userId: string | null = null;
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
   const anthropicKey = getAnthropicKey(userId);
   const claudeModel = getClaudeModel(userId);
   if (!anthropicKey) {
-    return NextResponse.json({ error: "Anthropic API Key não configurada. Adiciona nas Configurações." }, { status: 500 });
+    return NextResponse.json({ error: "Anthropic API Key not configured. Add it in Settings." }, { status: 500 });
   }
 
   const anthropic = new Anthropic({ apiKey: anthropicKey });
@@ -54,14 +55,14 @@ Tipo de post: ${postTypeDesc}
 Tom: ${toneDesc}
 
 Regras:
-- Caption: máximo 2200 caracteres, começa com um gancho forte (primeira linha = hook que para o scroll)
-- Inclui chamada à ação clara no final
-- Hashtags: 15-20 hashtags relevantes misturando PT e EN, separadas por espaço
-- Image prompt: descreve uma imagem fotorrealista ideal para este post (para usar no Canva ou IA)
-- Escreve em Português de Portugal
+- Gera EXACTAMENTE ${count} post(s) — nem mais, nem menos. Cada post com ângulo/gancho diferente.
+- Caption (estrutura): linha 1 = hook que para o scroll; 2-4 frases de corpo com 1 dado/benefício concreto; última linha = chamada à ação clara. Máximo 2200 caracteres. Usa quebras de linha entre blocos.
+- Hashtags: 15-20 hashtags relevantes misturando PT e EN, separadas por espaço (nicho + locais + amplas)
+- Image prompt: descreve uma imagem fotorrealista ideal para este post (sujeito, enquadramento, luz, mood) — para usar no Canva ou IA
+- Escreve em Português de Portugal. ${toneDesc.includes("emoji") ? "Emojis com moderação, alinhados ao tom." : "Sem emojis a não ser que o tom o peça."}
 - NÃO uses aspas em volta da caption
 
-Responde APENAS com um JSON array (sem markdown):
+Responde APENAS com um JSON array de ${count} objecto(s) (sem markdown):
 [
   {
     "caption": "texto completo do post",
@@ -72,21 +73,27 @@ Responde APENAS com um JSON array (sem markdown):
 
   const res = await anthropic.messages.create({
     model: claudeModel,
-    max_tokens: 2000,
+    max_tokens: Math.min(8000, 1500 + Number(count) * 900),
     messages: [{ role: "user", content: prompt }],
   });
 
   const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "[]";
-  const match = raw.match(/\[[\s\S]*\]/);
-  if (!match) {
+  const parsed = extractJsonArray<GeneratedPost>(raw);
+  if (!parsed) {
     return NextResponse.json({ error: "Erro ao gerar posts — tenta novamente" }, { status: 500 });
   }
 
-  let posts: GeneratedPost[];
-  try {
-    posts = JSON.parse(match[0]);
-  } catch {
-    return NextResponse.json({ error: "Resposta inválida do Claude" }, { status: 500 });
+  // Normalize: keep valid posts, clamp caption to Instagram's 2200 limit.
+  const posts: GeneratedPost[] = parsed
+    .filter((p) => p && typeof p.caption === "string")
+    .map((p) => ({
+      caption: p.caption.length > 2200 ? p.caption.slice(0, 2197) + "…" : p.caption,
+      hashtags: typeof p.hashtags === "string" ? p.hashtags : "",
+      imagePrompt: typeof p.imagePrompt === "string" ? p.imagePrompt : "",
+    }));
+
+  if (posts.length === 0) {
+    return NextResponse.json({ error: "Invalid response from Claude — please try again" }, { status: 500 });
   }
 
   return NextResponse.json({ posts });

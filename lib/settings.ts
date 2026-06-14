@@ -5,7 +5,7 @@ const DATA_DIR = path.join(process.cwd(), "data");
 
 export const AVAILABLE_MODELS = [
   { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6", desc: "Equilibrado — rápido e capaz" },
-  { id: "claude-opus-4-6", label: "Claude Opus 4.6", desc: "Mais capaz — mais lento e caro" },
+  { id: "claude-opus-4-7", label: "Claude Opus 4.7", desc: "Mais capaz — mais lento e caro" },
   { id: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5", desc: "Mais rápido e barato" },
 ] as const;
 
@@ -20,6 +20,13 @@ export interface AppSettings {
   whatsappPhoneNumberId: string;
   whatsappAccessToken: string;
   whatsappVerifyToken: string;
+  // Google OAuth — app credentials (one OAuth app for the platform; env fallback)
+  googleClientId: string;
+  googleClientSecret: string;
+  // Google OAuth — per-user connection (filled after the consent flow)
+  googleRefreshToken: string;
+  googleScopes: string;       // space-separated list of granted scopes
+  googleEmail: string;        // connected Google account email
 }
 
 const DEFAULTS: AppSettings = {
@@ -31,6 +38,11 @@ const DEFAULTS: AppSettings = {
   whatsappPhoneNumberId: "",
   whatsappAccessToken: "",
   whatsappVerifyToken: "",
+  googleClientId: "",
+  googleClientSecret: "",
+  googleRefreshToken: "",
+  googleScopes: "",
+  googleEmail: "",
 };
 
 /**
@@ -100,4 +112,47 @@ export function getWhatsAppAccessToken(userId?: string | null): string {
 
 export function getWhatsAppVerifyToken(userId?: string | null): string {
   return readSettings(userId).whatsappVerifyToken || process.env.WHATSAPP_VERIFY_TOKEN || "";
+}
+
+// ── Google OAuth ───────────────────────────────────────────────────────────
+// App credentials are global (one OAuth client for the platform): env first,
+// then the global settings file. Tokens are stored per user.
+
+export function getGoogleClientId(userId?: string | null): string {
+  return process.env.GOOGLE_CLIENT_ID || readSettings(userId).googleClientId || readSettings(null).googleClientId || "";
+}
+
+export function getGoogleClientSecret(userId?: string | null): string {
+  return process.env.GOOGLE_CLIENT_SECRET || readSettings(userId).googleClientSecret || readSettings(null).googleClientSecret || "";
+}
+
+export interface GoogleConnection {
+  refreshToken: string;
+  scopes: string[];
+  email: string;
+  connected: boolean;
+}
+
+export function getGoogleConnection(userId?: string | null): GoogleConnection {
+  const s = readSettings(userId);
+  return {
+    refreshToken: s.googleRefreshToken || "",
+    scopes: s.googleScopes ? s.googleScopes.split(" ").filter(Boolean) : [],
+    email: s.googleEmail || "",
+    connected: !!s.googleRefreshToken,
+  };
+}
+
+export function saveGoogleConnection(
+  conn: { refreshToken: string; scopes: string; email: string },
+  userId?: string | null,
+): void {
+  writeSettings(
+    { googleRefreshToken: conn.refreshToken, googleScopes: conn.scopes, googleEmail: conn.email },
+    userId,
+  );
+}
+
+export function clearGoogleConnection(userId?: string | null): void {
+  writeSettings({ googleRefreshToken: "", googleScopes: "", googleEmail: "" }, userId);
 }

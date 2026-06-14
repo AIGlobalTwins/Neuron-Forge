@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readSettings, writeSettings } from "@/lib/settings";
+import { readSettings, writeSettings, getGoogleConnection, getGoogleClientId, clearGoogleConnection } from "@/lib/settings";
+import { PRODUCT_SCOPES, type GoogleProduct } from "@/lib/google";
+
+// Which products a connection covers, derived from the granted scopes.
+function connectedProducts(scopes: string[]): GoogleProduct[] {
+  const has = (need: string[]) => need.every((s) => scopes.includes(s));
+  const out: GoogleProduct[] = [];
+  (Object.keys(PRODUCT_SCOPES) as GoogleProduct[]).forEach((p) => {
+    if (p === "login") return;
+    if (has(PRODUCT_SCOPES[p])) out.push(p);
+  });
+  return out;
+}
 
 async function getUserId(): Promise<string | null> {
   try {
@@ -14,6 +26,7 @@ async function getUserId(): Promise<string | null> {
 export async function GET() {
   const userId = await getUserId();
   const s = readSettings(userId);
+  const gc = getGoogleConnection(userId);
   return NextResponse.json({
     anthropicApiKey: s.anthropicApiKey ? maskKey(s.anthropicApiKey) : "",
     vercelToken: s.vercelToken ? maskKey(s.vercelToken) : "",
@@ -23,6 +36,13 @@ export async function GET() {
     hasInstagramToken: !!s.instagramToken,
     hasInstagramAccountId: !!s.instagramAccountId,
     instagramAccountId: s.instagramAccountId ? maskKey(s.instagramAccountId) : "",
+    // Google OAuth
+    googleClientId: s.googleClientId ? maskKey(s.googleClientId) : "",
+    hasGoogleClientId: !!getGoogleClientId(userId),
+    hasGoogleClientSecret: !!(process.env.GOOGLE_CLIENT_SECRET || s.googleClientSecret || readSettings(null).googleClientSecret),
+    googleConnected: gc.connected,
+    googleEmail: gc.email,
+    googleProducts: connectedProducts(gc.scopes),
   });
 }
 
@@ -54,6 +74,17 @@ export async function POST(req: NextRequest) {
   }
   if (typeof body.claudeModel === "string" && body.claudeModel.trim()) {
     update.claudeModel = body.claudeModel.trim();
+  }
+  if (typeof body.googleClientId === "string") {
+    update.googleClientId = body.googleClientId.trim();
+  }
+  if (typeof body.googleClientSecret === "string" && body.googleClientSecret.trim()) {
+    update.googleClientSecret = body.googleClientSecret.trim();
+  }
+
+  // Disconnect the Google account (clears tokens, keeps app credentials).
+  if (body.googleDisconnect === true) {
+    clearGoogleConnection(userId);
   }
 
   writeSettings(update, userId);

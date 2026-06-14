@@ -186,7 +186,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const { plan, area } = body;
 
-  if (!plan) return NextResponse.json({ error: "plan é obrigatório" }, { status: 400 });
+  if (!plan) return NextResponse.json({ error: "plan is required" }, { status: 400 });
 
   const html = buildReportHtml(plan as ConsultingPlan, area || "Consultoria");
 
@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "domcontentloaded" });
     const pdf = await page.pdf({ format: "A4", printBackground: true, margin: { top: "0", right: "0", bottom: "0", left: "0" } });
-    return new NextResponse(pdf, {
+    return new NextResponse(new Uint8Array(pdf), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="plano-consultoria.pdf"`,

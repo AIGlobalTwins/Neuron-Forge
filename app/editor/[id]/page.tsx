@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -238,12 +238,6 @@ function CursorIcon() {
 }
 
 function AlignIcon({ align }: { align: string }) {
-  const lines: Record<string, [number, number][]> = {
-    left:    [[3,5],[3,11],[3,8]],
-    center:  [[5,5],[3,11],[4,8]],
-    right:   [[5,5],[3,11],[5,8]],
-    justify: [[3,5],[3,11],[3,8]],
-  };
   const widths: Record<string, number[]> = {
     left:    [8, 5, 6],
     center:  [6, 8, 4],
@@ -483,7 +477,7 @@ export default function EditorPage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch {
-      setSaveError("Erro ao guardar.");
+      setSaveError("Failed to save.");
     } finally {
       setSaving(false);
     }
@@ -560,7 +554,7 @@ export default function EditorPage() {
     return (
       <div className="fixed inset-0 bg-[#080808] flex items-center justify-center">
         <div className="text-center space-y-3">
-          <p className="text-white font-semibold">Website não encontrado</p>
+          <p className="text-white font-semibold">Website not found</p>
           <p className="text-gray-500 text-sm">{fetchError}</p>
           <a href="/" className="text-[#E8622A] text-sm hover:underline">← Voltar ao Forge</a>
         </div>
@@ -973,7 +967,7 @@ export default function EditorPage() {
 
               {/* Reset hint */}
               <div className="px-4 py-3 text-center">
-                <p className="text-[9px] text-gray-700">Alterações aplicadas em tempo real · Guarda para persistir</p>
+                <p className="text-[9px] text-gray-700">Changes applied in real time · Save to persist</p>
               </div>
 
             </div>

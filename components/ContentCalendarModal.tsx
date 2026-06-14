@@ -20,10 +20,10 @@ const TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> 
 };
 
 const LOADING_STEPS = [
-  { label: "A analisar o teu negócio...", duration: 2000 },
-  { label: "A planear os temas semanais...", duration: 4000 },
-  { label: "A criar 30 dias de conteúdo...", duration: 6000 },
-  { label: "A refinar o calendário...", duration: 0 },
+  { label: "Analyzing your business...", duration: 2000 },
+  { label: "Planning the weekly themes...", duration: 4000 },
+  { label: "Creating 30 days of content...", duration: 6000 },
+  { label: "Refining the calendar...", duration: 0 },
 ];
 
 function CalIcon({ className = "w-5 h-5" }: { className?: string }) {
@@ -48,7 +48,7 @@ function CopyIcon() {
 export function ContentCalendarModal({ onClose }: Props) {
   const [step, setStep] = useState<Step>("form");
   const [businessName, setBusinessName] = useState("");
-  const [category, setCategory] = useState("Negócio");
+  const [category, setCategory] = useState("Business");
   const [description, setDescription] = useState("");
   const [frequency, setFrequency] = useState("daily");
   const [loadingStep, setLoadingStep] = useState(0);
@@ -92,7 +92,7 @@ export function ContentCalendarModal({ onClose }: Props) {
         body: JSON.stringify({ businessName, category, description, frequency }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Erro desconhecido");
+      if (!res.ok) throw new Error(data.error || "Unknown error");
       setMonth(data.month);
       setStrategy(data.strategy);
       setDays(data.days);
@@ -132,9 +132,9 @@ export function ContentCalendarModal({ onClose }: Props) {
             <div>
               <h2 className="text-white font-semibold text-sm">Content Calendar Agent</h2>
               <p className="text-gray-600 text-xs">
-                {step === "form" && "Calendário editorial mensal com IA"}
+                {step === "form" && "AI-powered monthly editorial calendar"}
                 {step === "loading" && LOADING_STEPS[loadingStep]?.label}
-                {step === "result" && `${month} · ${days.filter((d) => d.type !== "rest").length} conteúdos`}
+                {step === "result" && `${month} · ${days.filter((d) => d.type !== "rest").length} pieces of content`}
               </p>
             </div>
           </div>
@@ -150,16 +150,16 @@ export function ContentCalendarModal({ onClose }: Props) {
           {step === "form" && (
             <div className="px-6 py-6 space-y-5">
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Nome do negócio *</label>
-                <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="Ex: Barbearia do João" className={inputClass} />
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">Business name *</label>
+                <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="e.g. John's Barbershop" className={inputClass} />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Categoria</label>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Category</label>
                   <div className="relative">
                     <select value={category} onChange={(e) => setCategory(e.target.value)} className={selectClass}>
-                      {["Restaurante / Café", "Barbearia / Salão", "Clínica / Saúde", "Fitness / Ginásio", "Loja / Comércio", "Serviços / Consultoria", "Hotelaria", "Construção / Remodelação", "Outro"].map((c) => (
+                      {["Restaurant / Café", "Barbershop / Salon", "Clinic / Health", "Fitness / Gym", "Shop / Retail", "Services / Consulting", "Hospitality", "Construction / Renovation", "Other"].map((c) => (
                         <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
@@ -167,12 +167,12 @@ export function ContentCalendarModal({ onClose }: Props) {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Frequência</label>
+                  <label className="block text-xs font-medium text-gray-400 mb-1.5">Frequency</label>
                   <div className="flex gap-2">
                     {[
-                      { id: "daily",    label: "Diário" },
-                      { id: "weekdays", label: "Dias úteis" },
-                      { id: "3x",       label: "3x/semana" },
+                      { id: "daily",    label: "Daily" },
+                      { id: "weekdays", label: "Weekdays" },
+                      { id: "3x",       label: "3x/week" },
                     ].map((f) => (
                       <button key={f.id} onClick={() => setFrequency(f.id)} className={`flex-1 py-2.5 rounded-xl text-xs font-medium border transition-all ${frequency === f.id ? "border-violet-500/60 bg-violet-500/10 text-violet-400" : "border-[#2a2a2a] text-gray-500 hover:border-[#3a3a3a]"}`}>{f.label}</button>
                     ))}
@@ -181,8 +181,8 @@ export function ContentCalendarModal({ onClose }: Props) {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1.5">Sobre o negócio</label>
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="O que fazem, público-alvo, tom de comunicação..." rows={3} className={`${inputClass} resize-none`} />
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">About the business</label>
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What you do, target audience, tone of voice..." rows={3} className={`${inputClass} resize-none`} />
               </div>
 
               {error && <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
@@ -202,7 +202,7 @@ export function ContentCalendarModal({ onClose }: Props) {
               </div>
               <div className="text-center space-y-1">
                 <p className="text-white font-medium text-sm">{LOADING_STEPS[loadingStep]?.label}</p>
-                <p className="text-gray-600 text-xs">Claude está a planear o teu mês...</p>
+                <p className="text-gray-600 text-xs">Claude is planning your month...</p>
               </div>
               <div className="flex gap-1.5">
                 {LOADING_STEPS.map((_, i) => (
@@ -226,7 +226,7 @@ export function ContentCalendarModal({ onClose }: Props) {
                 {/* Weekly themes */}
                 {weeklyThemes.length > 0 && (
                   <div className="px-5 py-4 border-b border-[#1e1e1e] space-y-1.5">
-                    <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest mb-2">Pilares</p>
+                    <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest mb-2">Pillars</p>
                     {weeklyThemes.map((t, i) => (
                       <div key={i} className="text-xs text-gray-500 flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-violet-500/60" /> {t}
@@ -237,9 +237,9 @@ export function ContentCalendarModal({ onClose }: Props) {
 
                 {/* Type filters */}
                 <div className="px-5 py-4 border-b border-[#1e1e1e] space-y-1.5">
-                  <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest mb-2">Filtrar</p>
+                  <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest mb-2">Filter</p>
                   <button onClick={() => setFilterType("all")} className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all ${filterType === "all" ? "bg-violet-500/10 text-violet-400" : "text-gray-500 hover:text-gray-300"}`}>
-                    Todos ({days.length})
+                    All ({days.length})
                   </button>
                   {Object.entries(typeCounts).filter(([t]) => t !== "rest").map(([type, count]) => {
                     const c = TYPE_COLORS[type] ?? TYPE_COLORS.post;
@@ -255,7 +255,7 @@ export function ContentCalendarModal({ onClose }: Props) {
                 {/* Tips */}
                 {tips.length > 0 && (
                   <div className="px-5 py-4 space-y-2">
-                    <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest mb-2">Dicas</p>
+                    <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest mb-2">Tips</p>
                     {tips.map((tip, i) => (
                       <p key={i} className="text-[10px] text-gray-600 leading-relaxed">→ {tip}</p>
                     ))}
@@ -264,14 +264,14 @@ export function ContentCalendarModal({ onClose }: Props) {
 
                 {/* Restart */}
                 <div className="mt-auto px-5 py-4 border-t border-[#1e1e1e]">
-                  <button onClick={() => { setDays([]); setStep("form"); setSelectedDay(null); }} className="w-full py-2 rounded-xl text-xs text-gray-600 border border-[#1e1e1e] hover:border-[#2a2a2a] hover:text-gray-400 transition-all">Novo calendário</button>
+                  <button onClick={() => { setDays([]); setStep("form"); setSelectedDay(null); }} className="w-full py-2 rounded-xl text-xs text-gray-600 border border-[#1e1e1e] hover:border-[#2a2a2a] hover:text-gray-400 transition-all">New calendar</button>
                 </div>
               </div>
 
               {/* Calendar grid */}
               <div className="flex-1 overflow-y-auto px-5 py-5">
                 <div className="grid grid-cols-7 gap-1.5 mb-2">
-                  {["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"].map((d) => (
+                  {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
                     <div key={d} className="text-center text-[10px] text-gray-600 font-medium py-1">{d}</div>
                   ))}
                 </div>
@@ -309,15 +309,15 @@ export function ContentCalendarModal({ onClose }: Props) {
                     <div className="flex items-center justify-between px-4 py-3 border-b border-[#1e1e1e]">
                       <div className="flex items-center gap-2">
                         <span className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded ${TYPE_COLORS[selectedDay.type]?.bg} ${TYPE_COLORS[selectedDay.type]?.text}`}>{selectedDay.type}</span>
-                        <span className="text-xs text-gray-400">Dia {selectedDay.day} · {selectedDay.weekday} · {selectedDay.bestTime}</span>
+                        <span className="text-xs text-gray-400">Day {selectedDay.day} · {selectedDay.weekday} · {selectedDay.bestTime}</span>
                       </div>
                       <button onClick={() => copy(`${selectedDay.caption}\n\n${selectedDay.hashtags}`, `day-${selectedDay.day}`)} className={`flex items-center gap-1 text-[10px] ${copiedKey === `day-${selectedDay.day}` ? "text-violet-400" : "text-gray-600 hover:text-gray-400"}`}>
-                        <CopyIcon /> {copiedKey === `day-${selectedDay.day}` ? "Copiado" : "Copiar"}
+                        <CopyIcon /> {copiedKey === `day-${selectedDay.day}` ? "Copied" : "Copy"}
                       </button>
                     </div>
                     <div className="px-4 py-3 space-y-3">
                       <div>
-                        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1">Tema</p>
+                        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1">Theme</p>
                         <p className="text-sm text-white font-medium">{selectedDay.theme}</p>
                       </div>
                       <div>
@@ -330,7 +330,7 @@ export function ContentCalendarModal({ onClose }: Props) {
                       </div>
                       {selectedDay.imageIdea && (
                         <div>
-                          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1">Ideia de Imagem</p>
+                          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1">Image Idea</p>
                           <p className="text-xs text-gray-500 italic">{selectedDay.imageIdea}</p>
                         </div>
                       )}
@@ -347,7 +347,7 @@ export function ContentCalendarModal({ onClose }: Props) {
           <div className="px-6 pb-6 pt-4 border-t border-[#1e1e1e] shrink-0">
             <button onClick={handleGenerate} disabled={!businessName.trim()} className="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-violet-600 hover:bg-violet-500 text-white flex items-center justify-center gap-2">
               <CalIcon className="w-4 h-4" />
-              Gerar Calendário
+              Generate Calendar
             </button>
           </div>
         )}

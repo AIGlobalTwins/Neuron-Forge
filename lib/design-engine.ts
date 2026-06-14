@@ -1,0 +1,351 @@
+/**
+ * Design Engine — turns a user-chosen design TYPE into a rich, skill-backed
+ * design brief that drives website generation.
+ *
+ * It routes across the available skills depending on the chosen type:
+ *   - ui-ux-pro-max (.claude/skills/ui-ux-pro-max) — BM25 search over 67 styles,
+ *     57 font pairings, 96 palettes. Queried at runtime for the exact style /
+ *     pairing to pull AI prompt keywords, effects, CSS hints, checklist.
+ *   - taste-skill — anti-AI-slop rules (inlined below; the skill is markdown
+ *     reference that was never loaded at runtime before).
+ *   - minimalist-skill — editorial minimalism rules (inlined, used by the
+ *     minimal type).
+ *
+ * The curated baseline (fonts/palette/spacing) makes output deterministic and
+ * correct; the skill query enriches it with concrete design language.
+ */
+
+import { execSync } from "child_process";
+import path from "path";
+
+const SKILL_SCRIPT = path.join(process.cwd(), ".claude/skills/ui-ux-pro-max/scripts/search.py");
+
+// ── Anti-AI-slop rules (from taste-skill, applies to every type) ────────────
+const ANTI_SLOP: string[] = [
+  "No emojis anywhere in the UI",
+  "Off-black text (#111111 / #1a1a1a) — never pure #000000",
+  "No gradient text fills, no neon glows, no purple/blue 'AI aesthetic' accents",
+  "No generic 3-equal-column card walls — prefer asymmetric / alternating layouts",
+  "Realistic, organic content — real prices (€99.00), real percentages (47.2%), real local names",
+  "Banned clichés: 'Elevate', 'Seamless', 'Unleash', 'Next-Gen', 'Game-changer', 'Lorem Ipsum'",
+  "One gray family throughout; tint shadows to the background hue (no pure-black shadows)",
+  "Hover states required (background shift, scale or translate); animate transform/opacity only, 200–300ms",
+];
+
+// ── Minimalist rules (from minimalist-skill, only for the minimal type) ─────
+const MINIMALIST: string[] = [
+  "Warm off-white backgrounds (#F7F6F3 / #FBFBFA), card surfaces #FFFFFF or #F9F9F8",
+  "Borders 1px solid #EAEAEA everywhere — consistent; radius 8–12px (no rounded-full on cards/large buttons)",
+  "Max diffuse shadow opacity 0.05 — no shadow-md / shadow-lg",
+  "Primary CTA: solid near-black (#111) bg, white text, 4–6px radius, no shadow",
+  "Massive vertical rhythm (py-24 / py-32), constrained content width (max-w-4xl / max-w-5xl)",
+  "Highly desaturated pastel accents only — no bright primary-colored section backgrounds",
+];
+
+export type ThemeMode = "light" | "dark";
+
+export interface DesignType {
+  id: string;
+  label: string;       // English short label
+  labelPt: string;     // Portuguese label (UI)
+  descPt: string;      // Portuguese one-liner (UI card)
+  theme: ThemeMode;
+  fonts: { heading: string; body: string; import: string };
+  palette: { primary: string; accent: string; bg: string; text: string };
+  spacingScale: "compact" | "comfortable" | "generous";
+  cornerRadius: "sharp" | "soft" | "pill";
+  styleQuery: string;       // exact-ish style name for ui-ux styles domain
+  typographyQuery: string;  // pairing name for ui-ux typography domain
+  vibeKeywords: string;     // injected into planner + Unsplash query
+  principles: string[];     // hard rules layered on top of templates
+  swatch: string[];         // hex chips for the UI picker
+}
+
+function gf(families: string): string {
+  return `https://fonts.googleapis.com/css2?${families}&display=swap`;
+}
+
+// ── Curated, premium, mutually-distinct design types ────────────────────────
+export const DESIGN_TYPES: DesignType[] = [
+  {
+    id: "auto",
+    label: "Recommended",
+    labelPt: "Recomendado",
+    descPt: "A IA escolhe o melhor estilo para a categoria",
+    theme: "light",
+    fonts: { heading: "Playfair Display", body: "Lora", import: gf("family=Playfair+Display:wght@400;600;700&family=Lora:wght@400;500") },
+    palette: { primary: "#1a1a2e", accent: "#c2703d", bg: "#ffffff", text: "#1a1a1a" },
+    spacingScale: "comfortable",
+    cornerRadius: "soft",
+    styleQuery: "modern clean minimalism dynamic",
+    typographyQuery: "modern professional",
+    vibeKeywords: "modern dynamic professional bright",
+    principles: ["Lean modern and dynamic: bold display headings, generous whitespace, tasteful motion and hover lift"],
+    swatch: ["#1a1a2e", "#c2703d", "#f7f6f3"],
+  },
+  {
+    id: "minimal",
+    label: "Minimal",
+    labelPt: "Minimalista",
+    descPt: "Editorial, muito espaço branco, tipografia forte",
+    theme: "light",
+    fonts: { heading: "Space Grotesk", body: "Manrope", import: gf("family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@300;400;500;600") },
+    palette: { primary: "#1a1a1a", accent: "#475569", bg: "#f7f6f3", text: "#1a1a1a" },
+    spacingScale: "generous",
+    cornerRadius: "sharp",
+    styleQuery: "Minimalism Swiss Style clean grid",
+    typographyQuery: "modern geometric clean",
+    vibeKeywords: "minimal clean bright airy",
+    principles: MINIMALIST,
+    swatch: ["#1a1a1a", "#475569", "#f7f6f3"],
+  },
+  {
+    id: "elegant",
+    label: "Elegant",
+    labelPt: "Clássico Elegante",
+    descPt: "Serif refinada, atemporal, alto contraste",
+    theme: "light",
+    fonts: { heading: "Playfair Display", body: "Lora", import: gf("family=Playfair+Display:wght@400;500;600;700&family=Lora:wght@400;500") },
+    palette: { primary: "#1f2937", accent: "#9a7b4f", bg: "#fbfaf8", text: "#1a1a1a" },
+    spacingScale: "generous",
+    cornerRadius: "soft",
+    styleQuery: "Editorial Grid Magazine",
+    typographyQuery: "Classic Elegant Playfair",
+    vibeKeywords: "elegant refined editorial",
+    principles: ["High contrast between elegant serif headings and clean body", "Two-tone headings: line 2 italic in the accent color", "Generous whitespace, restrained palette"],
+    swatch: ["#1f2937", "#9a7b4f", "#fbfaf8"],
+  },
+  {
+    id: "luxury",
+    label: "Luxury",
+    labelPt: "Luxo / Premium",
+    descPt: "Sofisticado, dourado discreto, espaço generoso",
+    theme: "light",
+    fonts: { heading: "Cormorant", body: "Montserrat", import: gf("family=Cormorant:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600") },
+    palette: { primary: "#1a1a1a", accent: "#9a7b4f", bg: "#faf8f5", text: "#1a1a1a" },
+    spacingScale: "generous",
+    cornerRadius: "sharp",
+    styleQuery: "Soft UI Evolution premium",
+    typographyQuery: "Luxury Serif Cormorant",
+    vibeKeywords: "luxury premium sophisticated",
+    principles: ["Restrained, deep palette with a single muted-gold accent", "Large display headings (Cormorant), tight tracking", "Subtle shadows only; let whitespace carry the premium feel"],
+    swatch: ["#1a1a1a", "#9a7b4f", "#faf8f5"],
+  },
+  {
+    id: "warm",
+    label: "Warm",
+    labelPt: "Acolhedor / Rústico",
+    descPt: "Tons terrosos, tradicional, próximo",
+    theme: "light",
+    fonts: { heading: "Fraunces", body: "Mulish", import: gf("family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Mulish:wght@300;400;500;600") },
+    palette: { primary: "#7c4a2d", accent: "#c2703d", bg: "#faf6f1", text: "#2a2018" },
+    spacingScale: "generous",
+    cornerRadius: "soft",
+    styleQuery: "Organic Biophilic natural",
+    typographyQuery: "warm friendly editorial serif",
+    vibeKeywords: "warm rustic cozy natural",
+    principles: ["Earthy palette (terracotta, clay, warm cream)", "Soft corners, relaxed spacing, inviting tone", "Texture via warm tints, not heavy shadows"],
+    swatch: ["#7c4a2d", "#c2703d", "#faf6f1"],
+  },
+  {
+    id: "bold",
+    label: "Bold",
+    labelPt: "Bold / Editorial",
+    descPt: "Alto contraste, tipografia grande, impacto",
+    theme: "light",
+    fonts: { heading: "Archivo", body: "Archivo", import: gf("family=Archivo:wght@400;500;600;700;800;900") },
+    palette: { primary: "#111111", accent: "#ff4d2e", bg: "#ffffff", text: "#111111" },
+    spacingScale: "comfortable",
+    cornerRadius: "sharp",
+    styleQuery: "Exaggerated Minimalism oversized",
+    typographyQuery: "bold grotesque heavy",
+    vibeKeywords: "bold high-contrast editorial",
+    principles: ["Oversized headings (font-weight 800–900), tight tracking", "Sharp corners, hard edges, one hot accent color", "Confident negative space; no soft pastel washes"],
+    swatch: ["#111111", "#ff4d2e", "#ffffff"],
+  },
+  {
+    id: "playful",
+    label: "Playful",
+    labelPt: "Vibrante / Divertido",
+    descPt: "Cores vivas, formas arredondadas, energia",
+    theme: "light",
+    fonts: { heading: "Poppins", body: "Nunito", import: gf("family=Poppins:wght@400;500;600;700;800&family=Nunito:wght@400;500;600;700") },
+    palette: { primary: "#0ea5a4", accent: "#f97316", bg: "#fffdf8", text: "#1a1a1a" },
+    spacingScale: "comfortable",
+    cornerRadius: "pill",
+    styleQuery: "Vibrant Block-based colorful",
+    typographyQuery: "friendly rounded modern",
+    vibeKeywords: "vibrant playful bright colorful",
+    principles: ["Friendly rounded shapes (pill buttons, generous radius)", "Energetic but harmonious duo: teal + warm orange", "Lively hover micro-interactions"],
+    swatch: ["#0ea5a4", "#f97316", "#fffdf8"],
+  },
+  {
+    id: "tech",
+    label: "Tech",
+    labelPt: "Tech / Startup",
+    descPt: "Moderno, geométrico, preciso",
+    theme: "light",
+    fonts: { heading: "Sora", body: "Manrope", import: gf("family=Sora:wght@400;500;600;700;800&family=Manrope:wght@300;400;500;600") },
+    palette: { primary: "#0f172a", accent: "#0ea5e9", bg: "#f8fafc", text: "#0f172a" },
+    spacingScale: "comfortable",
+    cornerRadius: "soft",
+    styleQuery: "Bento Box Grid modern",
+    typographyQuery: "modern geometric sans tech",
+    vibeKeywords: "modern tech clean professional",
+    principles: ["Geometric sans (Sora), crisp subtle shadows", "Tight, confident spacing; structured grids", "Single sky-blue accent on a near-white slate canvas"],
+    swatch: ["#0f172a", "#0ea5e9", "#f8fafc"],
+  },
+  {
+    id: "dark",
+    label: "Dark Premium",
+    labelPt: "Dark Premium",
+    descPt: "Fundo escuro, contraste dramático, exclusivo",
+    theme: "dark",
+    fonts: { heading: "Sora", body: "Manrope", import: gf("family=Sora:wght@400;500;600;700;800&family=Manrope:wght@300;400;500;600") },
+    palette: { primary: "#e8e2d6", accent: "#d4a056", bg: "#0b0b0c", text: "#f5f5f4" },
+    spacingScale: "generous",
+    cornerRadius: "soft",
+    styleQuery: "Swiss Modernism clean",
+    typographyQuery: "modern geometric sans",
+    vibeKeywords: "dark moody dramatic premium",
+    principles: ["Dark canvas (#0B0B0C), elevated surfaces (#141416), warm gold accent", "High contrast light text (#F5F5F4) on dark; muted text #A1A1AA", "Borders as white/10; glow-free, restrained elegance"],
+    swatch: ["#0b0b0c", "#d4a056", "#141416"],
+  },
+];
+
+export function getDesignType(id?: string): DesignType {
+  return DESIGN_TYPES.find((d) => d.id === id) ?? DESIGN_TYPES[0];
+}
+
+/** Lightweight catalog for the client picker (no server-only fields needed). */
+export const DESIGN_TYPE_OPTIONS = DESIGN_TYPES.map((d) => ({
+  id: d.id,
+  label: d.labelPt,
+  desc: d.descPt,
+  swatch: d.swatch,
+  theme: d.theme,
+}));
+
+// ── ui-ux-pro-max skill query + parse ───────────────────────────────────────
+function querySkill(query: string, domain: string): Record<string, string> {
+  try {
+    const safe = query.replace(/[^a-z0-9 ]/gi, "").slice(0, 80);
+    const out = execSync(`python3 "${SKILL_SCRIPT}" "${safe}" --domain ${domain} --max-results 1`, { timeout: 8000 }).toString();
+    const fields: Record<string, string> = {};
+    for (const line of out.split("\n")) {
+      const m = line.match(/^- \*\*(.+?):\*\*\s*(.*)$/);
+      if (m) fields[m[1].trim()] = m[2].trim();
+    }
+    return fields;
+  } catch {
+    return {};
+  }
+}
+
+export interface DesignBrief {
+  typeId: string;
+  label: string;
+  theme: ThemeMode;
+  isCustom: boolean; // false when "auto"
+  fonts: { heading: string; body: string; import: string };
+  palette: { primary: string; accent: string; bg: string; text: string };
+  spacingScale: DesignType["spacingScale"];
+  cornerRadius: DesignType["cornerRadius"];
+  styleName: string;
+  aestheticKeywords: string;
+  effects: string;
+  cssKeywords: string;
+  fontPairingNote: string;
+  principles: string[];
+  vibeKeywords: string;
+}
+
+/**
+ * Resolve the chosen design type into a concrete brief, enriched with the
+ * ui-ux-pro-max skill. `instructions` only nudges Unsplash/vibe keywords here;
+ * the planner still treats raw user instructions as highest priority.
+ */
+export function buildDesignBrief(designTypeId: string | undefined, category: string, instructions = ""): DesignBrief {
+  const dt = getDesignType(designTypeId);
+  const isCustom = dt.id !== "auto";
+
+  const styleFields = querySkill(`${dt.styleQuery} ${isCustom ? "" : category}`.trim(), "style");
+  const typoFields = querySkill(dt.typographyQuery, "typography");
+
+  const trim = (s = "", n = 280) => (s.length > n ? s.slice(0, n) + "…" : s);
+
+  // Blend any aesthetic keywords the user typed into the vibe (drives images).
+  const userVibe = extractVibeKeywords(instructions);
+
+  return {
+    typeId: dt.id,
+    label: dt.label,
+    theme: dt.theme,
+    isCustom,
+    fonts: dt.fonts,
+    palette: dt.palette,
+    spacingScale: dt.spacingScale,
+    cornerRadius: dt.cornerRadius,
+    styleName: styleFields["Style Category"] || dt.label,
+    aestheticKeywords: trim(styleFields["AI Prompt Keywords"] || styleFields["Keywords"] || dt.vibeKeywords),
+    effects: trim(styleFields["Effects & Animation"] || "", 200),
+    cssKeywords: trim(styleFields["CSS/Technical Keywords"] || "", 200),
+    fontPairingNote: typoFields["Notes"] || `${dt.fonts.heading} headings + ${dt.fonts.body} body`,
+    principles: dt.principles,
+    vibeKeywords: [dt.vibeKeywords, userVibe].filter(Boolean).join(" ").trim(),
+  };
+}
+
+/** Extract aesthetic adjectives from free-text user instructions. */
+export function extractVibeKeywords(instructions = ""): string {
+  const ins = instructions.toLowerCase();
+  const hits: string[] = [];
+  const map: Record<string, string> = {
+    "modern|moderno|contempor": "modern",
+    "minimal|minimalist|minimalista|clean|limpo": "minimal",
+    "luxury|luxuos|premium|elegant|elegante|sofist": "elegant luxury",
+    "rustic|rústic|rustico|tradicional|traditional|warm|cozy|aconcheg": "warm rustic",
+    "industrial|urban|urbano|raw": "industrial",
+    "playful|vibrant|fun|divert|colorful|colorido": "vibrant",
+    "dark|escuro|moody": "dark moody",
+    "bold|forte|impact": "bold",
+  };
+  for (const [re, kw] of Object.entries(map)) {
+    if (new RegExp(`\\b(${re})`).test(ins)) hits.push(kw);
+  }
+  return Array.from(new Set(hits.join(" ").split(" "))).join(" ").trim();
+}
+
+/**
+ * Render the brief as a prompt block for HTML generation. This replaces the
+ * old thin `UI/UX: <300 chars>` line with concrete, skill-backed direction.
+ */
+export function formatDesignBriefForPrompt(brief: DesignBrief): string {
+  const principles = [...brief.principles, ...ANTI_SLOP].map((p) => `  • ${p}`).join("\n");
+  return `═══ DESIGN BRIEF — "${brief.label}" (${brief.styleName}) ═══
+Aesthetic: ${brief.aestheticKeywords}
+${brief.effects ? `Effects/animation: ${brief.effects}` : ""}
+Typography: ${brief.fonts.heading} (headings) + ${brief.fonts.body} (body) — ${brief.fontPairingNote}
+Theme: ${brief.theme}
+NON-NEGOTIABLE PRINCIPLES:
+${principles}
+══════════════════════════════════════`;
+}
+
+/**
+ * Dark-theme translation instructions. The section templates are authored with
+ * light-mode Tailwind classes; when a dark brief is chosen we ask the model to
+ * translate surface classes consistently instead of duplicating every template.
+ */
+export function darkThemeInstruction(brief: DesignBrief): string {
+  if (brief.theme !== "dark") return "";
+  return `
+🌑 DARK THEME OVERRIDE (the section specs below use light-mode classes — translate EVERY occurrence):
+- bg-white → bg-[${brief.palette.bg}]   |   bg-slate-50 / bg-stone-50 → bg-[#141416]
+- text-slate-900 → text-[${brief.palette.text}]   |   text-slate-500 / text-slate-400 → text-[#A1A1AA]   |   text-slate-600 → text-[#C4C4C8]
+- border-slate-100 / border-slate-200 → border-white/10
+- footer bg-slate-900 → bg-[#050506]
+- form/card surfaces: bg-white → bg-[#141416] with border-white/10
+- CRITICAL — the "primary" color (${brief.palette.primary}) is a LIGHT text color here, not a button fill. Render every primary CTA button (class bg-primary text-white) as bg-[${brief.palette.accent}] text-[${brief.palette.bg}] (gold fill, dark text). Keep bg-primary/10 chips and text-primary links as-is (they read well on dark).
+- Keep the hero dark overlay; ensure all text meets 4.5:1 contrast on the dark canvas.`;
+}

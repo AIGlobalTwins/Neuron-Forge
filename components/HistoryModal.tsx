@@ -39,9 +39,9 @@ function timeAgo(iso: string, lang: Lang): string {
     return `${Math.floor(diff / 86400)}d ago`;
   }
   if (diff < 60)    return "agora mesmo";
-  if (diff < 3600)  return `${Math.floor(diff / 60)}m atrás`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h atrás`;
-  return `${Math.floor(diff / 86400)}d atrás`;
+  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
 }
 
 interface Props {
@@ -74,7 +74,7 @@ function typeIcon(type: HistoryType) {
 
 // ── SEO content type labels ─────────────────────────────────
 const SEO_TYPE_LABEL: Record<string, string> = {
-  blog: "Artigo de Blog", landing: "Landing Page", meta: "Meta Tags", faq: "FAQs", service: "Serviços",
+  blog: "Blog Article", landing: "Landing Page", meta: "Meta Tags", faq: "FAQs", service: "Services",
 };
 
 // ── Copy helper ─────────────────────────────────────────────
@@ -376,7 +376,7 @@ function DetailView({ entry, copiedKey, onCopy, lang }: { entry: HistoryEntry; c
 
         {plan.diagnosis.length > 0 && (
           <div>
-            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">Diagnóstico</p>
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">Diagnosis</p>
             <ul className="space-y-1.5">
               {plan.diagnosis.map((d, i) => (
                 <li key={i} className="flex items-start gap-2 text-xs text-gray-400"><span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 bg-orange-500`} />{d}</li>
@@ -398,7 +398,7 @@ function DetailView({ entry, copiedKey, onCopy, lang }: { entry: HistoryEntry; c
 
         {plan.actions.length > 0 && (
           <div>
-            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">Plano de Acção</p>
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">Action Plan</p>
             <div className="space-y-2">
               {plan.actions.map((a, i) => (
                 <div key={i} className="bg-[#111] border border-[#1e1e1e] rounded-lg px-3 py-2.5 flex items-start gap-3">
@@ -455,13 +455,13 @@ function DetailView({ entry, copiedKey, onCopy, lang }: { entry: HistoryEntry; c
       <div className="p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <span className={`text-[10px] uppercase tracking-widest font-semibold ${c.text}`}>Auditoria de Segurança</span>
+            <span className={`text-[10px] uppercase tracking-widest font-semibold ${c.text}`}>Security Audit</span>
             <div className="text-white font-semibold">{entry.name}</div>
             <div className="text-xs text-gray-600 mt-0.5">{entry.securityUrl}</div>
           </div>
           {entry.securityRating && (
             <div className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${c.bg} border ${c.border} ${c.text}`}>
-              {entry.securityRating === "secure" ? "Seguro" : entry.securityRating === "moderate" ? "Moderado" : entry.securityRating === "vulnerable" ? "Vulnerável" : "Crítico"}
+              {entry.securityRating === "secure" ? "Secure" : entry.securityRating === "moderate" ? "Moderate" : entry.securityRating === "vulnerable" ? "Vulnerable" : "Critical"}
             </div>
           )}
         </div>
@@ -527,7 +527,7 @@ function DetailView({ entry, copiedKey, onCopy, lang }: { entry: HistoryEntry; c
               <p className={`text-xs ${c.text} opacity-70 leading-relaxed`}>{post.hashtags}</p>
               {post.imagePrompt && (
                 <div className="bg-[#0d0d0d] rounded-lg px-3 py-2 mt-2">
-                  <span className="text-[10px] text-gray-600 block mb-1">Sugestão de imagem</span>
+                  <span className="text-[10px] text-gray-600 block mb-1">Image suggestion</span>
                   <p className="text-xs text-gray-500 italic">{post.imagePrompt}</p>
                 </div>
               )}
@@ -540,7 +540,7 @@ function DetailView({ entry, copiedKey, onCopy, lang }: { entry: HistoryEntry; c
 
   return (
     <div className="flex items-center justify-center h-full text-gray-600 text-sm">
-      Sem detalhe disponível.
+      No detail available.
     </div>
   );
 }

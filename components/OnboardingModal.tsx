@@ -7,11 +7,11 @@ interface Props {
 }
 
 const AGENTS = [
-  { icon: "🔍", title: "Analyze & Redesign", desc: "Cola o URL de qualquer site — o Forge analisa o design e gera uma versão moderna." },
-  { icon: "📍", title: "Create from Maps", desc: "Cola um Google Maps URL — extrai os dados do negócio e cria o site do zero." },
-  { icon: "📸", title: "Posts Instagram", desc: "Descreve o teu negócio — o Forge gera captions, hashtags e ideias de imagem prontas a publicar." },
-  { icon: "💬", title: "Agente WhatsApp", desc: "Configura um assistente de IA para o teu WhatsApp Business que responde 24/7." },
-  { icon: "📊", title: "Consulting Agent", desc: "Responde a perguntas sobre o teu negócio e recebe um plano de ação em PDF." },
+  { icon: "🔍", title: "Analyze & Redesign", desc: "Paste the URL of any site — Forge analyzes the design and generates a modern version." },
+  { icon: "📍", title: "Create from Maps", desc: "Paste a Google Maps URL — it extracts the business details and builds the site from scratch." },
+  { icon: "📸", title: "Instagram Posts", desc: "Describe your business — Forge generates captions, hashtags, and image ideas ready to publish." },
+  { icon: "💬", title: "WhatsApp Agent", desc: "Set up an AI assistant for your WhatsApp Business that replies 24/7." },
+  { icon: "📊", title: "Consulting Agent", desc: "Answer questions about your business and get an action plan as a PDF." },
 ];
 
 export function OnboardingModal({ onComplete }: Props) {
@@ -23,7 +23,7 @@ export function OnboardingModal({ onComplete }: Props) {
 
   async function saveKey() {
     if (!apiKey.trim().startsWith("sk-ant-")) {
-      setError("A chave deve começar com sk-ant-");
+      setError("The key must start with sk-ant-");
       return;
     }
     setSaving(true);
@@ -34,10 +34,10 @@ export function OnboardingModal({ onComplete }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ anthropicKey: apiKey.trim() }),
       });
-      if (!res.ok) throw new Error("Erro ao guardar");
+      if (!res.ok) throw new Error("Failed to save");
       setStep(2);
     } catch {
-      setError("Não foi possível guardar a chave. Tenta novamente.");
+      setError("Could not save the key. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -71,15 +71,15 @@ export function OnboardingModal({ onComplete }: Props) {
                 <path d="M10 8l-4 2.5v2L10 15l4-2.5v-2L10 8z" fill="currentColor" fillOpacity="0.5" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-white mb-3">Bem-vindo ao Neuron Forge</h1>
+            <h1 className="text-2xl font-bold text-white mb-3">Welcome to Neuron Forge</h1>
             <p className="text-gray-400 leading-relaxed mb-8 max-w-sm mx-auto">
-              A tua equipa de agentes de IA para criar websites, gerir redes sociais, automatizar o WhatsApp e muito mais — tudo sem código.
+              Your team of AI agents to build websites, manage social media, automate WhatsApp, and much more — all without code.
             </p>
             <div className="grid grid-cols-3 gap-3 mb-8 text-center">
               {[
-                { n: "5", label: "Agentes de IA" },
-                { n: "~2min", label: "Por website" },
-                { n: "€0", label: "Sem subscrição" },
+                { n: "5", label: "AI agents" },
+                { n: "~2min", label: "Per website" },
+                { n: "€0", label: "No subscription" },
               ].map(({ n, label }) => (
                 <div key={label} className="bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl p-3">
                   <div className="text-xl font-bold text-[#E8622A]">{n}</div>
@@ -91,13 +91,13 @@ export function OnboardingModal({ onComplete }: Props) {
               onClick={() => setStep(1)}
               className="w-full py-3 bg-[#E8622A] hover:bg-[#d4561f] text-white font-semibold rounded-xl transition"
             >
-              Começar configuração →
+              Start setup →
             </button>
             <button
               onClick={finish}
               className="mt-3 text-xs text-gray-600 hover:text-gray-400 transition"
             >
-              Já tenho tudo configurado — entrar
+              I already have everything set up — enter
             </button>
           </div>
         )}
@@ -106,21 +106,21 @@ export function OnboardingModal({ onComplete }: Props) {
         {step === 1 && (
           <div className="p-8">
             <div className="mb-6">
-              <div className="text-xs text-[#E8622A] font-medium uppercase tracking-widest mb-2">Passo 1 de 3</div>
-              <h2 className="text-xl font-bold text-white mb-2">Conecta o Claude</h2>
+              <div className="text-xs text-[#E8622A] font-medium uppercase tracking-widest mb-2">Step 1 of 3</div>
+              <h2 className="text-xl font-bold text-white mb-2">Connect Claude</h2>
               <p className="text-gray-400 text-sm leading-relaxed">
-                O Forge usa o Claude da Anthropic para gerar conteúdo. Precisas de uma API key gratuita para começar.
+                Forge uses Anthropic&apos;s Claude to generate content. You need a free API key to get started.
               </p>
             </div>
 
             {/* How to get key */}
             <div className="bg-[#0d0d0d] border border-[#1e1e1e] rounded-xl p-4 mb-5 text-sm space-y-2">
-              <div className="text-gray-300 font-medium mb-3">Como obter a tua API Key:</div>
+              <div className="text-gray-300 font-medium mb-3">How to get your API Key:</div>
               {[
-                { n: "1", text: "Vai a console.anthropic.com" },
-                { n: "2", text: "Cria uma conta gratuita" },
-                { n: "3", text: "Clica em \"API Keys\" → \"Create Key\"" },
-                { n: "4", text: "Cola aqui em baixo" },
+                { n: "1", text: "Go to console.anthropic.com" },
+                { n: "2", text: "Create a free account" },
+                { n: "3", text: "Click \"API Keys\" → \"Create Key\"" },
+                { n: "4", text: "Paste it below" },
               ].map(({ n, text }) => (
                 <div key={n} className="flex items-center gap-3 text-gray-400">
                   <span className="w-5 h-5 rounded-full bg-[#E8622A]/20 text-[#E8622A] text-xs flex items-center justify-center flex-shrink-0 font-bold">{n}</span>
@@ -133,7 +133,7 @@ export function OnboardingModal({ onComplete }: Props) {
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-[#E8622A] hover:text-[#ff7a3d] text-xs font-medium mt-2 transition"
               >
-                Abrir Console da Anthropic ↗
+                Open Anthropic Console ↗
               </a>
             </div>
 
@@ -160,7 +160,7 @@ export function OnboardingModal({ onComplete }: Props) {
                 </button>
               </div>
               {error && <p className="text-red-400 text-xs mt-1.5">{error}</p>}
-              <p className="text-gray-600 text-xs mt-1.5">A chave é guardada localmente e nunca partilhada.</p>
+              <p className="text-gray-600 text-xs mt-1.5">The key is stored locally and never shared.</p>
             </div>
 
             <div className="flex gap-3">
@@ -168,21 +168,21 @@ export function OnboardingModal({ onComplete }: Props) {
                 onClick={() => setStep(0)}
                 className="px-4 py-2.5 border border-[#2a2a2a] rounded-xl text-gray-400 text-sm hover:border-[#444] transition"
               >
-                ← Voltar
+                ← Back
               </button>
               <button
                 onClick={saveKey}
                 disabled={!apiKey.trim() || saving}
                 className="flex-1 py-2.5 bg-[#E8622A] hover:bg-[#d4561f] text-white font-semibold rounded-xl transition disabled:opacity-50"
               >
-                {saving ? "A guardar..." : "Guardar e continuar →"}
+                {saving ? "Saving..." : "Save and continue →"}
               </button>
             </div>
             <button
               onClick={() => setStep(2)}
               className="mt-3 w-full text-xs text-gray-600 hover:text-gray-400 transition"
             >
-              Configurar mais tarde — ver agentes primeiro
+              Set up later — see the agents first
             </button>
           </div>
         )}
@@ -191,9 +191,9 @@ export function OnboardingModal({ onComplete }: Props) {
         {step === 2 && (
           <div className="p-8">
             <div className="mb-6">
-              <div className="text-xs text-[#E8622A] font-medium uppercase tracking-widest mb-2">Passo 2 de 3</div>
-              <h2 className="text-xl font-bold text-white mb-2">Os teus 5 agentes</h2>
-              <p className="text-gray-400 text-sm">Cada agente resolve um problema real do teu negócio.</p>
+              <div className="text-xs text-[#E8622A] font-medium uppercase tracking-widest mb-2">Step 2 of 3</div>
+              <h2 className="text-xl font-bold text-white mb-2">Your 5 agents</h2>
+              <p className="text-gray-400 text-sm">Each agent solves a real problem for your business.</p>
             </div>
             <div className="space-y-3 mb-6">
               {AGENTS.map((a) => (
@@ -211,13 +211,13 @@ export function OnboardingModal({ onComplete }: Props) {
                 onClick={() => setStep(1)}
                 className="px-4 py-2.5 border border-[#2a2a2a] rounded-xl text-gray-400 text-sm hover:border-[#444] transition"
               >
-                ← Voltar
+                ← Back
               </button>
               <button
                 onClick={() => setStep(3)}
                 className="flex-1 py-2.5 bg-[#E8622A] hover:bg-[#d4561f] text-white font-semibold rounded-xl transition"
               >
-                Continuar →
+                Continue →
               </button>
             </div>
           </div>
@@ -231,21 +231,21 @@ export function OnboardingModal({ onComplete }: Props) {
                 <path d="M20 6L9 17l-5-5" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-white mb-3">Estás pronto!</h2>
+            <h2 className="text-2xl font-bold text-white mb-3">You&apos;re all set!</h2>
             <p className="text-gray-400 leading-relaxed mb-8 max-w-sm mx-auto">
-              O Forge está configurado. Escolhe um agente e cria o teu primeiro website, post ou plano de negócio em minutos.
+              Forge is configured. Pick an agent and create your first website, post, or business plan in minutes.
             </p>
             <div className="bg-[#0d0d0d] border border-[#E8622A]/20 rounded-xl p-4 mb-6 text-left">
-              <div className="text-xs text-[#E8622A] font-medium mb-2">Dica para começar</div>
+              <div className="text-xs text-[#E8622A] font-medium mb-2">Tip to get started</div>
               <div className="text-sm text-gray-400">
-                Experimenta o <span className="text-white font-medium">Create from Google Maps</span> — cola o URL de qualquer negócio e vê um website profissional gerado em ~90 segundos.
+                Try <span className="text-white font-medium">Create from Google Maps</span> — paste any business URL and watch a professional website get generated in ~90 seconds.
               </div>
             </div>
             <button
               onClick={finish}
               className="w-full py-3 bg-[#E8622A] hover:bg-[#d4561f] text-white font-semibold rounded-xl transition"
             >
-              Explorar o Forge →
+              Explore Forge →
             </button>
           </div>
         )}

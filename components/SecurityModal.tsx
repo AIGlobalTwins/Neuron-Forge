@@ -21,17 +21,17 @@ const SEVERITY_CONFIG = {
 const SEVERITY_ORDER: (keyof typeof SEVERITY_CONFIG)[] = ["critical", "high", "medium", "low", "info"];
 
 const LOADING_STEPS = [
-  { label: "A aceder ao website...", duration: 2000 },
-  { label: "A analisar headers de segurança...", duration: 3000 },
-  { label: "A verificar paths expostos...", duration: 3000 },
-  { label: "A analisar código e formulários...", duration: 0 },
+  { label: "Connecting to the website...", duration: 2000 },
+  { label: "Analyzing security headers...", duration: 3000 },
+  { label: "Checking for exposed paths...", duration: 3000 },
+  { label: "Analyzing code and forms...", duration: 0 },
 ];
 
 const RATING_CONFIG: Record<SecurityRating, { text: string; border: string; bg: string; label: string; dot: string }> = {
-  secure:     { text: "text-green-400",  border: "border-green-500",  bg: "bg-green-500/10",  label: "Seguro",     dot: "bg-green-500" },
-  moderate:   { text: "text-yellow-400", border: "border-yellow-500", bg: "bg-yellow-500/10", label: "Moderado",   dot: "bg-yellow-500" },
-  vulnerable: { text: "text-orange-400", border: "border-orange-500", bg: "bg-orange-500/10", label: "Vulnerável", dot: "bg-orange-500" },
-  critical:   { text: "text-red-400",    border: "border-red-500",    bg: "bg-red-500/10",    label: "Crítico",    dot: "bg-red-500" },
+  secure:     { text: "text-green-400",  border: "border-green-500",  bg: "bg-green-500/10",  label: "Secure",     dot: "bg-green-500" },
+  moderate:   { text: "text-yellow-400", border: "border-yellow-500", bg: "bg-yellow-500/10", label: "Moderate",   dot: "bg-yellow-500" },
+  vulnerable: { text: "text-orange-400", border: "border-orange-500", bg: "bg-orange-500/10", label: "Vulnerable", dot: "bg-orange-500" },
+  critical:   { text: "text-red-400",    border: "border-red-500",    bg: "bg-red-500/10",    label: "Critical",   dot: "bg-red-500" },
 };
 
 function ShieldIcon({ className = "w-5 h-5" }: { className?: string }) {
@@ -72,7 +72,7 @@ export function SecurityModal({ onClose }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ result }),
       });
-      if (!res.ok) throw new Error("Erro ao gerar PDF");
+      if (!res.ok) throw new Error("Failed to generate PDF");
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -112,7 +112,7 @@ export function SecurityModal({ onClose }: Props) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Erro inesperado");
+        setError(data.error ?? "Unexpected error");
         setStep("form");
         return;
       }
@@ -139,7 +139,7 @@ export function SecurityModal({ onClose }: Props) {
     if (!result) return;
     const lines = [
       `Security Audit — ${result.url}`,
-      `Score: ${result.score}/100`,
+      `Rating: ${result.rating.toUpperCase()}`,
       ``,
       result.summary,
       ``,
@@ -180,7 +180,7 @@ export function SecurityModal({ onClose }: Props) {
             <div>
               <h2 className="text-white font-semibold text-sm">Security Agent</h2>
               <p className="text-gray-600 text-xs">
-                {step === "form" && "Auditoria de segurança passiva — código público"}
+                {step === "form" && "Passive security audit — public code"}
                 {step === "loading" && LOADING_STEPS[loadingStep]?.label}
                 {step === "result" && result && `${result.findings.length} findings · ${result.url}`}
               </p>
@@ -199,14 +199,14 @@ export function SecurityModal({ onClose }: Props) {
                   ) : (
                     <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v8M5 7l3 3 3-3M2 12h12" /></svg>
                   )}
-                  {downloadingPdf ? "A gerar..." : "Download PDF"}
+                  {downloadingPdf ? "Generating..." : "Download PDF"}
                 </button>
                 <button
                   onClick={copyReport}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#2a2a2a] text-gray-500 hover:text-gray-300 hover:border-[#3a3a3a] text-xs transition-all"
                 >
                   <CopyIcon />
-                  {copied ? "Copiado!" : "Copiar"}
+                  {copied ? "Copied!" : "Copy"}
                 </button>
               </div>
             )}
@@ -234,35 +234,35 @@ export function SecurityModal({ onClose }: Props) {
                 <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mx-auto">
                   <ShieldIcon className="w-7 h-7" />
                 </div>
-                <h3 className="text-white font-semibold">Auditar Website</h3>
+                <h3 className="text-white font-semibold">Audit Website</h3>
                 <p className="text-xs text-gray-500 max-w-sm mx-auto">
-                  Analisa headers, código JS, formulários, comentários e paths expostos. Auditoria passiva — sem envio de payloads.
+                  Analyzes headers, JS code, forms, comments, and exposed paths. Passive audit — no payloads are sent.
                 </p>
               </div>
 
               <div>
-                <label className="block text-xs text-gray-500 mb-1.5 uppercase tracking-wide">URL do Website *</label>
+                <label className="block text-xs text-gray-500 mb-1.5 uppercase tracking-wide">Website URL *</label>
                 <input
                   type="url"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                   className="w-full bg-[#111] border border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 transition-colors"
-                  placeholder="https://exemplo.com"
+                  placeholder="https://example.com"
                   autoFocus
                 />
               </div>
 
               <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4 space-y-2">
-                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">O que é analisado</p>
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">What gets analyzed</p>
                 {[
-                  "Headers de segurança HTTP (CSP, HSTS, X-Frame-Options…)",
-                  "Scripts inline — API keys, tokens, dados sensíveis",
-                  "Formulários — campos sem proteção, autocomplete inseguro",
-                  "Comentários HTML com informação exposta",
-                  "Bibliotecas com versões desatualizadas",
-                  "Paths comuns acessíveis (/.env, /.git/config…)",
-                  "Tecnologias e versões expostas nos headers",
+                  "HTTP security headers (CSP, HSTS, X-Frame-Options…)",
+                  "Inline scripts — API keys, tokens, sensitive data",
+                  "Forms — unprotected fields, insecure autocomplete",
+                  "HTML comments with exposed information",
+                  "Libraries running outdated versions",
+                  "Common accessible paths (/.env, /.git/config…)",
+                  "Technologies and versions exposed in headers",
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-2 text-xs text-gray-600">
                     <div className="w-1 h-1 rounded-full bg-red-500/60 shrink-0" />
@@ -277,7 +277,7 @@ export function SecurityModal({ onClose }: Props) {
                 className="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-red-600 hover:bg-red-500 text-white flex items-center justify-center gap-2"
               >
                 <ShieldIcon className="w-4 h-4" />
-                Iniciar Auditoria
+                Start Audit
               </button>
             </div>
           )}
@@ -350,7 +350,7 @@ export function SecurityModal({ onClose }: Props) {
                       onClick={() => setFilterSeverity("all")}
                       className="w-full text-[10px] text-gray-600 hover:text-gray-400 py-1 transition-colors"
                     >
-                      Ver todos ({result.findings.length})
+                      View all ({result.findings.length})
                     </button>
                   )}
                 </div>
@@ -358,7 +358,7 @@ export function SecurityModal({ onClose }: Props) {
                 {/* Tech detected */}
                 {result.techDetected.length > 0 && (
                   <div className="px-5 py-4">
-                    <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest mb-3">Tecnologias</p>
+                    <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest mb-3">Technologies</p>
                     <div className="flex flex-wrap gap-1.5">
                       {result.techDetected.map((t, i) => (
                         <span key={i} className="text-[10px] px-2 py-0.5 bg-[#111] border border-[#2a2a2a] rounded-full text-gray-500">{t}</span>
@@ -373,7 +373,7 @@ export function SecurityModal({ onClose }: Props) {
                     onClick={() => { setResult(null); setStep("form"); setFilterSeverity("all"); setExpandedIdx(null); }}
                     className="w-full py-2 rounded-xl text-xs text-gray-600 border border-[#1e1e1e] hover:border-[#2a2a2a] hover:text-gray-400 transition-all"
                   >
-                    ← Nova auditoria
+                    ← New audit
                   </button>
                 </div>
               </div>
@@ -415,12 +415,12 @@ export function SecurityModal({ onClose }: Props) {
                             </div>
                             {f.evidence && (
                               <div>
-                                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1">Evidência</p>
+                                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1">Evidence</p>
                                 <pre className="text-[10px] text-gray-500 bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg px-3 py-2 overflow-x-auto whitespace-pre-wrap break-all">{f.evidence}</pre>
                               </div>
                             )}
                             <div className={`rounded-lg p-3 ${cfg.bg} border ${cfg.border}`}>
-                              <p className="text-[10px] font-semibold uppercase tracking-widest mb-1 ${cfg.text}">Recomendação</p>
+                              <p className="text-[10px] font-semibold uppercase tracking-widest mb-1 ${cfg.text}">Recommendation</p>
                               <p className={`text-xs leading-relaxed ${cfg.text}`}>{f.recommendation}</p>
                             </div>
                           </div>
