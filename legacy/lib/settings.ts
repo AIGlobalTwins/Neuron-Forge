@@ -81,12 +81,26 @@ export function writeSettings(settings: Partial<AppSettings>, userId?: string | 
 
 // ── Convenience getters (accept optional userId) ───────────────────────────
 
+/**
+ * When REQUIRE_OWN_KEYS=1 (set on a client-facing instance), the platform never
+ * falls back to the owner's env keys for cost/account-sensitive services — the
+ * user must enter their own in Settings. The owner's normal instance (flag unset)
+ * keeps the env fallback, so nothing breaks there.
+ */
+export function requireOwnKeys(): boolean {
+  return process.env.REQUIRE_OWN_KEYS === "1" || process.env.REQUIRE_OWN_KEYS === "true";
+}
+
 export function getAnthropicKey(userId?: string | null): string {
-  return readSettings(userId).anthropicApiKey || process.env.ANTHROPIC_API_KEY || "";
+  const own = readSettings(userId).anthropicApiKey;
+  if (own) return own;
+  return requireOwnKeys() ? "" : process.env.ANTHROPIC_API_KEY || "";
 }
 
 export function getVercelToken(userId?: string | null): string {
-  return readSettings(userId).vercelToken || process.env.VERCEL_TOKEN || "";
+  const own = readSettings(userId).vercelToken;
+  if (own) return own;
+  return requireOwnKeys() ? "" : process.env.VERCEL_TOKEN || "";
 }
 
 export function getClaudeModel(userId?: string | null): string {

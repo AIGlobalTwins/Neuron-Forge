@@ -21,6 +21,11 @@ services:
         value: production
       - key: ANTHROPIC_API_KEY
         sync: false
+      # Set to "1" on a client-facing instance so each user must enter their OWN
+      # Anthropic/Vercel keys in Settings (the owner's env keys are then ignored,
+      # protecting the owner's credits). Leave unset for the owner's own instance.
+      - key: REQUIRE_OWN_KEYS
+        sync: false
       - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
         sync: false
       - key: CLERK_SECRET_KEY
