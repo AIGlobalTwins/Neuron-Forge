@@ -6,22 +6,28 @@ export const metadata: Metadata = {
   description: "The visual layer for AI agents — websites, social media, WhatsApp and consulting powered by Claude",
 };
 
-// Clerk is optional — only loaded when valid keys are present
-const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
-const clerkEnabled = clerkKey.startsWith("pk_live_") || clerkKey.startsWith("pk_test_");
+// Clerk is optional — only loaded when valid keys are present.
+// Bracket notation (not process.env.NEXT_PUBLIC_X) so Next does NOT inline this at
+// build time — on Docker/Render the key only exists at runtime, and the client
+// gets it via the publishableKey prop below (serialized from the server).
+function clerkPublishableKey(): string {
+  return process.env["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"] ?? "";
+}
 
-async function MaybeClerkProvider({ children }: { children: React.ReactNode }) {
-  if (clerkEnabled) {
+async function MaybeClerkProvider({ children, enabled, pk }: { children: React.ReactNode; enabled: boolean; pk: string }) {
+  if (enabled) {
     const { ClerkProvider } = await import("@clerk/nextjs");
-    return <ClerkProvider>{children}</ClerkProvider>;
+    return <ClerkProvider publishableKey={pk}>{children}</ClerkProvider>;
   }
   return <>{children}</>;
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const pk = clerkPublishableKey();
+  const enabled = pk.startsWith("pk_live_") || pk.startsWith("pk_test_");
   return (
-    <MaybeClerkProvider>
-      <html lang="pt" className="dark">
+    <MaybeClerkProvider enabled={enabled} pk={pk}>
+      <html lang="pt" className="dark" data-clerk={enabled ? "1" : "0"}>
         <head>
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
