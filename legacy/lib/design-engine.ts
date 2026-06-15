@@ -357,6 +357,7 @@ interface HeroOpts {
   ctaSecondary: string;
   contactId?: string;
   servicesId?: string;
+  multipage?: boolean; // hero CTAs become page links (#/contacto) with no onclick
 }
 
 /**
@@ -366,10 +367,15 @@ interface HeroOpts {
 export function heroGuidance(o: HeroOpts): string {
   const contact = o.contactId || "contact";
   const services = o.servicesId || "services";
+  const cHref = o.multipage ? `#/${contact}` : `#${contact}`;
+  const sHref = o.multipage ? `#/${services}` : `#${services}`;
+  const ctaNote = o.multipage
+    ? `a primary button "${o.ctaPrimary}" as a plain link href="${cHref}" and a secondary button "${o.ctaSecondary}" as a plain link href="${sHref}" — NO onclick handler (a router switches pages on hash change; never call querySelector on a "#/..." value)`
+    : `a primary button "${o.ctaPrimary}" and a secondary button "${o.ctaSecondary}" (real onclick smooth-scroll to ${cHref} / ${sHref})`;
   return `HERO (id="home") — design an ORIGINAL, striking hero. Pick the ONE layout below that best fits this business and the chosen design style, and build it fully and beautifully. Vary your choice by business — do NOT always pick the same one, and do NOT default to a centered dark-overlay photo.
 Image to use: ${o.image}
 Accent color: ${o.accent} · Primary: ${o.primary}
-Every hero MUST include: a small overline ("${o.overline}"), a bold headline for "${o.name}" (two-tone allowed — second part in <span class="italic" style="color:${o.accent}">), a 1-sentence value proposition, a primary button "${o.ctaPrimary}" and a secondary button "${o.ctaSecondary}" (real onclick smooth-scroll to #${contact} / #${services}). It must feel premium on first paint and leave space below the fixed navbar (pt-28+).
+Every hero MUST include: a small overline ("${o.overline}"), a bold headline for "${o.name}" (two-tone allowed — second part in <span class="italic" style="color:${o.accent}">), a 1-sentence value proposition, ${ctaNote}. It must feel premium on first paint and leave space below the fixed navbar (pt-28+).
 
 Choose ONE layout:
 A) SPLIT EDITORIAL — <section id="home" class="relative pt-32 pb-20 px-6"> with <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">. LEFT: overline + huge headline + value prop + CTAs + a small trust row (rating ★ / years / clients). RIGHT: <img src="${o.image}" class="w-full aspect-[4/5] object-cover rounded-3xl shadow-2xl"> with an OPTIONAL floating glass stat card (absolute, backdrop-blur-xl, bg-white/70, border border-white/40, rounded-2xl) overlapping a corner.

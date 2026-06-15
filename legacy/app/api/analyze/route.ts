@@ -7,13 +7,14 @@ import path from "path";
 
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 import { deployToVercel } from "@/lib/vercel-deploy";
-import { searchUnsplashImages, buildImageSearchQuery } from "@/lib/image-search";
+import { searchUnsplashImages, buildImageSearchQuery, validateImages } from "@/lib/image-search";
 import { deriveDesignDirection } from "@/lib/website-planner";
 import { buildDesignBrief, formatDesignBriefForPrompt, darkThemeInstruction, heroGuidance } from "@/lib/design-engine";
 import { REVEAL_CSS, MOTION_SCRIPT, MOTION_PROMPT } from "@/lib/motion";
 import { balanceBlocks } from "@/lib/html-fix";
 import { extractJsonObject } from "@/lib/json-extract";
 import { waLink, whatsappPromptBlock } from "@/lib/phone";
+import { pageNav, multipagePromptBlock, PAGE_BOOT, type NavPage } from "@/lib/multipage";
 
 const REDESIGN_DIR = "./outputs/redesigns";
 
@@ -398,8 +399,14 @@ async function generateRedesign(
     if (/\b(industrial|urban|urbano)/.test(ins)) styleMods.push("industrial");
   }
   const searchQuery = styleMods.length > 0 ? `${styleMods.join(" ")} ${baseSearchQuery}` : baseSearchQuery;
-  const foundImages = await searchUnsplashImages(searchQuery, 6, "landscape");
-  console.log(`[analyze] unsplash "${searchQuery}" → ${foundImages.length} images`);
+  const candidatePool = await searchUnsplashImages(searchQuery, 12, "landscape");
+  const foundImages = await validateImages(anthropic, {
+    businessName: analysis.businessName,
+    category,
+    candidates: candidatePool,
+    need: 6,
+  });
+  console.log(`[analyze] unsplash "${searchQuery}" → ${candidatePool.length} candidates → ${foundImages.length} validated`);
 
   const heroImage = foundImages[0] ?? catalog.hero[0];
   const remainingUnsplash = foundImages.slice(1);
@@ -424,7 +431,6 @@ ${s.content || "(generate relevant content based on business type)"}
 
   const isFood = ["restaur","café","cafe","bar","pizz","sushi","comida","tasca","food","pastel","padaria","bakery","bistro"].some(k => category.toLowerCase().includes(k));
   const heroOverline = category.toUpperCase();
-  const allNavIds = ["home", ...pageSections.map(p => p.id), "why", ...(showTeam ? ["team"] : []), "contact"];
 
   const foodAboutSection = isFood
     ? `ABOUT (id="services") — <section id="services" class="py-28 px-6 bg-stone-50">:
@@ -455,9 +461,6 @@ ${s.content || "(generate relevant content based on business type)"}
   Row 2: content FIRST then <img src="${contentPhotos[1] || contentPhotos[0]}" class="rounded-2xl w-full aspect-[4/3] object-cover">`
     : "";
 
-  const footerLinks = isFood
-    ? `Início, Sobre, Menu, Porquê Nós${showTeam ? ", Equipa" : ""}, Contacto`
-    : `Início, Serviços, Porquê Nós${showTeam ? ", Equipa" : ""}, Contacto`;
 
   // Chosen design type overrides the keyword-derived direction.
   const direction = brief.isCustom
@@ -471,7 +474,36 @@ ${s.content || "(generate relevant content based on business type)"}
   const waUrl = waLink(analysis.phone, `Olá! Vim pelo site de ${analysis.businessName} e queria mais informações.`);
   const whatsappBlock = whatsappPromptBlock(waUrl);
 
-  const prompt = `You are a world-class web designer creating a premium redesign of a real business site. Produce the highest quality HTML possible — Lovable-level design with flawless typography, generous spacing, and polished visual hierarchy. Wow the viewer on first impression. This is a SINGLE-PAGE website where every nav link scrolls to a section.
+  // ── Multi-page (hash-routed, single file): nav with dropdown + page mapping ──
+  const servId = isFood ? "menu" : "servicos";
+  const navPages: NavPage[] = [
+    { name: "inicio", label: "Início" },
+    { name: servId, label: isFood ? "Menu" : "Serviços" },
+    { name: "sobre", label: "Sobre" },
+    { name: "contacto", label: "Contacto" },
+  ];
+  const pageMapping = isFood
+    ? `- "inicio": the HERO section and the WHY-US (+ stats) section.
+- "${servId}": the MENU SHOWCASE section (id="menu").
+- "sobre": the ABOUT / story section (id="services")${showTeam ? " and the TEAM section" : ""}.
+- "contacto": the CONTACT section.
+The <footer> stays OUTSIDE the page containers (shared across all pages), after the last container.`
+    : `- "inicio": the HERO section and the WHY-US (+ stats) section.
+- "${servId}": the SERVICES SHOWCASE section (id="services") and every ORIGINAL SECTION listed above.
+- "sobre": write a short authentic "Sobre" section for ${analysis.businessName} (2-3 paragraphs about the business + a few values/highlights)${showTeam ? " and the TEAM section" : ""}.
+- "contacto": the CONTACT section.
+The <footer> stays OUTSIDE the page containers (shared across all pages), after the last container.`;
+  const navBlock = pageNav({
+    businessName: analysis.businessName,
+    pages: navPages,
+    serviceItems: analysis.services,
+    servicesName: servId,
+    navCta,
+    ctaName: "contacto",
+  });
+  const multipageBlock = multipagePromptBlock({ pages: navPages, mapping: pageMapping });
+
+  const prompt = `You are a world-class web designer creating a premium redesign of a real business site. Produce the highest quality HTML possible — Lovable-level design with flawless typography, generous spacing, and polished visual hierarchy. Wow the viewer on first impression. This is a MULTI-PAGE website: a fixed navbar with a Serviços dropdown switches between separate pages (Início, ${isFood ? "Menu" : "Serviços"}, Sobre, Contacto) — not one long scroll.
 ${instructions ? `\n🔴🔴 USER INSTRUCTIONS — MANDATORY, HIGHEST PRIORITY. These are direct orders and OVERRIDE every default below (layout, colors, sections, copy). Implement ALL of them, exactly and visibly. If anything conflicts with the defaults, the USER WINS. Re-read them before each section:\n"""\n${instructions}\n"""\n` : ""}
 ═══ DESIGN DIRECTION (apply to every section) ═══
 Tone: ${direction.tone}
@@ -511,6 +543,8 @@ ${sectionsSpec}
 
 ## HTML STRUCTURE
 
+${multipageBlock}
+
 HEAD:
 - <link href="${fonts.import}" rel="stylesheet">
 - <script src="https://cdn.tailwindcss.com"></script>
@@ -518,16 +552,12 @@ HEAD:
 - <style>*,*::before,*::after{box-sizing:border-box}html{scroll-behavior:smooth}body{overflow-x:hidden}img{max-width:100%;height:auto}p,h1,h2,h3,h4,li,span{overflow-wrap:break-word;word-break:break-word}${REVEAL_CSS}</style>
 - <body class="font-body bg-white antialiased">
 
-NAV (id="navbar") — <nav id="navbar" class="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-100 shadow-sm">:
-- Inner: <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-- Left: logo circle w-10 h-10 rounded-full bg-primary + business name font-heading font-bold text-xl
-- Right desktop: nav links text-sm text-slate-600 hover:text-primary + <a href="#contact" class="px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-full">${navCta}</a>
-- Nav links: ${allNavIds.map(id => `<a href="#${id}">...</a>`).join(" ")}
-- Mobile hamburger id="hamburger" class="md:hidden p-2" + hidden menu id="mobile-menu"
-- JS: <script>document.getElementById('hamburger').addEventListener('click',()=>{document.getElementById('mobile-menu').classList.toggle('hidden')})</script>
-- NEVER use href="#" alone
+NAVBAR — reproduce EXACTLY this fixed navbar verbatim as the FIRST element inside <body>, OUTSIDE every page container. It already contains the Serviços dropdown + mobile menu. Do NOT alter its links or markup:
+${navBlock}
 
-${heroGuidance({ name: analysis.businessName, overline: heroOverline, image: heroImage, accent: analysis.accentColor, primary: analysis.primaryColor, ctaPrimary, ctaSecondary, contactId: "contact", servicesId: "services" })}
+PAGE CONTAINERS — immediately after the navbar, output the page containers from MULTI-PAGE STRUCTURE above. Each section lives inside its <div data-page="NAME" class="page"> (the "inicio" container is class="page active"). Never use href="#" alone.
+
+${heroGuidance({ name: analysis.businessName, overline: heroOverline, image: heroImage, accent: analysis.accentColor, primary: analysis.primaryColor, ctaPrimary, ctaSecondary, contactId: "contacto", servicesId: servId, multipage: true })}
 ${whatsappBlock ? `\n${whatsappBlock}\n` : ""}
 ${foodAboutSection}
 
@@ -568,12 +598,12 @@ FOOTER — <footer class="bg-slate-900 text-white py-16 px-6">:
 - <div class="max-w-6xl mx-auto">
 - <div class="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12">
 - Col 1: business name font-heading font-bold text-xl + brand tagline text-slate-400 text-sm
-- Col 2: Links Rápidos + <ul class="space-y-2"> ${footerLinks} each <a href="#section-id" class="text-slate-400 hover:text-white text-sm transition">
+- Col 2: <p class="font-semibold mb-3">Navegação</p> + <ul class="space-y-2"> — ONE link per page (these are page routes, not anchors): <a href="#/inicio">Início</a>, <a href="#/${servId}">${isFood ? "Menu" : "Serviços"}</a>, <a href="#/sobre">Sobre</a>, <a href="#/contacto">Contacto</a> — each class="text-slate-400 hover:text-white text-sm transition"
 - Col 3: Contacto + address/phone/email each <p class="text-slate-400 text-sm mb-2">
 - <div class="border-t border-slate-800 mt-10 pt-8 text-center text-slate-500 text-sm">© ${new Date().getFullYear()} ${analysis.businessName}. Todos os direitos reservados.</div>
 
 STRICT RULES:
-1. Every <a> → real href: #section-id, tel:..., mailto:...
+1. Every <a> → real href: #/page-name (to switch page), #section-id (scroll within current page), tel:..., mailto:..., or https://wa.me/... — never href="#" alone
 2. Every <button> → type="submit" in form OR onclick scroll
 3. No Lorem Ipsum — use real content from original site or generate authentic content
 4. Mobile responsive: sm: md: lg: prefixes
@@ -603,6 +633,7 @@ OUTPUT: ONLY the complete HTML starting with <!DOCTYPE html>. No markdown fences
 
   // Inject the deterministic motion layer before closing the body.
   html += "\n" + MOTION_SCRIPT;
+  html += "\n" + PAGE_BOOT;
 
   if (!html.includes("</body>")) html += "\n</body>";
   if (!html.includes("</html>")) html += "\n</html>";

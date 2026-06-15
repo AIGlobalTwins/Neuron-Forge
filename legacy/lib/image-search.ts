@@ -1,4 +1,5 @@
 import { chromium, Browser } from "playwright";
+import type Anthropic from "@anthropic-ai/sdk";
 
 /**
  * Image sourcing for generated websites.
@@ -115,6 +116,84 @@ export async function searchImages(query: string, count = 6, orientation: Orient
 
 // Back-compat alias (callers still import searchUnsplashImages).
 export const searchUnsplashImages = searchImages;
+
+/**
+ * Validate a candidate image pool against the actual business with a cheap vision
+ * pass (Haiku) and return the best-fitting URLs, best first. Low-res thumbnails are
+ * sent to keep cost/latency tiny. Falls back to the first `need` candidates on any
+ * error so generation never breaks. Use this BEFORE placing images on a site.
+ */
+export async function validateImages(
+  anthropic: Anthropic,
+  opts: { businessName: string; category: string; candidates: string[]; need: number },
+): Promise<string[]> {
+  const { businessName, category, candidates, need } = opts;
+  const pool = candidates.filter(Boolean);
+  if (pool.length <= need) return pool;
+
+  // Shrink to thumbnails (Unsplash/Pexels honor width params) then fetch bytes →
+  // base64. We send bytes (not URLs) so it works regardless of SDK image-source type.
+  const thumb = (u: string) => u.replace(/([?&])w=\d+/, "$1w=400").replace(/([?&])q=\d+/, "$1q=60");
+
+  const fetched = await Promise.all(pool.map((u) => fetchAsBase64(thumb(u))));
+  const usable = pool.map((u, i) => ({ i, img: fetched[i] })).filter((x) => x.img);
+  if (usable.length <= need) return usable.length ? usable.map((x) => pool[x.i]) : pool.slice(0, need);
+
+  const content: Anthropic.ContentBlockParam[] = [
+    {
+      type: "text",
+      text: `Business: "${businessName}" — category: "${category}".\nYou are choosing stock photos for THIS business's website. Below are candidate images, each labelled "Index N". Pick the ${need} BEST that genuinely fit this specific business: correct industry/subject, professional, modern, no embedded text/watermarks/logos, no wrong context. Reject anything off-topic. Reply with ONLY a JSON array of the chosen indices, best first, e.g. [4,1,7].`,
+    },
+  ];
+  for (const { i, img } of usable) {
+    content.push({ type: "text", text: `Index ${i}:` });
+    content.push({ type: "image", source: { type: "base64", media_type: img!.media_type, data: img!.data } });
+  }
+
+  try {
+    const res = await anthropic.messages.create({
+      model: "claude-haiku-4-5",
+      max_tokens: 150,
+      messages: [{ role: "user", content }],
+    });
+    const txt = res.content[0]?.type === "text" ? res.content[0].text : "";
+    const match = txt.match(/\[[\d,\s]*\]/);
+    const idx = match ? (JSON.parse(match[0]) as number[]) : [];
+    const picked = idx.filter((i) => Number.isInteger(i) && i >= 0 && i < pool.length).map((i) => pool[i]);
+    const unique = Array.from(new Set(picked));
+    console.log(`[image-search] validated ${pool.length}→${unique.length} for "${businessName}"`);
+    return unique.length >= Math.min(need, 2) ? unique : pool.slice(0, need);
+  } catch (err) {
+    console.warn("[image-search] validate failed:", (err as Error).message);
+    return pool.slice(0, need);
+  }
+}
+
+type MediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+
+/** Fetch an image and return base64 + media_type, or null on failure. */
+async function fetchAsBase64(url: string): Promise<{ media_type: MediaType; data: string } | null> {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), 6000);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal });
+    if (!res.ok) return null;
+    const ct = (res.headers.get("content-type") || "").toLowerCase();
+    const media_type: MediaType = ct.includes("png")
+      ? "image/png"
+      : ct.includes("webp")
+        ? "image/webp"
+        : ct.includes("gif")
+          ? "image/gif"
+          : "image/jpeg";
+    const data = Buffer.from(await res.arrayBuffer()).toString("base64");
+    return { media_type, data };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(id);
+  }
+}
 
 /** Nudge any query toward a modern, editorial, high-end aesthetic. */
 export function modernizeQuery(query: string): string {

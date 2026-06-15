@@ -7,7 +7,7 @@ import path from "path";
 
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 import { deployToVercel } from "@/lib/vercel-deploy";
-import { searchUnsplashImages, buildImageSearchQuery } from "@/lib/image-search";
+import { searchUnsplashImages, buildImageSearchQuery, validateImages } from "@/lib/image-search";
 import { planWebsite, formatPlanForPrompt } from "@/lib/website-planner";
 import { buildDesignBrief, formatDesignBriefForPrompt, darkThemeInstruction, heroGuidance } from "@/lib/design-engine";
 import { REVEAL_CSS, MOTION_SCRIPT, MOTION_PROMPT } from "@/lib/motion";
@@ -362,11 +362,16 @@ export async function POST(req: NextRequest) {
   const vibe = brief.isCustom ? brief.vibeKeywords : "";
   const heroQ = [vibe, plan.heroImageQuery || fallbackQuery].filter(Boolean).join(" ").trim();
   const contentQ = [vibe, plan.contentImageQuery || fallbackQuery].filter(Boolean).join(" ").trim();
-  const [heroPool, contentPool] = await Promise.all([
-    searchUnsplashImages(heroQ, 3, "landscape"),
-    searchUnsplashImages(contentQ, 6, "landscape"),
+  const [heroPoolRaw, contentPoolRaw] = await Promise.all([
+    searchUnsplashImages(heroQ, 8, "landscape"),
+    searchUnsplashImages(contentQ, 12, "landscape"),
   ]);
-  console.log(`[maps] unsplash hero→${heroPool.length} content→${contentPool.length}`);
+  // Validate relevance against the actual business before placing (Haiku vision).
+  const [heroPool, contentPool] = await Promise.all([
+    validateImages(anthropic, { businessName: finalName, category: finalCategory, candidates: heroPoolRaw, need: 2 }),
+    validateImages(anthropic, { businessName: finalName, category: finalCategory, candidates: contentPoolRaw, need: 6 }),
+  ]);
+  console.log(`[maps] unsplash hero ${heroPoolRaw.length}→${heroPool.length} content ${contentPoolRaw.length}→${contentPool.length}`);
 
   // ── Resolve final image set (uploaded > unsplash-plan > catalog) ───────
   const heroImage = savedImageUrls[0] ?? heroPool[0] ?? catalog.hero[0];
