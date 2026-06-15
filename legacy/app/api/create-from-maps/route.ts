@@ -12,6 +12,7 @@ import { planWebsite, formatPlanForPrompt } from "@/lib/website-planner";
 import { buildDesignBrief, formatDesignBriefForPrompt, darkThemeInstruction, heroGuidance } from "@/lib/design-engine";
 import { REVEAL_CSS, MOTION_SCRIPT, MOTION_PROMPT } from "@/lib/motion";
 import { balanceBlocks } from "@/lib/html-fix";
+import { waLink, whatsappPromptBlock } from "@/lib/phone";
 
 const REDESIGN_DIR = "./outputs/redesigns";
 const UPLOADS_DIR = "./public/uploads";
@@ -387,6 +388,9 @@ export async function POST(req: NextRequest) {
 
   const designBlock = formatDesignBriefForPrompt(brief);
 
+  const waUrl = waLink(finalPhone, `Olá! Vim pelo site de ${finalName} e queria mais informações.`);
+  const whatsappBlock = whatsappPromptBlock(waUrl);
+
   const sharedContext = `
 ${instructions ? `🔴 USER INSTRUCTIONS — MANDATORY, override every default below. Implement ALL of them exactly and visibly: ${instructions}\n\n` : ""}${designBlock}
 
@@ -401,6 +405,7 @@ Brand colors: primary=${plan.primaryColor} accent=${plan.accentColor} bg=${plan.
 Brand personality: ${plan.brandPersonality}
 Hero image: ${heroImage}
 Fonts: heading="${fonts.heading}" body="${fonts.body}"
+${whatsappBlock ? `\n${whatsappBlock}` : ""}
 `.trim();
 
   const darkBlock = darkThemeInstruction(brief);

@@ -13,6 +13,7 @@ import { buildDesignBrief, formatDesignBriefForPrompt, darkThemeInstruction, her
 import { REVEAL_CSS, MOTION_SCRIPT, MOTION_PROMPT } from "@/lib/motion";
 import { balanceBlocks } from "@/lib/html-fix";
 import { extractJsonObject } from "@/lib/json-extract";
+import { waLink, whatsappPromptBlock } from "@/lib/phone";
 
 const REDESIGN_DIR = "./outputs/redesigns";
 
@@ -467,6 +468,9 @@ ${s.content || "(generate relevant content based on business type)"}
   const btnRadius = direction.cornerRadius === "sharp" ? "rounded-md" : "rounded-full";
   const darkBlock = darkThemeInstruction(brief);
 
+  const waUrl = waLink(analysis.phone, `Olá! Vim pelo site de ${analysis.businessName} e queria mais informações.`);
+  const whatsappBlock = whatsappPromptBlock(waUrl);
+
   const prompt = `You are a world-class web designer creating a premium redesign of a real business site. Produce the highest quality HTML possible — Lovable-level design with flawless typography, generous spacing, and polished visual hierarchy. Wow the viewer on first impression. This is a SINGLE-PAGE website where every nav link scrolls to a section.
 ${instructions ? `\n🔴🔴 USER INSTRUCTIONS — MANDATORY, HIGHEST PRIORITY. These are direct orders and OVERRIDE every default below (layout, colors, sections, copy). Implement ALL of them, exactly and visibly. If anything conflicts with the defaults, the USER WINS. Re-read them before each section:\n"""\n${instructions}\n"""\n` : ""}
 ═══ DESIGN DIRECTION (apply to every section) ═══
@@ -524,7 +528,7 @@ NAV (id="navbar") — <nav id="navbar" class="fixed top-0 inset-x-0 z-50 bg-whit
 - NEVER use href="#" alone
 
 ${heroGuidance({ name: analysis.businessName, overline: heroOverline, image: heroImage, accent: analysis.accentColor, primary: analysis.primaryColor, ctaPrimary, ctaSecondary, contactId: "contact", servicesId: "services" })}
-
+${whatsappBlock ? `\n${whatsappBlock}\n` : ""}
 ${foodAboutSection}
 
 ${foodMenuSection}
