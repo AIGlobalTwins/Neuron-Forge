@@ -16,6 +16,7 @@ import { EmailMarketingModal } from "@/components/EmailMarketingModal";
 import { GoogleAdsModal } from "@/components/GoogleAdsModal";
 import { ContentCalendarModal } from "@/components/ContentCalendarModal";
 import { HistoryModal } from "@/components/HistoryModal";
+import { AuthButton } from "@/components/AuthButton";
 
 
 function SearchIcon() {
@@ -359,6 +360,9 @@ export default function Home() {
               <circle cx="4.5" cy="15.5" r="1.5" />
             </svg>
           </button>
+
+          {/* Account (sign-out) — only when Clerk login is enabled */}
+          <AuthButton />
         </div>
       </header>
 
