@@ -324,7 +324,7 @@ export function GoogleMapsModal({ onClose }: Props) {
             {/* Image upload */}
             <div>
               <label className="block text-xs text-gray-500 mb-1.5 uppercase tracking-wide">
-                Business Photos <span className="text-gray-700 normal-case">(up to 3 — helps Claude match the style)</span>
+                Business Photos <span className="text-gray-700 normal-case">(up to 3 — helps AI match the style)</span>
               </label>
               <div
                 onClick={() => fileInputRef.current?.click()}

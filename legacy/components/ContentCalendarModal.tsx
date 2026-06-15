@@ -202,7 +202,7 @@ export function ContentCalendarModal({ onClose }: Props) {
               </div>
               <div className="text-center space-y-1">
                 <p className="text-white font-medium text-sm">{LOADING_STEPS[loadingStep]?.label}</p>
-                <p className="text-gray-600 text-xs">Claude is planning your month...</p>
+                <p className="text-gray-600 text-xs">AI is planning your month...</p>
               </div>
               <div className="flex gap-1.5">
                 {LOADING_STEPS.map((_, i) => (

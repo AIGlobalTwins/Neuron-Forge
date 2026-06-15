@@ -93,7 +93,7 @@ Responde APENAS com um JSON array de ${count} objecto(s) (sem markdown):
     }));
 
   if (posts.length === 0) {
-    return NextResponse.json({ error: "Invalid response from Claude — please try again" }, { status: 500 });
+    return NextResponse.json({ error: "Invalid response from AI — please try again" }, { status: 500 });
   }
 
   return NextResponse.json({ posts });

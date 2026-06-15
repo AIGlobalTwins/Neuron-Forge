@@ -202,7 +202,7 @@ function buildHtml(result: SecurityResult): string {
   </div>
 
   <div class="footer">
-    <span>Neuron Forge Security Agent · Powered by Claude Sonnet · Auditoria passiva de código público</span>
+    <span>Neuron Forge Security Agent · Auditoria passiva de código público</span>
     <span>${date}</span>
   </div>
 

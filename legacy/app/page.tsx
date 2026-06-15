@@ -120,7 +120,7 @@ const T = {
     viewDemo: "Ver demo",
     tagline: "Agentes de IA, zero código",
     h1: "A tua equipa de IA, pronta em minutos",
-    sub: "Websites, redes sociais, atendimento ao cliente e consultoria estratégica — tudo com Claude.",
+    sub: "Websites, redes sociais, atendimento ao cliente e consultoria estratégica — tudo com IA.",
     cards: [
       { tag: "Tem website", title: "Analisar & Redesenhar", desc: "Cola qualquer URL. Fazemos um screenshot, avaliamos o design com IA e geramos um redesign completamente moderno.", cta: "Analisar website" },
       { tag: "Sem website", title: "Criar a partir do Google Maps", desc: "Cola o URL do Google Maps do negócio e adiciona as tuas fotos. Extraímos a info e construímos um site profissional do zero.", cta: "Criar website" },
@@ -143,7 +143,7 @@ const T = {
     viewDemo: "View demo",
     tagline: "AI agents, zero code",
     h1: "Your AI team, ready in minutes",
-    sub: "Websites, social media, customer support, and strategic consulting — all powered by Claude.",
+    sub: "Websites, social media, customer support, and strategic consulting — all powered by AI.",
     cards: [
       { tag: "Has website", title: "Analyze & Redesign", desc: "Paste any website URL. We'll screenshot it, score the design with AI, and generate a fully modern redesign.", cta: "Analyze website" },
       { tag: "No website", title: "Create from Google Maps", desc: "Paste a Google Maps business URL and add your photos. We'll extract the info and build a professional site from scratch.", cta: "Create website" },
@@ -424,7 +424,7 @@ export default function Home() {
 
         {/* Footer note */}
         <p className="mt-10 text-xs text-gray-700">
-          Powered by Claude Sonnet · Playwright · Neuron Forge Agents
+          Neuron Forge Agents
         </p>
       </main>
 

@@ -7,9 +7,9 @@ const S = {
   pt: {
     title: "Settings", subtitle: "API Keys & Integrations",
     configured: "Configured",
-    anthropicDesc: "Required to generate websites with Claude. Get it at",
+    anthropicDesc: "Required to generate websites with AI. Get it at",
     keepPlaceholder: "••••••••••••  (deixa em branco para manter)",
-    modelTitle: "Modelo Claude",
+    modelTitle: "Modelo de IA",
     modelDesc: "O modelo usado por todos os agentes. Modelos mais capazes produzem melhores resultados mas são mais lentos.",
     modelDescs: ["Mais capaz — melhor qualidade", "Muito capaz — topo anterior", "Equilibrado — rápido e capaz", "Mais rápido e barato"],
     vercelDesc: "Opcional. Para deploy automático dos websites gerados. Obtém em",
@@ -19,9 +19,9 @@ const S = {
   en: {
     title: "Settings", subtitle: "API Keys & Integrations",
     configured: "Configured",
-    anthropicDesc: "Required to generate websites with Claude. Get it at",
+    anthropicDesc: "Required to generate websites with AI. Get it at",
     keepPlaceholder: "••••••••••••  (leave blank to keep)",
-    modelTitle: "Claude Model",
+    modelTitle: "Model",
     modelDesc: "The model used by all agents. More capable models produce better results but are slower.",
     modelDescs: ["Most capable — best quality", "Very capable — previous flagship", "Balanced — fast and capable", "Fastest and cheapest"],
     vercelDesc: "Optional. For automatic deployment of generated websites. Get it at",
@@ -56,7 +56,7 @@ function CheckIcon() {
 }
 
 const MODEL_IDS = ["claude-opus-4-8", "claude-opus-4-7", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"] as const;
-const MODEL_LABELS = ["Claude Opus 4.8", "Claude Opus 4.7", "Claude Sonnet 4.6", "Claude Haiku 4.5"] as const;
+const MODEL_LABELS = ["Opus 4.8", "Opus 4.7", "Sonnet 4.6", "Haiku 4.5"] as const;
 
 export function SettingsModal({ onClose }: Props) {
   const lang = useLang();

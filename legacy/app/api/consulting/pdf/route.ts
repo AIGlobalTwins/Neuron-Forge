@@ -173,7 +173,7 @@ function buildReportHtml(plan: ConsultingPlan, area: string): string {
   ${forgeSection}
 
   <div class="footer">
-    <span>Neuron Forge Consulting Agent · Powered by Claude Sonnet</span>
+    <span>Neuron Forge Consulting Agent</span>
     <span>${date}</span>
   </div>
 

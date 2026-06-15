@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Neuron Forge Agents",
-  description: "The visual layer for AI agents — websites, social media, WhatsApp and consulting powered by Claude",
+  description: "The visual layer for AI agents — websites, social media, WhatsApp and consulting powered by AI",
 };
 
 // Clerk is optional — only loaded when valid keys are present.

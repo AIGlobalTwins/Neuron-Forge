@@ -17,7 +17,7 @@ interface GeneratedPost {
 
 const LOADING_STEPS = [
   { label: "Analyzing your business...", duration: 2500 },
-  { label: "Writing the captions with Claude...", duration: 4000 },
+  { label: "Writing the captions with AI...", duration: 4000 },
   { label: "Adding the final touches...", duration: 0 },
 ];
 
@@ -418,7 +418,7 @@ export function SocialPostsModal({ onClose }: Props) {
               </div>
               <div className="text-center space-y-1">
                 <p className="text-white font-medium text-sm">{LOADING_STEPS[loadingStep]?.label}</p>
-                <p className="text-gray-600 text-xs">Claude is writing your posts...</p>
+                <p className="text-gray-600 text-xs">AI is writing your posts...</p>
               </div>
               <div className="flex gap-1.5">
                 {LOADING_STEPS.map((_, i) => (

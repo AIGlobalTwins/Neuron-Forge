@@ -36,7 +36,7 @@ function scoreColor(score: number) {
 const LOADING_STEPS = [
   { label: "Loading website...", duration: 4000 },
   { label: "Taking screenshot...", duration: 3000 },
-  { label: "Analysing design with Claude Vision...", duration: 6000 },
+  { label: "Analysing design with AI Vision...", duration: 6000 },
   { label: "Generating redesign...", duration: 0 },
 ];
 
@@ -190,8 +190,8 @@ export function AnalyzeModal({ onClose }: Props) {
             <div className="bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg p-3 text-xs text-gray-500 space-y-1">
               <div className="text-gray-400 font-medium mb-1.5">What happens:</div>
               <div>① Playwright screenshots your site at 1280×800</div>
-              <div>② Claude Vision scores design quality 1–10</div>
-              <div>③ Claude generates a full modern redesign</div>
+              <div>② AI Vision scores design quality 1–10</div>
+              <div>③ AI generates a full modern redesign</div>
             </div>
 
             <div className="flex gap-3 pt-1">

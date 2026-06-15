@@ -107,9 +107,9 @@ export function OnboardingModal({ onComplete }: Props) {
           <div className="p-8">
             <div className="mb-6">
               <div className="text-xs text-[#E8622A] font-medium uppercase tracking-widest mb-2">Step 1 of 3</div>
-              <h2 className="text-xl font-bold text-white mb-2">Connect Claude</h2>
+              <h2 className="text-xl font-bold text-white mb-2">Connect AI</h2>
               <p className="text-gray-400 text-sm leading-relaxed">
-                Forge uses Anthropic&apos;s Claude to generate content. You need a free API key to get started.
+                Forge uses Anthropic&apos;s AI to generate content. You need a free API key to get started.
               </p>
             </div>
 
