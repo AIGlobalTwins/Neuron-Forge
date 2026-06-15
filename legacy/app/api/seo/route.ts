@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
+import { qualityBar } from "@/lib/agent-quality";
 import { extractJsonObject } from "@/lib/json-extract";
 
 async function getUserId(): Promise<string | null> {
@@ -67,7 +68,7 @@ GEO (Generative Engine Optimization) — regras para ser citado por Google AI Ov
 - NUNCA fazer keyword stuffing — reduz visibilidade AI em -10%
 `.trim();
 
-  const base = `És um especialista em SEO e copywriting. ${businessCtx}\n\n`;
+  const base = `És um especialista em SEO e copywriting. ${businessCtx}\n\n${qualityBar(language)}\n\n`;
 
   if (contentType === "blog") {
     return base + `Escreve um artigo de blog SEO-optimizado.
@@ -227,7 +228,7 @@ export async function POST(req: NextRequest) {
     );
 
     const anthropic = new Anthropic({ apiKey: anthropicKey });
-    const maxTokens = contentType === "blog" ? 4000 : contentType === "landing" ? 3000 : 2500;
+    const maxTokens = contentType === "blog" ? 6000 : contentType === "landing" ? 3500 : 2500;
 
     const res = await anthropic.messages.create({
       model: claudeModel,

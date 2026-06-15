@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
+import { qualityBar } from "@/lib/agent-quality";
 import { extractJsonObject } from "@/lib/json-extract";
 
 export type SequenceType = "welcome" | "nurture" | "reengagement" | "promotion" | "abandoned";
@@ -75,6 +76,8 @@ ${seq.pt}: ${seq.desc}
 - Último email: urgência natural ou resumo de valor (sem spam)
 - sendDay: quando enviar relativamente ao trigger (ex: "Dia 0", "Dia 2", "Dia 5")
 
+${qualityBar(language)}
+
 Responde APENAS com JSON (sem markdown):
 {
   "emails": [
@@ -108,7 +111,7 @@ Notas:
 
     const res = await anthropic.messages.create({
       model: claudeModel,
-      max_tokens: 5500,
+      max_tokens: 7000,
       messages: [{ role: "user", content: prompt }],
     });
 

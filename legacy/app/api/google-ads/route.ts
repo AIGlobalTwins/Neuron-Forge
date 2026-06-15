@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
+import { qualityBar } from "@/lib/agent-quality";
 import { extractJsonObject } from "@/lib/json-extract";
 
 export type CampaignType = "search" | "pmax" | "display" | "remarketing";
@@ -73,6 +74,8 @@ ${campaign.pt}: ${campaign.desc}
 - Não repetir a mesma ideia em headlines diferentes — variar ângulos
 - Usar inserção de keyword onde fizer sentido: {KeyWord:fallback}
 
+${qualityBar(language)}
+
 Responde APENAS com JSON (sem markdown):
 {
   "adGroups": [
@@ -106,7 +109,7 @@ Notas:
 
     const res = await anthropic.messages.create({
       model: claudeModel,
-      max_tokens: 6000,
+      max_tokens: 8000,
       messages: [{ role: "user", content: prompt }],
     });
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
+import { qualityBar } from "@/lib/agent-quality";
 import { extractJsonObject } from "@/lib/json-extract";
 
 export interface CalendarDay {
@@ -71,6 +72,8 @@ Idioma: ${lang}
 - Incluir: datas relevantes do mês, tendências sazonais, hooks virais adaptados ao negócio
 - bestTime: horário recomendado baseado em dados gerais de engagement para ${lang === "Português europeu" ? "Portugal" : "o mercado-alvo"}
 - Progressão: construir narrativa ao longo do mês (não repetir temas em dias consecutivos)
+
+${qualityBar(lang)}
 
 Responde APENAS com JSON (sem markdown):
 {

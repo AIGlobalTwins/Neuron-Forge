@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
+import { qualityBar } from "@/lib/agent-quality";
 import { extractJsonObject } from "@/lib/json-extract";
 import fs from "fs";
 import path from "path";
@@ -77,6 +78,8 @@ Abaixo estão as ferramentas que podes recomendar se forem genuinamente relevant
 
 ${forgeToolsMd}` : ""}
 
+${qualityBar("pt")}
+
 Constrói o plano em JSON. Responde APENAS com JSON (sem markdown):
 {
   "title": "Título do plano (específico ao problema)",
@@ -117,7 +120,7 @@ Notas:
 
     const res = await anthropic.messages.create({
       model: claudeModel,
-      max_tokens: 4000,
+      max_tokens: 6000,
       messages: [{ role: "user", content: prompt }],
     });
 
