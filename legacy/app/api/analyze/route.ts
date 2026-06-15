@@ -15,6 +15,7 @@ import { balanceBlocks } from "@/lib/html-fix";
 import { extractJsonObject } from "@/lib/json-extract";
 import { waLink, whatsappPromptBlock } from "@/lib/phone";
 import { pageNav, multipagePromptBlock, PAGE_BOOT, type NavPage } from "@/lib/multipage";
+import { siteGuard } from "@/lib/site-guard";
 
 const REDESIGN_DIR = "./outputs/redesigns";
 
@@ -634,6 +635,7 @@ OUTPUT: ONLY the complete HTML starting with <!DOCTYPE html>. No markdown fences
   // Inject the deterministic motion layer before closing the body.
   html += "\n" + MOTION_SCRIPT;
   html += "\n" + PAGE_BOOT;
+  html += "\n" + siteGuard({ waUrl, contactHref: "#/contacto" });
 
   if (!html.includes("</body>")) html += "\n</body>";
   if (!html.includes("</html>")) html += "\n</html>";

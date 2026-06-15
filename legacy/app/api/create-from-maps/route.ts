@@ -13,6 +13,7 @@ import { buildDesignBrief, formatDesignBriefForPrompt, darkThemeInstruction, her
 import { REVEAL_CSS, MOTION_SCRIPT, MOTION_PROMPT } from "@/lib/motion";
 import { balanceBlocks } from "@/lib/html-fix";
 import { waLink, whatsappPromptBlock } from "@/lib/phone";
+import { siteGuard } from "@/lib/site-guard";
 
 const REDESIGN_DIR = "./outputs/redesigns";
 const UPLOADS_DIR = "./public/uploads";
@@ -236,7 +237,7 @@ function cleanPart2(raw: string): string {
   return s.trim();
 }
 
-function fixHtml(part1: string, part2: string): string {
+function fixHtml(part1: string, part2: string, tailScript = ""): string {
   let p1 = stripMarkdown(part1);
   const docStart = p1.indexOf("<!DOCTYPE");
   if (docStart > 0) p1 = p1.slice(docStart);
@@ -258,6 +259,7 @@ function fixHtml(part1: string, part2: string): string {
 
   // Inject the deterministic motion layer before closing the body.
   html += "\n" + MOTION_SCRIPT;
+  if (tailScript) html += "\n" + tailScript;
 
   if (!html.includes("</body>")) html += "\n</body>";
   if (!html.includes("</html>")) html += "\n</html>";
@@ -643,7 +645,7 @@ Output ONLY raw HTML. No markdown. No explanations.`;
   part2 = part2.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
 
   // ── Combine parts ──────────────────────────────────────────────────────
-  const html = fixHtml(part1, part2);
+  const html = fixHtml(part1, part2, siteGuard({ waUrl, contactHref: "#contact" }));
 
   if (html.length < 3000) {
     return NextResponse.json({ error: "Generated HTML too short — try again" }, { status: 500 });
