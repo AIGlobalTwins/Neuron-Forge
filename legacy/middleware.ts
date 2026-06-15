@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import type { NextRequest, NextFetchEvent } from "next/server";
 
 const clerkKey = process.env.CLERK_SECRET_KEY ?? "";
 const clerkEnabled = clerkKey.startsWith("sk_live_") || clerkKey.startsWith("sk_test_");
@@ -7,7 +7,7 @@ const clerkEnabled = clerkKey.startsWith("sk_live_") || clerkKey.startsWith("sk_
 // When Clerk is configured, every non-public route requires a signed-in user, so
 // each tester is isolated under their own userId (own API keys, settings, history).
 // When Clerk is NOT configured, the app stays fully open (no auth).
-export default async function middleware(req: NextRequest) {
+export default async function middleware(req: NextRequest, event: NextFetchEvent) {
   // Never touch static assets — prevents CSS/JS 404s
   const { pathname } = req.nextUrl;
   if (pathname.startsWith("/_next") || pathname.startsWith("/favicon")) {
@@ -28,9 +28,11 @@ export default async function middleware(req: NextRequest) {
     "/api/preview(.*)", // generated-site preview must be shareable
   ]);
 
+  // Pass the REAL NextFetchEvent through — Clerk's handshake (dev-browser cookie
+  // exchange) needs it; a stub event made the handshake return 500.
   return clerkMiddleware(async (auth, request) => {
     if (!isPublic(request)) await auth.protect();
-  })(req, { waitUntil: () => {} } as never);
+  })(req, event);
 }
 
 export const config = {
