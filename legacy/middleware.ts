@@ -4,9 +4,9 @@ import type { NextRequest } from "next/server";
 const clerkKey = process.env.CLERK_SECRET_KEY ?? "";
 const clerkEnabled = clerkKey.startsWith("sk_live_") || clerkKey.startsWith("sk_test_");
 
-// When Clerk is configured, use Clerk middleware for session handling.
-// API routes are NOT protected here — each route handler checks auth individually
-// via `try { auth() } catch {}` and falls back gracefully when unauthenticated.
+// When Clerk is configured, every non-public route requires a signed-in user, so
+// each tester is isolated under their own userId (own API keys, settings, history).
+// When Clerk is NOT configured, the app stays fully open (no auth).
 export default async function middleware(req: NextRequest) {
   // Never touch static assets — prevents CSS/JS 404s
   const { pathname } = req.nextUrl;
@@ -16,9 +16,21 @@ export default async function middleware(req: NextRequest) {
 
   if (!clerkEnabled) return NextResponse.next();
 
-  const { clerkMiddleware } = await import("@clerk/nextjs/server");
+  const { clerkMiddleware, createRouteMatcher } = await import("@clerk/nextjs/server");
 
-  return clerkMiddleware()(req, { waitUntil: () => {} } as never);
+  // Public — reachable WITHOUT login. Everything else (the app UI + the generation
+  // APIs) is protected, forcing sign-in so requests carry a real userId.
+  const isPublic = createRouteMatcher([
+    "/sign-in(.*)",
+    "/sign-up(.*)",
+    "/api/whatsapp(.*)", // Meta webhook + /api/whatsapp/status (Render health check)
+    "/api/google/callback(.*)", // OAuth redirect
+    "/api/preview(.*)", // generated-site preview must be shareable
+  ]);
+
+  return clerkMiddleware(async (auth, request) => {
+    if (!isPublic(request)) await auth.protect();
+  })(req, { waitUntil: () => {} } as never);
 }
 
 export const config = {
