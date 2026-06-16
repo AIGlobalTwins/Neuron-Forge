@@ -180,12 +180,43 @@ export function EmailMarketingModal({ onClose }: Props) {
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-3 uppercase tracking-widest">Sequence Type</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {SEQUENCES.map((s) => (
-                    <button key={s.id} onClick={() => setSequenceType(s.id)} className={`text-left px-4 py-3 rounded-xl border transition-all duration-200 ${sequenceType === s.id ? "border-cyan-500/60 bg-cyan-500/5 text-white" : "border-[#1e1e1e] text-gray-500 hover:border-[#2a2a2a] hover:text-gray-400"}`}>
-                      <div className="text-sm font-medium mb-0.5">{s.icon} {s.label}</div>
-                      <div className="text-xs text-gray-600">{s.desc}</div>
-                    </button>
-                  ))}
+                  {SEQUENCES.map((s) => {
+                    const sel = sequenceType === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => setSequenceType(s.id)}
+                        aria-pressed={sel}
+                        className={`group relative text-left rounded-xl border p-3.5 transition-all duration-200 ease-out hover:-translate-y-0.5 ${
+                          sel
+                            ? "border-[#E8622A] bg-[#E8622A]/[0.07] shadow-[0_0_0_1px_rgba(232,98,42,0.55),0_10px_30px_-10px_rgba(232,98,42,0.5)]"
+                            : "border-white/[0.06] bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04] hover:shadow-lg hover:shadow-black/40"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <span
+                            className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-colors ${
+                              sel ? "bg-[#E8622A]/15 ring-1 ring-[#E8622A]/30" : "bg-white/[0.04] ring-1 ring-white/10 group-hover:bg-white/[0.06]"
+                            }`}
+                          >
+                            {s.icon}
+                          </span>
+                          <div className="min-w-0">
+                            <div className={`text-sm font-semibold tracking-tight ${sel ? "text-white" : "text-gray-200"}`}>{s.label}</div>
+                            <div className="text-[11px] text-gray-500 leading-snug mt-0.5">{s.desc}</div>
+                          </div>
+                        </div>
+                        {sel && (
+                          <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-[#E8622A] flex items-center justify-center shadow-md shadow-[#E8622A]/40">
+                            <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                              <path d="M5 12l5 5L20 6" />
+                            </svg>
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
