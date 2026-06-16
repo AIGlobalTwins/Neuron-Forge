@@ -10,13 +10,53 @@ interface Props {
 
 type Step = "form" | "loading" | "result";
 
-const SEQUENCES: { id: SequenceType; label: string; desc: string; icon: string }[] = [
-  { id: "welcome",      label: "Welcome",             desc: "Onboarding for new subscribers",           icon: "👋" },
-  { id: "nurture",      label: "Nurturing",           desc: "Nurture leads toward conversion",          icon: "🌱" },
-  { id: "promotion",    label: "Promotion",           desc: "Campaign with urgency and scarcity",        icon: "🔥" },
-  { id: "reengagement", label: "Re-engagement",       desc: "Reactivate inactive contacts",             icon: "💫" },
-  { id: "abandoned",    label: "Abandoned cart",       desc: "Recover lost leads/carts",                 icon: "🛒" },
+const SEQUENCES: { id: SequenceType; label: string; desc: string }[] = [
+  { id: "welcome",      label: "Welcome",       desc: "Onboarding for new subscribers" },
+  { id: "nurture",      label: "Nurturing",     desc: "Nurture leads toward conversion" },
+  { id: "promotion",    label: "Promotion",     desc: "Campaign with urgency and scarcity" },
+  { id: "reengagement", label: "Re-engagement", desc: "Reactivate inactive contacts" },
+  { id: "abandoned",    label: "Abandoned cart", desc: "Recover lost leads/carts" },
 ];
+
+// Professional line icons (Lucide-style) per sequence — replaces emojis.
+const SEQ_ICONS: Record<SequenceType, JSX.Element> = {
+  welcome: (
+    <>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M19 8v6M22 11h-6" />
+    </>
+  ),
+  nurture: (
+    <>
+      <path d="M12 20V9" />
+      <path d="M12 9C12 5.7 9.3 3 6 3c0 3.3 2.7 6 6 6z" />
+      <path d="M12 11c0-2.8 2.2-5 5-5 0 2.8-2.2 5-5 5z" />
+      <path d="M8 20h8" />
+    </>
+  ),
+  promotion: (
+    <>
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+      <circle cx="7" cy="7" r="1.3" />
+    </>
+  ),
+  reengagement: (
+    <>
+      <path d="M21 2v6h-6" />
+      <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+      <path d="M3 22v-6h6" />
+      <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+    </>
+  ),
+  abandoned: (
+    <>
+      <circle cx="9" cy="21" r="1" />
+      <circle cx="20" cy="21" r="1" />
+      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+    </>
+  ),
+};
 
 const TONES = [
   { id: "professional", label: "Professional" },
@@ -196,11 +236,15 @@ export function EmailMarketingModal({ onClose }: Props) {
                       >
                         <div className="flex items-start gap-3">
                           <span
-                            className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-colors ${
-                              sel ? "bg-[#E8622A]/15 ring-1 ring-[#E8622A]/30" : "bg-white/[0.04] ring-1 ring-white/10 group-hover:bg-white/[0.06]"
+                            className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+                              sel
+                                ? "bg-[#E8622A]/15 ring-1 ring-[#E8622A]/30 text-[#E8622A]"
+                                : "bg-white/[0.04] ring-1 ring-white/10 text-gray-400 group-hover:bg-white/[0.06] group-hover:text-gray-300"
                             }`}
                           >
-                            {s.icon}
+                            <svg viewBox="0 0 24 24" className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                              {SEQ_ICONS[s.id]}
+                            </svg>
                           </span>
                           <div className="min-w-0">
                             <div className={`text-sm font-semibold tracking-tight ${sel ? "text-white" : "text-gray-200"}`}>{s.label}</div>
