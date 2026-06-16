@@ -22,31 +22,57 @@ interface Props {
 export function DesignTypePicker({ value, onChange }: Props) {
   return (
     <div>
-      <label className="block text-xs text-gray-500 mb-1.5 uppercase tracking-wide">
+      <label className="block text-xs text-gray-500 mb-2 uppercase tracking-wide">
         Design style <span className="normal-case text-gray-700">— the agent picks the right skills</span>
       </label>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2.5">
         {DESIGN_TYPES.map((d) => {
           const selected = value === d.id;
+          const isAuto = d.id === "auto";
+          const cardCls = selected
+            ? "border-[#E8622A] bg-[#E8622A]/[0.07] shadow-[0_0_0_1px_rgba(232,98,42,0.55),0_10px_30px_-10px_rgba(232,98,42,0.5)]"
+            : isAuto
+              ? "border-[#E8622A]/25 bg-[#E8622A]/[0.03] hover:border-[#E8622A]/55 hover:bg-[#E8622A]/[0.06]"
+              : "border-white/[0.06] bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04] hover:shadow-lg hover:shadow-black/40";
           return (
             <button
               key={d.id}
               type="button"
               onClick={() => onChange(d.id)}
-              className={`text-left rounded-lg border p-2.5 transition-all ${
-                selected
-                  ? "border-[#E8622A] bg-[#E8622A]/10"
-                  : "border-[#2a2a2a] bg-[#0d0d0d] hover:border-[#444]"
-              }`}
+              aria-pressed={selected}
+              className={`group relative overflow-hidden text-left rounded-xl border p-3 transition-all duration-200 ease-out hover:-translate-y-0.5 ${cardCls}`}
             >
-              <div className="flex items-center gap-1 mb-1.5">
-                {d.swatch.map((c, i) => (
-                  <span key={i} className="w-3.5 h-3.5 rounded-full border border-white/10" style={{ backgroundColor: c }} />
-                ))}
-                {d.theme === "dark" && <span className="ml-auto text-[9px] text-gray-500 uppercase">dark</span>}
+              {/* Palette preview — gradient swatch with a glassy top sheen */}
+              <div
+                className="relative mb-2.5 h-7 rounded-md ring-1 ring-inset ring-white/10 overflow-hidden"
+                style={{ backgroundImage: `linear-gradient(120deg, ${d.swatch[0]} 0%, ${d.swatch[1]} 50%, ${d.swatch[2]} 100%)` }}
+              >
+                <span className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent" />
+                {d.theme === "dark" && (
+                  <span className="absolute top-1 right-1 text-[8px] font-semibold tracking-wider text-white/80 uppercase bg-black/45 px-1.5 py-0.5 rounded-full backdrop-blur-sm">
+                    dark
+                  </span>
+                )}
               </div>
-              <div className={`text-xs font-semibold ${selected ? "text-white" : "text-gray-300"}`}>{d.label}</div>
-              <div className="text-[10px] text-gray-600 leading-tight mt-0.5">{d.desc}</div>
+
+              <div className="flex items-center gap-1.5">
+                <span className={`text-[13px] font-semibold tracking-tight ${selected ? "text-white" : "text-gray-200"}`}>{d.label}</span>
+                {isAuto && (
+                  <svg viewBox="0 0 24 24" className="w-3 h-3 text-[#E8622A] shrink-0" fill="currentColor" aria-hidden>
+                    <path d="M12 2l2.5 6L21 9l-4.5 4.1L18 20l-6-3.4L6 20l1.5-6.9L3 9l6.5-1z" />
+                  </svg>
+                )}
+              </div>
+              <div className="text-[11px] text-gray-500 leading-snug mt-0.5">{d.desc}</div>
+
+              {/* Selected check badge */}
+              {selected && (
+                <span className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#E8622A] flex items-center justify-center shadow-md shadow-[#E8622A]/40">
+                  <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M5 12l5 5L20 6" />
+                  </svg>
+                </span>
+              )}
             </button>
           );
         })}
