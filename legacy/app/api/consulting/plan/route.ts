@@ -118,13 +118,17 @@ Notas:
 - Escreve tudo em Português de Portugal
 - Sê específico — nada genérico`;
 
-    const res = await anthropic.messages.create({
+    // Stream the plan — Opus 4.8 plans can take ~50s; streaming keeps the request
+    // alive and avoids the gateway timeouts that surfaced as intermittent errors.
+    const stream = anthropic.messages.stream({
       model: claudeModel,
-      max_tokens: 6000,
+      max_tokens: 8000,
       messages: [{ role: "user", content: prompt }],
     });
+    const res = await stream.finalMessage();
 
-    const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "{}";
+    const textBlock = res.content.find((b: Anthropic.ContentBlock) => b.type === "text");
+    const raw = textBlock && textBlock.type === "text" ? textBlock.text.trim() : "{}";
     const plan = extractJsonObject<ConsultingPlan>(raw);
     if (!plan || !Array.isArray(plan.actions)) {
       return NextResponse.json({ error: "Failed to generate plan — please try again." }, { status: 500 });
@@ -136,6 +140,9 @@ Notas:
     if (msg.includes("API Key") || msg.includes("authentication") || msg.includes("401")) {
       return NextResponse.json({ error: "Invalid API Key. Check your settings." }, { status: 500 });
     }
-    return NextResponse.json({ error: "Unexpected error — please try again." }, { status: 500 });
+    if (/overload|rate.?limit|\b429\b|\b529\b|\b503\b|timeout|timed out/i.test(msg)) {
+      return NextResponse.json({ error: "The AI is busy right now. Wait a few seconds and try again." }, { status: 503 });
+    }
+    return NextResponse.json({ error: `Could not generate the plan: ${msg.slice(0, 140) || "unexpected error"}. Please try again.` }, { status: 500 });
   }
 }
