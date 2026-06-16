@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { safeJson } from "@/lib/api";
 import { saveToHistory } from "@/lib/history";
 import type { EmailEntry, SequenceType } from "@/app/api/email-marketing/route";
 
@@ -132,7 +133,7 @@ export function EmailMarketingModal({ onClose }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ businessName, category, description, sequenceType, tone }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Unknown error");
       setEmails(data.emails);
       setTips(data.tips);

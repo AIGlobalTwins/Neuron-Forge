@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { SeoResult, ContentType } from "@/app/api/seo/route";
 import { saveToHistory } from "@/lib/history";
+import { safeJson } from "@/lib/api";
 
 interface Props {
   onClose: () => void;
@@ -181,7 +182,7 @@ export function SeoModal({ onClose, onOpenTool }: Props) {
   const [gscSites, setGscSites] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch("/api/settings").then((r) => r.json()).then((d) => {
+    fetch("/api/settings").then((r) => safeJson(r)).then((d) => {
       setGscAvailable(Array.isArray(d.googleProducts) && d.googleProducts.includes("searchconsole"));
     }).catch(() => {});
   }, []);
@@ -190,7 +191,7 @@ export function SeoModal({ onClose, onOpenTool }: Props) {
     setGscBusy(true); setGscMsg(""); setGscSites([]);
     try {
       const r = await fetch("/api/google/searchconsole/sites");
-      const d = await r.json();
+      const d = await safeJson(r);
       if (!r.ok) throw new Error(d.error || "Failed to load sites");
       const sites: string[] = d.sites || [];
       if (sites.length === 0) { setGscMsg("No verified sites in Search Console."); return; }
@@ -207,7 +208,7 @@ export function SeoModal({ onClose, onOpenTool }: Props) {
     setGscBusy(true); setGscMsg(""); setGscSites([]);
     try {
       const r = await fetch(`/api/google/searchconsole/queries?site=${encodeURIComponent(site)}`);
-      const d = await r.json();
+      const d = await safeJson(r);
       if (!r.ok) throw new Error(d.error || "Failed to load queries");
       const qs: { query: string }[] = d.queries || [];
       if (qs.length === 0) { setGscMsg("No query data for this site yet."); return; }
@@ -243,7 +244,7 @@ export function SeoModal({ onClose, onOpenTool }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contentType, businessName, category, description, targetAudience, keywords, tone, language }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) { setError(data.error ?? "Failed to generate"); setStep("form"); return; }
       setResult(data);
       setStep("result");

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { saveToHistory } from "@/lib/history";
+import { safeJson } from "@/lib/api";
 
 interface Props {
   onClose: () => void;
@@ -95,7 +96,7 @@ export function SocialPostsModal({ onClose }: Props) {
 
   useEffect(() => {
     fetch("/api/settings")
-      .then((r) => r.json())
+      .then((r) => safeJson(r))
       .then((data) => {
         const connected = data.hasInstagramToken && data.hasInstagramAccountId;
         setIsConnected(connected);
@@ -148,7 +149,7 @@ export function SocialPostsModal({ onClose }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ businessName, category, description, postType, tone, count }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Unknown error");
       setPosts(data.posts);
       setStep("result");
@@ -174,7 +175,7 @@ export function SocialPostsModal({ onClose }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ caption: `${post.caption}\n\n${post.hashtags}`, imageUrl }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Failed to publish");
       setPublishedIdx(idx);
     } catch (e) {

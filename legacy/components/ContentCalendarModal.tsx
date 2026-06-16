@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { safeJson } from "@/lib/api";
 import { saveToHistory } from "@/lib/history";
 import type { CalendarDay } from "@/app/api/content-calendar/route";
 
@@ -91,7 +92,7 @@ export function ContentCalendarModal({ onClose }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ businessName, category, description, frequency }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Unknown error");
       setMonth(data.month);
       setStrategy(data.strategy);

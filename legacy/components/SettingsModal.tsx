@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useLang } from "@/lib/lang";
+import { safeJson } from "@/lib/api";
 
 const S = {
   pt: {
@@ -86,7 +87,7 @@ export function SettingsModal({ onClose }: Props) {
 
   function loadSettings() {
     fetch("/api/settings")
-      .then((r) => r.json())
+      .then((r) => safeJson(r))
       .then((data) => {
         setHasAnthropicKey(data.hasAnthropicKey);
         setHasVercelToken(data.hasVercelToken);

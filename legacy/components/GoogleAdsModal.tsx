@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { safeJson } from "@/lib/api";
 import { saveToHistory } from "@/lib/history";
 import type { AdGroup, CampaignType } from "@/app/api/google-ads/route";
 
@@ -79,7 +80,7 @@ export function GoogleAdsModal({ onClose }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ businessName, category, description, campaignType, targetAudience, location }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Unknown error");
       setAdGroups(data.adGroups);
       setNegativeKeywords(data.negativeKeywords);

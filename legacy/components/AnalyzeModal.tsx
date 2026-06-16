@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { saveToHistory } from "@/lib/history";
 import { DesignTypePicker } from "@/components/DesignTypePicker";
+import { safeJson } from "@/lib/api";
 
 interface Props {
   onClose: () => void;
@@ -80,7 +81,7 @@ export function AnalyzeModal({ onClose }: Props) {
         body: JSON.stringify({ url: url.trim(), name: name.trim() || url, category, instructions: instructions.trim(), designType }),
       });
 
-      const data = await res.json();
+      const data = await safeJson(res);
 
       if (!res.ok) {
         setError(data.error ?? "Something went wrong");

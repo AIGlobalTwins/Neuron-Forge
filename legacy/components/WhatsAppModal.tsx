@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { safeJson } from "@/lib/api";
 
 interface Props {
   onClose: () => void;
@@ -101,7 +102,7 @@ export function WhatsAppModal({ onClose }: Props) {
 
   useEffect(() => {
     fetch("/api/whatsapp/status")
-      .then((r) => r.json())
+      .then((r) => safeJson(r))
       .then((data) => {
         setHasCredentials(data.hasCredentials);
         if (data.active) {
@@ -179,7 +180,7 @@ export function WhatsAppModal({ onClose }: Props) {
         body: JSON.stringify({ active: true, createdAt: new Date().toISOString() }),
       });
       if (!res.ok) throw new Error();
-      const statusRes = await fetch("/api/whatsapp/status").then((r) => r.json());
+      const statusRes = await fetch("/api/whatsapp/status").then((r) => safeJson(r));
       setStatus(statusRes);
       setStep("live");
     } catch {

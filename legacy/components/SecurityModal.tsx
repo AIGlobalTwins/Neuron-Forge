@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { SecurityFinding, SecurityResult, SecurityRating } from "@/app/api/security/route";
 import { saveToHistory } from "@/lib/history";
+import { safeJson } from "@/lib/api";
 
 interface Props {
   onClose: () => void;
@@ -110,7 +111,7 @@ export function SecurityModal({ onClose }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: url.trim() }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) {
         setError(data.error ?? "Unexpected error");
         setStep("form");

@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Question } from "@/app/api/consulting/questions/route";
 import type { ConsultingPlan } from "@/app/api/consulting/plan/route";
 import { saveToHistory } from "@/lib/history";
+import { safeJson } from "@/lib/api";
 
 interface Props {
   onClose: () => void;
@@ -68,7 +69,7 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ area, problem }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error);
       setQuestions(data.questions);
       setStep("questions");
@@ -100,7 +101,7 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ area, problem, questions, answers }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error);
       setPlan(data.plan);
       setStep("plan");

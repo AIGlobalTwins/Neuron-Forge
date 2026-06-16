@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { saveToHistory } from "@/lib/history";
+import { safeJson } from "@/lib/api";
 import { DesignTypePicker } from "@/components/DesignTypePicker";
 import type { BusinessLocation } from "@/lib/google-api";
 
@@ -55,7 +56,7 @@ export function GoogleMapsModal({ onClose }: Props) {
   const [gbLocations, setGbLocations] = useState<BusinessLocation[]>([]);
 
   useEffect(() => {
-    fetch("/api/settings").then((r) => r.json()).then((d) => {
+    fetch("/api/settings").then((r) => safeJson(r)).then((d) => {
       setGbAvailable(Array.isArray(d.googleProducts) && d.googleProducts.includes("business"));
     }).catch(() => {});
   }, []);
@@ -64,7 +65,7 @@ export function GoogleMapsModal({ onClose }: Props) {
     setGbBusy(true); setGbMsg(""); setGbLocations([]);
     try {
       const r = await fetch("/api/google/business/locations");
-      const d = await r.json();
+      const d = await safeJson(r);
       if (!r.ok) throw new Error(d.error || "Failed to load locations");
       const locs: BusinessLocation[] = d.items || [];
       if (locs.length === 0) { setGbMsg("No business locations found."); return; }
@@ -164,7 +165,7 @@ export function GoogleMapsModal({ onClose }: Props) {
         }),
       });
 
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) {
         setError(data.error ?? "Something went wrong");
         setStep("form");
