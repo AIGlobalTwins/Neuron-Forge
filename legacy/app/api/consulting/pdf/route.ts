@@ -16,7 +16,7 @@ function buildReportHtml(plan: ConsultingPlan, area: string): string {
     <div class="phase-block">
       <div class="phase-title">${phase}</div>
       <table class="action-table">
-        <thead><tr><th>Tarefa</th><th>Responsável</th><th>Prazo</th></tr></thead>
+        <thead><tr><th>Task</th><th>Owner</th><th>Deadline</th></tr></thead>
         <tbody>
           ${items.map((a) => `<tr><td>${a.task}</td><td>${a.owner}</td><td>${a.timing}</td></tr>`).join("")}
         </tbody>
@@ -28,7 +28,7 @@ function buildReportHtml(plan: ConsultingPlan, area: string): string {
     <div class="section">
       <div class="section-header forge-header">
         <div class="section-icon">⬡</div>
-        <h2>Ferramentas Neuron Forge Recomendadas</h2>
+        <h2>Recommended Neuron Forge Tools</h2>
       </div>
       ${plan.forgeTools.map((t) => `
         <div class="forge-card">
@@ -40,7 +40,7 @@ function buildReportHtml(plan: ConsultingPlan, area: string): string {
   ` : "";
 
   return `<!DOCTYPE html>
-<html lang="pt">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <style>
@@ -101,24 +101,24 @@ function buildReportHtml(plan: ConsultingPlan, area: string): string {
 
 <div class="cover">
   <div class="cover-logo">NEURON FORGE</div>
-  <div class="cover-badge">Plano de Consultoria</div>
+  <div class="cover-badge">Consulting Plan</div>
   <div class="cover-area">${area}</div>
   <div class="cover-title">${plan.title}</div>
-  <div class="cover-date">Gerado a ${date} · Neuron Forge Consulting Agent</div>
+  <div class="cover-date">Generated on ${date} · Neuron Forge Consulting Agent</div>
   <div class="cover-bar"></div>
 </div>
 
 <div class="content">
 
   <div class="executive-box">
-    <div class="executive-label">Resumo Executivo</div>
+    <div class="executive-label">Executive Summary</div>
     <div class="executive-text">${plan.executive}</div>
   </div>
 
   <div class="section">
     <div class="section-header">
       <div class="section-icon">1</div>
-      <h2>Diagnóstico — Problemas Identificados</h2>
+      <h2>Diagnosis — Identified Problems</h2>
     </div>
     ${plan.diagnosis.map((d) => `<div class="list-item"><div class="list-dot"></div><div class="list-text">${d}</div></div>`).join("")}
   </div>
@@ -126,7 +126,7 @@ function buildReportHtml(plan: ConsultingPlan, area: string): string {
   <div class="section">
     <div class="section-header">
       <div class="section-icon">2</div>
-      <h2>Objectivos</h2>
+      <h2>Objectives</h2>
     </div>
     ${plan.objectives.map((o) => `<div class="list-item"><div class="list-dot"></div><div class="list-text">${o}</div></div>`).join("")}
   </div>
@@ -134,7 +134,7 @@ function buildReportHtml(plan: ConsultingPlan, area: string): string {
   <div class="section">
     <div class="section-header">
       <div class="section-icon">3</div>
-      <h2>Plano de Acção</h2>
+      <h2>Action Plan</h2>
     </div>
     ${actionsHtml}
   </div>
@@ -142,7 +142,7 @@ function buildReportHtml(plan: ConsultingPlan, area: string): string {
   <div class="section">
     <div class="section-header">
       <div class="section-icon">4</div>
-      <h2>KPIs — Métricas de Sucesso</h2>
+      <h2>KPIs — Success Metrics</h2>
     </div>
     <div class="kpi-grid">
       ${plan.kpis.map((k) => `
@@ -157,11 +157,11 @@ function buildReportHtml(plan: ConsultingPlan, area: string): string {
   <div class="section">
     <div class="section-header">
       <div class="section-icon">5</div>
-      <h2>Riscos & Mitigações</h2>
+      <h2>Risks & Mitigations</h2>
     </div>
     ${plan.risks.map((r) => `
       <div class="risk-row">
-        <div class="risk-badge">Risco</div>
+        <div class="risk-badge">Risk</div>
         <div class="risk-content">
           <div class="risk-text">${r.risk}</div>
           <div class="risk-mit">→ ${r.mitigation}</div>

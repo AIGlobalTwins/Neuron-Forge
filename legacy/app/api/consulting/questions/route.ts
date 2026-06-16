@@ -32,38 +32,38 @@ export async function POST(req: NextRequest) {
 
     const anthropic = new Anthropic({ apiKey: anthropicKey });
 
-    const prompt = `És um consultor de negócios sénior especializado em ${area}. Um cliente descreveu o seguinte problema:
+    const prompt = `You are a senior business consultant specialized in ${area}. A client described the following problem:
 
 "${problem}"
 
-Gera exactamente 7 perguntas de diagnóstico altamente específicas a este problema e área. As perguntas devem revelar as causas raiz, o contexto do negócio, os recursos disponíveis e os constrangimentos reais.
+Generate exactly 7 diagnostic questions that are highly specific to this problem and area. The questions must surface the root causes, the business context, the available resources and the real constraints.
 
-Regras:
-- Cada pergunta deve ser accionável — a resposta deve influenciar directamente o plano de solução
-- Mistura tipos: algumas abertas (text), algumas de escala (scale), algumas de escolha múltipla (choice)
-- Não faças perguntas genéricas que se apliquem a qualquer negócio
-- Adapta 100% ao problema descrito e à área de ${area}
-- Escreve em Português de Portugal
+Rules:
+- Each question must be actionable — the answer should directly shape the solution plan
+- Mix types: some open (text), some scale, some multiple-choice (choice)
+- No generic questions that could apply to any business
+- Adapt 100% to the described problem and the ${area} area
+- Write in English
 
-Responde APENAS com JSON array (sem markdown):
+Respond ONLY with a JSON array (no markdown):
 [
   {
     "id": "q1",
-    "text": "Pergunta aqui?",
+    "text": "Question here?",
     "type": "text"
   },
   {
     "id": "q2",
-    "text": "Numa escala de 1 a 10, como avalias X?",
+    "text": "On a scale of 1 to 10, how would you rate X?",
     "type": "scale",
-    "scaleMin": "Muito mau",
-    "scaleMax": "Excelente"
+    "scaleMin": "Very poor",
+    "scaleMax": "Excellent"
   },
   {
     "id": "q3",
-    "text": "Qual a principal razão para Y?",
+    "text": "What is the main reason for Y?",
     "type": "choice",
-    "options": ["Opção A", "Opção B", "Opção C", "Opção D"]
+    "options": ["Option A", "Option B", "Option C", "Option D"]
   }
 ]`;
 

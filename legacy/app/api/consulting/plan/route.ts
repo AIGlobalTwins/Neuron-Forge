@@ -65,58 +65,58 @@ export async function POST(req: NextRequest) {
 
     const anthropic = new Anthropic({ apiKey: anthropicKey });
 
-    const prompt = `És um consultor de negócios sénior especializado em ${area}. Analisa o diagnóstico completo e constrói um plano de consultoria profissional.
+    const prompt = `You are a senior business consultant specialized in ${area}. Analyze the full diagnosis and build a professional consulting plan.
 
-## PROBLEMA INICIAL
+## INITIAL PROBLEM
 ${problem}
 
-## RESPOSTAS DO DIAGNÓSTICO
+## DIAGNOSIS ANSWERS
 ${qa}
 
-${forgeToolsMd ? `## FERRAMENTAS DISPONÍVEIS NO NEURON FORGE
-Abaixo estão as ferramentas que podes recomendar se forem genuinamente relevantes para resolver parte do problema. Só recomenda se existir uma ligação clara e real entre o problema diagnosticado e a ferramenta. Máximo 2 ferramentas.
+${forgeToolsMd ? `## TOOLS AVAILABLE IN NEURON FORGE
+Below are the tools you may recommend if they are genuinely relevant to solving part of the problem. Only recommend one if there is a clear, real link between the diagnosed problem and the tool. Maximum 2 tools.
 
 ${forgeToolsMd}` : ""}
 
-${qualityBar("pt")}
+${qualityBar("en")}
 
-Constrói o plano em JSON. Responde APENAS com JSON (sem markdown):
+Build the plan as JSON. Respond ONLY with JSON (no markdown):
 {
-  "title": "Título do plano (específico ao problema)",
-  "executive": "Resumo executivo em 2-3 frases — o que está mal e o que vai mudar",
+  "title": "Plan title (specific to the problem)",
+  "executive": "Executive summary in 2-3 sentences — what is wrong and what will change",
   "diagnosis": [
-    "Problema raiz 1 identificado",
-    "Problema raiz 2 identificado",
-    "Problema raiz 3 identificado"
+    "Identified root problem 1",
+    "Identified root problem 2",
+    "Identified root problem 3"
   ],
   "objectives": [
-    "Objetivo SMART 1",
-    "Objetivo SMART 2",
-    "Objetivo SMART 3"
+    "SMART objective 1",
+    "SMART objective 2",
+    "SMART objective 3"
   ],
   "actions": [
-    { "phase": "Fase 1 — Nome", "task": "Descrição da tarefa", "owner": "Quem executa (ex: CEO, Equipa de Marketing)", "timing": "Semana 1-2" },
-    { "phase": "Fase 1 — Nome", "task": "Outra tarefa", "owner": "Responsável", "timing": "Semana 2" },
-    { "phase": "Fase 2 — Nome", "task": "Tarefa seguinte", "owner": "Responsável", "timing": "Mês 2" }
+    { "phase": "Phase 1 — Name", "task": "Task description", "owner": "Who executes (e.g. CEO, Marketing Team)", "timing": "Week 1-2" },
+    { "phase": "Phase 1 — Name", "task": "Another task", "owner": "Owner", "timing": "Week 2" },
+    { "phase": "Phase 2 — Name", "task": "Next task", "owner": "Owner", "timing": "Month 2" }
   ],
   "kpis": [
-    { "metric": "Nome da métrica", "target": "Valor alvo e prazo" }
+    { "metric": "Metric name", "target": "Target value and deadline" }
   ],
   "risks": [
-    { "risk": "Descrição do risco", "mitigation": "Como mitigar" }
+    { "risk": "Risk description", "mitigation": "How to mitigate" }
   ],
   "forgeTools": [
-    { "id": "analyze", "name": "Analyze & Redesign", "reason": "Motivo específico para este caso — ligar ao problema diagnosticado" }
+    { "id": "analyze", "name": "Analyze & Redesign", "reason": "Specific reason for this case — tie it to the diagnosed problem" }
   ]
 }
 
-Notas:
-- Mínimo 6 action items distribuídos por 2-3 fases
-- Mínimo 4 KPIs
-- Mínimo 3 riscos
-- forgeTools pode ser array vazio [] se não houver ferramentas genuinamente relevantes
-- Escreve tudo em Português de Portugal
-- Sê específico — nada genérico`;
+Notes:
+- At least 6 action items across 2-3 phases
+- At least 4 KPIs
+- At least 3 risks
+- forgeTools can be an empty array [] if no tools are genuinely relevant
+- Write everything in English
+- Be specific — nothing generic`;
 
     // Stream the plan — Opus 4.8 plans can take ~50s; streaming keeps the request
     // alive and avoids the gateway timeouts that surfaced as intermittent errors.
