@@ -1,22 +1,58 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { UserButton } from "@clerk/nextjs";
+import { getBrowserSupabase, clientSupabaseEnabled } from "@/lib/supabase/client";
 
-// Render the Clerk UserButton only when Clerk is actually configured. We read the
-// runtime flag the server layout writes to <html data-clerk> — NOT the NEXT_PUBLIC
-// env, which is inlined empty at build time on Docker/Render. The app routes are
-// login-protected, so the viewer is always signed in here.
+// Account chip + sign-out. Only renders when Supabase is configured AND a user is
+// signed in (the app routes are login-gated, so that's the normal case).
 export function AuthButton() {
-  const [enabled, setEnabled] = useState(false);
+  const [email, setEmail] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+
   useEffect(() => {
-    setEnabled(document.documentElement.dataset.clerk === "1");
+    if (!clientSupabaseEnabled()) return;
+    (async () => {
+      try {
+        const { data } = await getBrowserSupabase().auth.getUser();
+        setEmail(data.user?.email ?? null);
+      } catch {
+        /* not signed in / supabase unreachable */
+      }
+    })();
   }, []);
 
-  if (!enabled) return null;
+  if (!email) return null;
+
+  async function signOut() {
+    await getBrowserSupabase().auth.signOut();
+    window.location.href = "/login";
+  }
+
+  const initial = email[0]?.toUpperCase() || "U";
+
   return (
-    <div className="flex items-center pl-1">
-      <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
+    <div className="relative pl-1">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-8 h-8 rounded-full bg-[#E8622A]/15 border border-[#E8622A]/30 text-[#E8622A] text-xs font-semibold flex items-center justify-center hover:bg-[#E8622A]/25 transition"
+        title={email}
+      >
+        {initial}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full mt-2 w-56 bg-[#141414] border border-white/10 rounded-xl shadow-xl p-1.5 z-50">
+            <div className="px-3 py-2 text-xs text-gray-500 truncate border-b border-white/5 mb-1">{email}</div>
+            <button
+              onClick={signOut}
+              className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-white/5 hover:text-white transition"
+            >
+              Sign out
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

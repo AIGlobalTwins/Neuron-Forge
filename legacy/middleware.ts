@@ -1,38 +1,40 @@
 import { NextResponse } from "next/server";
-import type { NextRequest, NextFetchEvent } from "next/server";
+import type { NextRequest } from "next/server";
+import { supabaseEnabled } from "@/lib/supabase/config";
+import { updateSession } from "@/lib/supabase/middleware";
 
-const clerkKey = process.env.CLERK_SECRET_KEY ?? "";
-const clerkEnabled = clerkKey.startsWith("sk_live_") || clerkKey.startsWith("sk_test_");
+// Reachable WITHOUT login. Everything else requires a signed-in user.
+const PUBLIC = [
+  /^\/login/,
+  /^\/auth\//, // OAuth callback
+  /^\/api\/whatsapp/, // Meta webhook + /api/whatsapp/status (Render health check)
+  /^\/api\/google\/callback/, // Google OAuth redirect
+  /^\/api\/preview/, // generated-site preview must be shareable
+];
 
-// When Clerk is configured, every non-public route requires a signed-in user, so
-// each tester is isolated under their own userId (own API keys, settings, history).
-// When Clerk is NOT configured, the app stays fully open (no auth).
-export default async function middleware(req: NextRequest, event: NextFetchEvent) {
-  // Never touch static assets — prevents CSS/JS 404s
+export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  if (pathname.startsWith("/_next") || pathname.startsWith("/favicon")) {
+  if (pathname.startsWith("/_next") || pathname.startsWith("/favicon") || pathname.startsWith("/icon")) {
     return NextResponse.next();
   }
 
-  if (!clerkEnabled) return NextResponse.next();
+  // Auth/memory layer is off until Supabase is configured → app stays fully open.
+  if (!supabaseEnabled()) return NextResponse.next();
 
-  const { clerkMiddleware, createRouteMatcher } = await import("@clerk/nextjs/server");
+  const { response, user } = await updateSession(req);
 
-  // Public — reachable WITHOUT login. Everything else (the app UI + the generation
-  // APIs) is protected, forcing sign-in so requests carry a real userId.
-  const isPublic = createRouteMatcher([
-    "/sign-in(.*)",
-    "/sign-up(.*)",
-    "/api/whatsapp(.*)", // Meta webhook + /api/whatsapp/status (Render health check)
-    "/api/google/callback(.*)", // OAuth redirect
-    "/api/preview(.*)", // generated-site preview must be shareable
-  ]);
+  const isPublic = PUBLIC.some((re) => re.test(pathname));
+  if (!user && !isPublic) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Sign in required." }, { status: 401 });
+    }
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
 
-  // Pass the REAL NextFetchEvent through — Clerk's handshake (dev-browser cookie
-  // exchange) needs it; a stub event made the handshake return 500.
-  return clerkMiddleware(async (auth, request) => {
-    if (!isPublic(request)) await auth.protect();
-  })(req, event);
+  return response;
 }
 
 export const config = {
