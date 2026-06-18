@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { saveToHistory } from "@/lib/history";
 import { DesignTypePicker } from "@/components/DesignTypePicker";
 import { safeJson } from "@/lib/api";
 
@@ -91,7 +90,7 @@ export function AnalyzeModal({ onClose }: Props) {
 
       setResult(data);
       setStep("result");
-      saveToHistory({ type: "analyze", name: name.trim() || url, category, websiteId: data.id, score: data.score });
+      // History is saved server-side by /api/analyze (avoids the navigate-away race).
     } catch (err) {
       setError((err as Error).message);
       setStep("form");

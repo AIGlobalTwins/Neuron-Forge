@@ -9,14 +9,16 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     return new NextResponse("Not found", { status: 404 });
   }
 
-  const redesignDir = path.join(process.cwd(), "outputs", "redesigns");
-
-  // Try both prefixes
-  const candidates = [
-    path.join(redesignDir, `analyze_${id}.html`),
-    path.join(redesignDir, `maps_${id}.html`),
-    path.join(redesignDir, `${id}.html`),
+  // data/ is the mounted disk (persists across redeploys); outputs/ kept for back-compat.
+  const dirs = [
+    path.join(process.cwd(), "data", "redesigns"),
+    path.join(process.cwd(), "outputs", "redesigns"),
   ];
+  const candidates = dirs.flatMap((d) => [
+    path.join(d, `analyze_${id}.html`),
+    path.join(d, `maps_${id}.html`),
+    path.join(d, `${id}.html`),
+  ]);
 
   for (const htmlPath of candidates) {
     if (fs.existsSync(htmlPath)) {

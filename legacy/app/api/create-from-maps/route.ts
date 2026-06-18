@@ -15,7 +15,8 @@ import { balanceBlocks } from "@/lib/html-fix";
 import { waLink, whatsappPromptBlock } from "@/lib/phone";
 import { siteGuard } from "@/lib/site-guard";
 
-const REDESIGN_DIR = "./outputs/redesigns";
+// On the mounted disk (/app/data) so generated-site previews survive redeploys.
+const REDESIGN_DIR = "./data/redesigns";
 const UPLOADS_DIR = "./public/uploads";
 
 // ── Photo catalog by category ──────────────────────────────────────────────
@@ -660,6 +661,9 @@ Output ONLY raw HTML. No markdown. No explanations.`;
   const deployed = await deployToVercel(html, finalName);
 
   console.log(`[maps] "${finalName}" | ${finalCategory} | ${Math.round(html.length / 1024)}KB | photos=${savedImageUrls.length}${deployed ? ` | deployed: ${deployed.url}` : ""}`);
+
+  // Persist to history server-side — the client navigates to the site before its save lands.
+  await (await import("@/lib/supabase/server")).saveGenerationServer(userId, "maps", finalName, { category: finalCategory, websiteId: id });
 
   return NextResponse.json({ id, name: finalName, category: finalCategory, address: finalAddress, deployUrl: deployed?.url ?? null });
   } catch (err) {

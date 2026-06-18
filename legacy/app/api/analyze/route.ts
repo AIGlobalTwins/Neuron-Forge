@@ -17,7 +17,8 @@ import { waLink, whatsappPromptBlock } from "@/lib/phone";
 import { pageNav, multipagePromptBlock, PAGE_BOOT, type NavPage } from "@/lib/multipage";
 import { siteGuard } from "@/lib/site-guard";
 
-const REDESIGN_DIR = "./outputs/redesigns";
+// On the mounted disk (/app/data) so generated-site previews survive redeploys.
+const REDESIGN_DIR = "./data/redesigns";
 
 // ── Step 1: Screenshot ────────────────────────────────────────────────────
 async function takeScreenshot(url: string): Promise<string> {
@@ -711,6 +712,10 @@ export async function POST(req: NextRequest) {
   const deployed = await deployToVercel(html, analysis.businessName);
 
   console.log(`[analyze] ${analysis.businessName} | score=${analysis.score} | pages=${crawlResult.pages.length} | ${Math.round(html.length / 1024)}KB${deployed ? ` | deployed: ${deployed.url}` : ""}`);
+
+  // Persist to history server-side — the client navigates to the generated site
+  // before a fire-and-forget client save can complete.
+  await (await import("@/lib/supabase/server")).saveGenerationServer(userId, "analyze", analysis.businessName || url, { category, websiteId: id, score: analysis.score });
 
   return NextResponse.json({
     id,

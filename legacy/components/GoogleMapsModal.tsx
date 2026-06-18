@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { saveToHistory } from "@/lib/history";
 import { safeJson } from "@/lib/api";
 import { DesignTypePicker } from "@/components/DesignTypePicker";
 import type { BusinessLocation } from "@/lib/google-api";
@@ -173,7 +172,7 @@ export function GoogleMapsModal({ onClose }: Props) {
       }
       setResult(data);
       setStep("result");
-      saveToHistory({ type: "maps", name: data.name || name, category: data.category || category, websiteId: data.id });
+      // History is saved server-side by /api/create-from-maps (avoids the navigate-away race).
     } catch (err) {
       setError((err as Error).message);
       setStep("form");
