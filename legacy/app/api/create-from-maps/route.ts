@@ -273,7 +273,7 @@ export async function POST(req: NextRequest) {
   const { mapsUrl = "", name = "", category = "Business", address = "", phone = "", email = "", images = [], instructions = "", designType = "auto" } = body;
 
   let userId: string | null = null;
-  try { const { auth } = await import("@clerk/nextjs/server"); const a = await auth(); userId = a.userId; } catch {}
+  try { userId = await (await import("@/lib/supabase/server")).getSupabaseUserId(); } catch {}
   const anthropicKey = getAnthropicKey(userId);
   const claudeModel = getClaudeModel(userId);
   if (!anthropicKey) return NextResponse.json({ error: "Anthropic API Key not configured. Add it in Settings." }, { status: 500 });

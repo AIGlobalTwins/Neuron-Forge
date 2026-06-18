@@ -651,7 +651,7 @@ export async function POST(req: NextRequest) {
 
   if (!url) return NextResponse.json({ error: "url required" }, { status: 400 });
   let userId: string | null = null;
-  try { const { auth } = await import("@clerk/nextjs/server"); const a = await auth(); userId = a.userId; } catch {}
+  try { userId = await (await import("@/lib/supabase/server")).getSupabaseUserId(); } catch {}
   const anthropicKey = getAnthropicKey(userId);
   const claudeModel = getClaudeModel(userId);
   if (!anthropicKey) return NextResponse.json({ error: "Anthropic API Key not configured. Add it in Settings." }, { status: 500 });

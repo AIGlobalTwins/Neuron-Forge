@@ -15,9 +15,8 @@ function connectedProducts(scopes: string[]): GoogleProduct[] {
 
 async function getUserId(): Promise<string | null> {
   try {
-    const { auth } = await import("@clerk/nextjs/server");
-    const { userId } = await auth();
-    return userId;
+    const { getSupabaseUserId } = await import("@/lib/supabase/server");
+    return await getSupabaseUserId();
   } catch {
     return null;
   }

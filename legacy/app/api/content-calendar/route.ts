@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     }
 
     let userId: string | null = null;
-    try { const { auth } = await import("@clerk/nextjs/server"); const a = await auth(); userId = a.userId; } catch {}
+    try { userId = await (await import("@/lib/supabase/server")).getSupabaseUserId(); } catch {}
     const anthropicKey = getAnthropicKey(userId);
     const claudeModel = getClaudeModel(userId);
     if (!anthropicKey) {
