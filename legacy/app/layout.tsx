@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   description: "The visual layer for AI agents — websites, social media, WhatsApp and consulting powered by AI",
 };
 
+// Render per-request so the runtime Supabase URL/anon (read below) reach the
+// client via <html data-sb-*>. Without this the layout is statically prerendered
+// at build time, where NEXT_PUBLIC_* is empty (Docker/Render injects env at run).
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   // Read the (public) Supabase URL + anon key at RUNTIME (bracket notation, never
   // build-inlined) and hand them to the browser via <html data-sb-*>. The client
