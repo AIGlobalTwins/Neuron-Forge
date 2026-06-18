@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import {
-  loadHistory,
+  fetchHistory,
   removeFromHistory,
   clearHistory,
   historyTypeLabel,
@@ -97,7 +97,7 @@ export function HistoryModal({ onClose }: Props) {
   const TYPE_FILTERS = getFilters(lang);
 
   useEffect(() => {
-    setEntries(loadHistory());
+    fetchHistory().then(setEntries);
   }, []);
 
   function handleRemove(id: string) {

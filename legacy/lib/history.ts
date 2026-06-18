@@ -50,37 +50,51 @@ export interface HistoryEntry {
   calendarDayCount?: number;
 }
 
-const KEY = "forge_history";
-const MAX = 50;
+// History is stored per-user in Supabase (see /api/generations). RLS guarantees a
+// user only ever reads/writes their own rows; it survives reloads, deploys and
+// device changes — unlike the old localStorage store. The flat HistoryEntry fields
+// beyond type/name are kept in the DB `payload` jsonb column.
 
-export function loadHistory(): HistoryEntry[] {
-  if (typeof window === "undefined") return [];
+export async function fetchHistory(): Promise<HistoryEntry[]> {
   try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "[]");
+    const res = await fetch("/api/generations");
+    if (!res.ok) return [];
+    const { generations } = await res.json();
+    return ((generations ?? []) as {
+      id: string; type: HistoryType; name: string; payload?: Record<string, unknown>; created_at: string;
+    }[]).map((g) => ({ id: g.id, type: g.type, name: g.name, date: g.created_at, ...(g.payload ?? {}) })) as HistoryEntry[];
   } catch {
     return [];
   }
 }
 
-export function saveToHistory(entry: Omit<HistoryEntry, "id" | "date">): void {
-  if (typeof window === "undefined") return;
-  const history = loadHistory();
-  const newEntry: HistoryEntry = {
-    ...entry,
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    date: new Date().toISOString(),
-  };
-  localStorage.setItem(KEY, JSON.stringify([newEntry, ...history].slice(0, MAX)));
+export async function saveToHistory(entry: Omit<HistoryEntry, "id" | "date">): Promise<void> {
+  try {
+    const { type, name, ...payload } = entry;
+    await fetch("/api/generations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, name: name ?? "", payload }),
+    });
+  } catch {
+    /* fire-and-forget; the result is already on screen */
+  }
 }
 
-export function removeFromHistory(id: string): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(KEY, JSON.stringify(loadHistory().filter((e) => e.id !== id)));
+export async function removeFromHistory(id: string): Promise<void> {
+  try {
+    await fetch(`/api/generations?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+  } catch {
+    /* ignore */
+  }
 }
 
-export function clearHistory(): void {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(KEY);
+export async function clearHistory(): Promise<void> {
+  try {
+    await fetch("/api/generations", { method: "DELETE" });
+  } catch {
+    /* ignore */
+  }
 }
 
 export function historyTypeLabel(type: HistoryType): string {
