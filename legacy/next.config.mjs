@@ -6,10 +6,6 @@ const nextConfig = {
       "playwright",
       "playwright-core",
       "@anthropic-ai/sdk",
-      "apify-client",
-      "@libsql/client",
-      "drizzle-orm",
-      "node-cron",
     ],
   },
   images: {
@@ -23,8 +19,6 @@ const nextConfig = {
         "playwright",
         "playwright-core",
         "@playwright/test",
-        "apify-client",
-        "node-cron",
         "chromium-bidi",
       ];
 
