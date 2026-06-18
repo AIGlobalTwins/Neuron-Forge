@@ -106,6 +106,10 @@ export function ContentCalendarModal({ onClose }: Props) {
         name: businessName,
         calendarMonth: data.month,
         calendarDayCount: contentDays.length,
+        calendarStrategy: data.strategy,
+        calendarWeeklyThemes: data.weeklyThemes,
+        calendarDays: data.days,
+        calendarTips: data.tips,
       });
     } catch (e) {
       setError((e as Error).message);

@@ -1,4 +1,7 @@
-// Client-side history — persisted in localStorage
+// Per-user history (persisted in Supabase — see /api/generations).
+import type { EmailEntry } from "@/app/api/email-marketing/route";
+import type { AdGroup } from "@/app/api/google-ads/route";
+import type { CalendarDay } from "@/app/api/content-calendar/route";
 
 export type HistoryType = "maps" | "analyze" | "seo" | "instagram" | "consulting" | "security" | "email" | "ads" | "calendar";
 
@@ -41,13 +44,24 @@ export interface HistoryEntry {
   emailSequenceType?: string;
   emailCount?: number;
   emailSubjects?: string[];
+  emailEmails?: EmailEntry[];
+  emailTips?: string[];
+  emailSubjectVariants?: string[];
   // google ads
   adsCampaignType?: string;
   adsGroupCount?: number;
   adsHeadlineCount?: number;
+  adsAdGroups?: AdGroup[];
+  adsNegativeKeywords?: string[];
+  adsTips?: string[];
+  adsBudget?: string;
   // content calendar
   calendarMonth?: string;
   calendarDayCount?: number;
+  calendarStrategy?: string;
+  calendarWeeklyThemes?: string[];
+  calendarDays?: CalendarDay[];
+  calendarTips?: string[];
 }
 
 // History is stored per-user in Supabase (see /api/generations). RLS guarantees a

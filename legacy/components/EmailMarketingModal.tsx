@@ -145,6 +145,9 @@ export function EmailMarketingModal({ onClose }: Props) {
         emailSequenceType: sequenceType,
         emailCount: data.emails?.length ?? 0,
         emailSubjects: (data.emails || []).map((e: EmailEntry) => e.subject),
+        emailEmails: data.emails,
+        emailTips: data.tips,
+        emailSubjectVariants: data.subjectLineVariants,
       });
     } catch (e) {
       setError((e as Error).message);

@@ -359,6 +359,117 @@ function DetailView({ entry, copiedKey, onCopy, lang }: { entry: HistoryEntry; c
     );
   }
 
+  // Email marketing
+  if (entry.type === "email" && entry.emailEmails) {
+    return (
+      <div className="p-5 space-y-4">
+        <div>
+          <span className={`text-[10px] uppercase tracking-widest font-semibold ${c.text}`}>{lang === "en" ? "Email sequence" : "Sequência de email"}{entry.emailSequenceType ? ` · ${entry.emailSequenceType}` : ""}</span>
+          <div className="text-white font-semibold">{entry.name}</div>
+          <div className="text-xs text-gray-600 mt-0.5">{entry.emailEmails.length} emails</div>
+        </div>
+        {entry.emailEmails.map((em, i) => (
+          <div key={i} className="bg-[#111] border border-[#1e1e1e] rounded-xl overflow-hidden">
+            <div className="flex items-start justify-between gap-2 px-4 py-2.5 border-b border-[#1e1e1e]">
+              <div className="min-w-0">
+                <div className="text-sm text-white font-medium truncate">{em.subject}</div>
+                <div className="text-[10px] text-gray-600 truncate">{em.preheader} · {em.sendDay}</div>
+              </div>
+              <button onClick={() => onCopy(`${em.subject}\n\n${em.body}\n\n${em.cta}`, `em-${i}`)} className={`text-[10px] shrink-0 ${copiedKey === `em-${i}` ? c.text : "text-gray-600 hover:text-white"}`}>{copiedKey === `em-${i}` ? "✓" : (lang === "en" ? "Copy" : "Copiar")}</button>
+            </div>
+            <p className="px-4 py-3 text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{em.body}</p>
+            <div className="px-4 pb-3"><span className={`inline-block text-xs px-2.5 py-1 rounded-full ${c.bg} border ${c.border} ${c.text}`}>{em.cta}</span></div>
+          </div>
+        ))}
+        {entry.emailSubjectVariants && entry.emailSubjectVariants.length > 0 && (
+          <div>
+            <div className="text-[10px] uppercase tracking-widest text-gray-600 font-medium mb-2">{lang === "en" ? "Subject variants" : "Variantes de assunto"}</div>
+            <ul className="space-y-1.5">{entry.emailSubjectVariants.map((v, i) => <li key={i} className="text-xs text-gray-400">• {v}</li>)}</ul>
+          </div>
+        )}
+        {entry.emailTips && entry.emailTips.length > 0 && (
+          <div>
+            <div className="text-[10px] uppercase tracking-widest text-gray-600 font-medium mb-2">{lang === "en" ? "Tips" : "Dicas"}</div>
+            <ul className="space-y-2">{entry.emailTips.map((t, i) => <li key={i} className="flex items-start gap-2 text-xs text-gray-400 leading-relaxed"><span className={`${c.text} mt-0.5 flex-shrink-0`}>→</span>{t}</li>)}</ul>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Google Ads
+  if (entry.type === "ads" && entry.adsAdGroups) {
+    return (
+      <div className="p-5 space-y-4">
+        <div>
+          <span className={`text-[10px] uppercase tracking-widest font-semibold ${c.text}`}>Google Ads{entry.adsCampaignType ? ` · ${entry.adsCampaignType}` : ""}</span>
+          <div className="text-white font-semibold">{entry.name}</div>
+          {entry.adsBudget && <div className="text-xs text-gray-600 mt-0.5">{entry.adsBudget}</div>}
+        </div>
+        {entry.adsAdGroups.map((g, i) => (
+          <div key={i} className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4 space-y-3">
+            <div className="text-sm text-white font-medium">{g.theme}</div>
+            <div>
+              <div className="text-[10px] uppercase tracking-widest text-gray-600 mb-1.5">Headlines</div>
+              <div className="flex flex-wrap gap-1.5">{g.headlines.map((h, j) => <span key={j} className="text-xs px-2 py-1 rounded bg-[#1a1a1a] text-gray-300">{h}</span>)}</div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-widest text-gray-600 mb-1.5">Descriptions</div>
+              <ul className="space-y-1">{g.descriptions.map((d, j) => <li key={j} className="text-xs text-gray-400">• {d}</li>)}</ul>
+            </div>
+            {g.callouts && g.callouts.length > 0 && <div className="flex flex-wrap gap-1.5">{g.callouts.map((co, j) => <span key={j} className={`text-[11px] px-2 py-0.5 rounded-full ${c.bg} ${c.text}`}>{co}</span>)}</div>}
+          </div>
+        ))}
+        {entry.adsNegativeKeywords && entry.adsNegativeKeywords.length > 0 && (
+          <div>
+            <div className="text-[10px] uppercase tracking-widest text-gray-600 font-medium mb-2">{lang === "en" ? "Negative keywords" : "Keywords negativas"}</div>
+            <div className="flex flex-wrap gap-1.5">{entry.adsNegativeKeywords.map((k, i) => <span key={i} className="text-xs px-2 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400">−{k}</span>)}</div>
+          </div>
+        )}
+        {entry.adsTips && entry.adsTips.length > 0 && (
+          <div>
+            <div className="text-[10px] uppercase tracking-widest text-gray-600 font-medium mb-2">{lang === "en" ? "Tips" : "Dicas"}</div>
+            <ul className="space-y-2">{entry.adsTips.map((t, i) => <li key={i} className="flex items-start gap-2 text-xs text-gray-400 leading-relaxed"><span className={`${c.text} mt-0.5 flex-shrink-0`}>→</span>{t}</li>)}</ul>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Content calendar
+  if (entry.type === "calendar" && entry.calendarDays) {
+    return (
+      <div className="p-5 space-y-4">
+        <div>
+          <span className={`text-[10px] uppercase tracking-widest font-semibold ${c.text}`}>{lang === "en" ? "Content calendar" : "Calendário"}{entry.calendarMonth ? ` · ${entry.calendarMonth}` : ""}</span>
+          <div className="text-white font-semibold">{entry.name}</div>
+        </div>
+        {entry.calendarStrategy && <div className={`${c.bg} border ${c.border} rounded-xl p-4`}><p className="text-sm text-gray-300 leading-relaxed">{entry.calendarStrategy}</p></div>}
+        {entry.calendarWeeklyThemes && entry.calendarWeeklyThemes.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">{entry.calendarWeeklyThemes.map((t, i) => <span key={i} className={`text-xs px-2 py-1 rounded-full ${c.bg} border ${c.border} ${c.text}`}>{t}</span>)}</div>
+        )}
+        <div className="space-y-1.5">
+          {entry.calendarDays.filter((d) => d.type !== "rest").map((d, i) => (
+            <div key={i} className="bg-[#111] border border-[#1e1e1e] rounded-lg px-3 py-2 flex items-start gap-3">
+              <div className="text-center shrink-0 w-9"><div className="text-sm text-white font-semibold">{d.day}</div><div className="text-[9px] text-gray-600 uppercase">{(d.weekday || "").slice(0, 3)}</div></div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2"><span className={`text-[9px] uppercase px-1.5 py-0.5 rounded ${c.bg} ${c.text}`}>{d.type}</span><span className="text-xs text-white truncate">{d.theme}</span><span className="text-[10px] text-gray-600 ml-auto shrink-0">{d.bestTime}</span></div>
+                <div className="text-xs text-gray-500 mt-0.5 truncate">{d.caption}</div>
+                {d.hashtags && <div className="text-[10px] text-gray-600 mt-0.5 truncate">{d.hashtags}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+        {entry.calendarTips && entry.calendarTips.length > 0 && (
+          <div>
+            <div className="text-[10px] uppercase tracking-widest text-gray-600 font-medium mb-2">{lang === "en" ? "Tips" : "Dicas"}</div>
+            <ul className="space-y-2">{entry.calendarTips.map((t, i) => <li key={i} className="flex items-start gap-2 text-xs text-gray-400 leading-relaxed"><span className={`${c.text} mt-0.5 flex-shrink-0`}>→</span>{t}</li>)}</ul>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // Consulting
   if (entry.type === "consulting" && entry.consultingPlan) {
     const plan = entry.consultingPlan;

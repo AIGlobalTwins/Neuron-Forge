@@ -93,6 +93,10 @@ export function GoogleAdsModal({ onClose }: Props) {
         adsCampaignType: campaignType,
         adsGroupCount: data.adGroups?.length ?? 0,
         adsHeadlineCount: (data.adGroups || []).reduce((acc: number, g: AdGroup) => acc + g.headlines.length, 0),
+        adsAdGroups: data.adGroups,
+        adsNegativeKeywords: data.negativeKeywords,
+        adsTips: data.tips,
+        adsBudget: data.budgetSuggestion,
       });
     } catch (e) {
       setError((e as Error).message);
