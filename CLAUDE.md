@@ -44,17 +44,25 @@ apps/api        # Hono API: orquestrador IA, auth, créditos, telemetria
 packages/shared # Zod schemas + tipos partilhados (web/api)
 supabase/migrations  # SQL versionado (multi-tenant + RLS)
 docs/           # TARGET-ARCHITECTURE.md, BUILD-PLAN.md
-legacy/         # MVP v0 (Next.js + geração HTML estático) — referência, NÃO desenvolver
-.claude/skills/ # refs de design reutilizáveis (taste, huashu, ui-ux-pro-max)
+legacy/         # demo LIVE em produção (Render) — desenvolvida até o builder novo a substituir
+.claude/skills/ # refs de design (taste, huashu, ui-ux-pro-max) — NOTA: no root, fora do contexto Docker do legacy → ui-ux-pro-max inativo na geração (fallback). Para ativar: copiar para legacy/.claude/skills/
 ```
 
-## Legacy (`legacy/`)
-A 1.ª versão (Neuron Forge: Next.js single-app que gerava HTML estático com prompts-template, deploy Vercel) está em `legacy/`. Continua a correr de lá (`cd legacy && npm run dev`) só para a demo/referência. NÃO adicionar features lá — tudo novo segue a stack acima. Boas ideias a aproveitar do legacy: design-engine (tipos de design + skills), motion layer, image-search (Unsplash/Pexels), Google OAuth.
+## Legacy (`legacy/`) — **demo LIVE em uso por clientes**
+Next.js 14 single-app que gera HTML estático (React+Vite+Tailwind). É o que está **em produção** (Render, Docker, `neuron-forge.onrender.com`, auto-deploy de `main`). O monorepo acima continua o alvo estratégico, mas o legacy está à frente de clientes/investidor — por isso É desenvolvido aqui até o builder novo o substituir.
+
+Estado do legacy (2026-06-17):
+- **Auth**: Supabase Auth (Google login) — funciona no domínio grátis (Clerk falhou: dev keys + cookies 3rd-party). Gate por middleware (`supabaseEnabled()`); sem `NEXT_PUBLIC_SUPABASE_*` fica aberto.
+- **Memória per-user**: `userId` da sessão Supabase em todas as rotas; settings/key em `data/users/{id}/` (disco); history na DB (`generations` jsonb + RLS) via `/api/generations` + `lib/history.ts`. Migration: `legacy/supabase/migrations/0001_auth_memory.sql`. `REQUIRE_OWN_KEYS=1` força key própria.
+- **Agentes**: 2 de geração de sites (analyze[URL→screenshot→redesign] + maps[Google Maps→site], usam Playwright/chromium — pesado nos 512MB do Render starter) + SEO, Email, Google Ads, Content Calendar, Consulting, Security, Instagram (texto, streaming).
+- **Geração**: multi-página (hash router + dropdown nav), WhatsApp deep-link garantido, site-guard (botões funcionam sempre), imagens validadas por visão (Haiku), design-engine + heroGuidance + motion. **ui-ux-pro-max inativo** (ver Layout) → fallback inline.
+- **White-label**: zero "Claude" na UI/PDFs; favicon próprio. **Resiliência**: `safeJson` (não rebenta com HTML 502), streaming nos agentes de texto.
+- **Padrões Docker/OAuth**: `NEXT_PUBLIC_*` lido em runtime (bracket notation + `<html data-sb-*>` + layout `force-dynamic`); callback OAuth via `x-forwarded-host` (req.url interno = localhost:10000); Supabase Site URL = onrender.
 
 ## Preferências do utilizador (Danilo)
 - Responder sempre em Português de Portugal. Iterações rápidas, sem resumos longos. Screenshots = mudança direta. Sem emojis.
 - Pedir o plano da feature, rever, só depois implementar. Uma feature por sessão; CLAUDE.md sempre atualizado.
 
-## Estado atual
-- **Fase 1 — Loop central de geração** (em curso). Fase 0 concluída: monorepo pnpm (apps/web, apps/api, packages/shared), Supabase migration inicial (multi-tenant + RLS + usage_events + credit ledger), skeletons web/api a arrancar.
-- Próximo: orquestrador IA (tool use create/edit/delete_file + system prompt React+Vite+Tailwind + prompt caching) e preview WebContainers com auto-correção.
+## Estado atual (2026-06-17)
+- **Legacy = demo live** em uso para teste com clientes (~50 users): Render + Supabase Google login + memória per-user (history na DB) + white-label. Ver secção Legacy. É aqui que o desenvolvimento está a acontecer.
+- **Monorepo (alvo estratégico)**: Fase 0 concluída (apps/web, apps/api, packages/shared, migration multi-tenant). Fase 1 (orquestrador tool-use + WebContainers + auto-correção) **pendente/em pausa** — foco no legacy para o teste com clientes.
