@@ -10,10 +10,11 @@ export default function LoginPage() {
     if (!clientSupabaseEnabled()) return;
     setLoading(true);
     const supabase = getBrowserSupabase();
-    const next = new URLSearchParams(window.location.search).get("next") || "/";
+    // No query string on redirectTo so it matches a plain allow-listed Redirect URL
+    // exactly (…/auth/callback). The callback route lands on "/" by default.
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
   }
 
