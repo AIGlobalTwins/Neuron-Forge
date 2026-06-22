@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { chromium } from "playwright";
 
 import { getAnthropicKey } from "@/lib/settings";
 import { extractJsonObject } from "@/lib/json-extract";
@@ -7,74 +8,111 @@ import { extractJsonObject } from "@/lib/json-extract";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-// Auto-fill a client profile from the business's own website. Grounded extraction
-// (Haiku): only uses facts present on the page; the user always reviews before save.
+// Auto-fill a client profile from the business's own website. Renders the page
+// with chromium (so JS/Wix/Squarespace sites work), falls back to a plain fetch,
+// then does a grounded Haiku extraction. The user always reviews before saving.
 
 function isPrivateHost(host: string): boolean {
   const h = host.toLowerCase();
   return (
-    h === "localhost" ||
-    h.endsWith(".local") ||
-    h === "127.0.0.1" ||
-    h === "0.0.0.0" ||
-    h.startsWith("10.") ||
-    h.startsWith("192.168.") ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(h) ||
-    h.startsWith("169.254.")
+    h === "localhost" || h.endsWith(".local") || h === "127.0.0.1" || h === "0.0.0.0" ||
+    h.startsWith("10.") || h.startsWith("192.168.") || /^172\.(1[6-9]|2\d|3[01])\./.test(h) || h.startsWith("169.254.")
   );
 }
 
-async function fetchSiteText(rawUrl: string): Promise<string> {
-  let u = rawUrl.trim();
+function normalizeUrl(raw: string): string {
+  let u = raw.trim();
   if (!/^https?:\/\//i.test(u)) u = "https://" + u;
   const parsed = new URL(u);
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") throw new Error("bad protocol");
   if (isPrivateHost(parsed.hostname)) throw new Error("blocked host");
+  return parsed.toString();
+}
 
-  const res = await fetch(parsed.toString(), {
-    headers: { "User-Agent": "Mozilla/5.0 (compatible; NeuronForge/1.0; +https://neuron-forge.onrender.com)" },
+function compact(s: string): string {
+  return s.replace(/\s+/g, " ").trim();
+}
+function nonSpaceLen(s: string): number {
+  return s.replace(/\s/g, "").length;
+}
+
+// Render the page (handles JS-heavy sites) and pull the visible text.
+async function renderWithChromium(url: string): Promise<string> {
+  const browser = await chromium.launch({
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+  });
+  try {
+    const page = await browser.newPage({ userAgent: "Mozilla/5.0 (compatible; NeuronForge/1.0)" });
+    await page.goto(url, { waitUntil: "networkidle", timeout: 20_000 }).catch(async () => {
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15_000 });
+    });
+    const data = await page.evaluate(() => {
+      const title = document.title || "";
+      const meta = (document.querySelector('meta[name="description"]') as HTMLMetaElement | null)?.content || "";
+      const og = (document.querySelector('meta[property="og:description"]') as HTMLMetaElement | null)?.content || "";
+      const body = (document.body?.innerText || "");
+      return { title, meta, og, body };
+    });
+    const head = [data.title && `TITLE: ${data.title}`, data.meta && `META: ${data.meta}`, data.og && `OG: ${data.og}`].filter(Boolean).join("\n");
+    return `${head}\n\n${compact(data.body)}`.slice(0, 12000);
+  } finally {
+    await browser.close().catch(() => {});
+  }
+}
+
+// Plain fetch fallback (SSR sites, or if chromium fails to launch).
+async function fetchLite(url: string): Promise<string> {
+  const res = await fetch(url, {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; NeuronForge/1.0)" },
     redirect: "follow",
-    signal: AbortSignal.timeout(15000),
+    signal: AbortSignal.timeout(15_000),
   });
   const html = await res.text();
-
   const title = (html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] || "").trim();
   const metaDesc = (html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i)?.[1] || "").trim();
-  const ogDesc = (html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']*)["']/i)?.[1] || "").trim();
-
-  const text = html
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<!--[\s\S]*?-->/g, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&[a-z]+;/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  const head = [title && `TITLE: ${title}`, metaDesc && `META: ${metaDesc}`, ogDesc && `OG: ${ogDesc}`].filter(Boolean).join("\n");
+  const text = compact(
+    html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<!--[\s\S]*?-->/g, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&[a-z]+;/gi, " "),
+  );
+  const head = [title && `TITLE: ${title}`, metaDesc && `META: ${metaDesc}`].filter(Boolean).join("\n");
   return `${head}\n\n${text}`.slice(0, 12000);
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
-  const url = String(body.url ?? "").trim();
-  if (!url) return NextResponse.json({ error: "url required" }, { status: 400 });
+  const raw = String(body.url ?? "").trim();
+  if (!raw) return NextResponse.json({ error: "url required" }, { status: 400 });
+
+  let url = "";
+  try {
+    url = normalizeUrl(raw);
+  } catch {
+    return NextResponse.json({ error: "That doesn't look like a valid website URL." }, { status: 400 });
+  }
 
   let userId: string | null = null;
   try { userId = await (await import("@/lib/supabase/server")).getSupabaseUserId(); } catch {}
   const anthropicKey = getAnthropicKey(userId);
   if (!anthropicKey) return NextResponse.json({ error: "Anthropic API Key not configured. Add it in Settings." }, { status: 500 });
 
+  // Prefer the rendered page; fall back to a plain fetch if chromium yields little.
   let siteText = "";
-  try {
-    siteText = await fetchSiteText(url);
-  } catch {
-    return NextResponse.json({ error: "Could not open that website. Check the URL." }, { status: 422 });
+  try { siteText = await renderWithChromium(url); } catch { /* fall through to fetch */ }
+  if (nonSpaceLen(siteText) < 200) {
+    try {
+      const lite = await fetchLite(url);
+      if (nonSpaceLen(lite) > nonSpaceLen(siteText)) siteText = lite;
+    } catch { /* ignore */ }
   }
-  if (siteText.replace(/\s/g, "").length < 40) {
-    return NextResponse.json({ error: "That page had no readable content to use." }, { status: 422 });
+  if (nonSpaceLen(siteText) < 40) {
+    return NextResponse.json({ error: "Couldn't read any content from that site. Check the URL or fill it manually." }, { status: 422 });
   }
 
   const prompt = `Extract a business profile from this website content. Return ONLY a JSON object (no markdown, no prose) with EXACTLY these keys:
@@ -85,10 +123,10 @@ export async function POST(req: NextRequest) {
   "website": string,        // canonical website URL
   "phone": string,          // phone or WhatsApp number, "" if not on the page
   "hours": string,          // opening hours as one short line, "" if not on the page
-  "services": string[],     // up to 8 concrete services/products they offer
+  "services": string[],     // up to 8 concrete services/products/menu items they offer
   "faqs": [{"question": string, "answer": string}]  // up to 4 FAQs grounded in the content, [] if none
 }
-RULES: Use ONLY facts present in the content. Never invent a phone, hours, services or FAQs that are not there — leave them "" or []. Match the language of the site. Use this website URL: ${url}
+RULES: Use ONLY facts present in the content. Never invent a phone, hours, services or FAQs that are not there — leave them "" or []. Be generous extracting services/menu items if listed. Match the language of the site. Use this website URL: ${url}
 
 WEBSITE CONTENT:
 ${siteText}`;

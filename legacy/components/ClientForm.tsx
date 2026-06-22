@@ -61,7 +61,12 @@ export function ClientForm({ client, onDone, onCancel }: { client?: Client | nul
         services: p.services && p.services.length ? p.services : f.services,
         faqs: p.faqs && p.faqs.length ? p.faqs : f.faqs,
       }));
-      setResearchMsg("Filled from the website with AI — review and edit before saving.");
+      const rich = !!(p.phone || p.hours || (p.services && p.services.length) || (p.faqs && p.faqs.length) || (p.description && p.description.length > 20));
+      if (rich) {
+        setResearchMsg("Filled from the website with AI — review and edit before saving.");
+      } else {
+        setError("Read very little from that site (it may be JavaScript-heavy or thin). Filled what I could — add the rest manually.");
+      }
     } catch {
       setError("Auto-fill failed. Try again.");
     } finally {
