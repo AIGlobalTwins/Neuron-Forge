@@ -1,6 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
 import { createServerSupabase, getSupabaseUserId } from "@/lib/supabase/server";
 import { supabaseEnabled } from "@/lib/supabase/config";
+
+export const runtime = "nodejs";
+
+// Remove a generated website's HTML file from disk (data/ mounted disk + legacy
+// outputs/). Mirrors the candidate paths the preview route serves, so deleting a
+// generation reclaims the disk space too — not just the Supabase row.
+function deleteWebsiteFiles(websiteId: string) {
+  if (!/^[\w-]+$/.test(websiteId)) return;
+  const dirs = [path.join(process.cwd(), "data", "redesigns"), path.join(process.cwd(), "outputs", "redesigns")];
+  const files = dirs.flatMap((d) => [
+    path.join(d, `analyze_${websiteId}.html`),
+    path.join(d, `maps_${websiteId}.html`),
+    path.join(d, `${websiteId}.html`),
+  ]);
+  for (const f of files) {
+    try { if (fs.existsSync(f)) fs.unlinkSync(f); } catch { /* ignore */ }
+  }
+}
 
 // Per-user generation history, stored in Supabase (RLS: a user only ever sees/
 // writes their own rows). The middleware already requires a signed-in session for
@@ -44,8 +64,21 @@ export async function DELETE(req: NextRequest) {
 
   const id = new URL(req.url).searchParams.get("id");
   const supabase = createServerSupabase();
-  // RLS still scopes both branches to the current user.
-  if (id) await supabase.from("generations").delete().eq("id", id);
-  else await supabase.from("generations").delete().eq("user_id", userId);
+  // RLS scopes every query below to the current user's own rows.
+  if (id) {
+    // Look the row up first so we can also drop its generated website file.
+    const { data: row } = await supabase.from("generations").select("payload").eq("id", id).single();
+    const websiteId = (row?.payload as { websiteId?: string } | null)?.websiteId;
+    if (websiteId) deleteWebsiteFiles(websiteId);
+    await supabase.from("generations").delete().eq("id", id);
+  } else {
+    // Clear all: drop every generated website file this user owns, then the rows.
+    const { data: rows } = await supabase.from("generations").select("payload").eq("user_id", userId);
+    for (const r of rows ?? []) {
+      const wid = (r.payload as { websiteId?: string } | null)?.websiteId;
+      if (wid) deleteWebsiteFiles(wid);
+    }
+    await supabase.from("generations").delete().eq("user_id", userId);
+  }
   return NextResponse.json({ ok: true });
 }
