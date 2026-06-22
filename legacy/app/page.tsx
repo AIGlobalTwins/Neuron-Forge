@@ -17,6 +17,8 @@ import { GoogleAdsModal } from "@/components/GoogleAdsModal";
 import { ContentCalendarModal } from "@/components/ContentCalendarModal";
 import { HistoryModal } from "@/components/HistoryModal";
 import { AuthButton } from "@/components/AuthButton";
+import { ClientProvider } from "@/lib/client-context";
+import { ClientSelector } from "@/components/ClientSelector";
 
 
 function SearchIcon() {
@@ -292,6 +294,7 @@ export default function Home() {
 
   return (
     <LangContext.Provider value={lang}>
+    <ClientProvider>
     <div className="min-h-screen flex flex-col hex-bg">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e1e] bg-[#0a0a0a]/90 backdrop-blur-sm">
@@ -309,6 +312,9 @@ export default function Home() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Active client */}
+          <ClientSelector />
+
           {/* API Key status */}
           <div className="flex items-center gap-2 text-xs text-gray-600">
             <div className={`w-1.5 h-1.5 rounded-full ${hasKey ? "bg-green-500 animate-pulse" : "bg-yellow-500"}`} />
@@ -444,6 +450,7 @@ export default function Home() {
       {showCalendar && <ContentCalendarModal onClose={() => setShowCalendar(false)} />}
       {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
     </div>
+    </ClientProvider>
     </LangContext.Provider>
   );
 }
