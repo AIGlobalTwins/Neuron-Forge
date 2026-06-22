@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { type Client, type ClientInput, EMPTY_CLIENT } from "@/lib/clients";
 import { useClientWorkspace } from "@/lib/client-context";
 
@@ -25,6 +26,10 @@ export function ClientModal({ client, onClose }: Props) {
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Render via portal to <body> so the header's backdrop-blur stacking context
+  // can't trap this fixed overlay.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   function set<K extends keyof ClientInput>(k: K, v: ClientInput[K]) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -55,7 +60,9 @@ export function ClientModal({ client, onClose }: Props) {
   const input = "w-full bg-[#111] border border-[#2a2a2a] rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#E8622A]/50 focus:ring-1 focus:ring-[#E8622A]/20 transition-colors";
   const labelCls = "block text-xs font-medium text-gray-400 mb-1.5";
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 w-full max-w-2xl bg-[#0d0d0d] border border-[#1e1e1e] rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
@@ -151,6 +158,7 @@ export function ClientModal({ client, onClose }: Props) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

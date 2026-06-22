@@ -19,6 +19,7 @@ import { HistoryModal } from "@/components/HistoryModal";
 import { AuthButton } from "@/components/AuthButton";
 import { ClientProvider } from "@/lib/client-context";
 import { ClientSelector } from "@/components/ClientSelector";
+import { WorkspaceHero } from "@/components/WorkspaceHero";
 
 
 function SearchIcon() {
@@ -390,19 +391,8 @@ export default function Home() {
 
       {/* Main */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 pb-8">
-        {/* Tagline */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#E8622A]/10 border border-[#E8622A]/20 rounded-full text-[#E8622A] text-xs font-medium mb-5">
-            <span className="w-1 h-1 rounded-full bg-[#E8622A]" />
-            {T[lang].tagline}
-          </div>
-          <h1 className="text-3xl font-bold text-white mb-3 tracking-tight">
-            {T[lang].h1}
-          </h1>
-          <p className="text-gray-500 text-base max-w-lg mx-auto">
-            {T[lang].sub}
-          </p>
-        </div>
+        {/* Client-aware hero */}
+        <WorkspaceHero />
 
         {/* Option cards */}
         {(() => {
