@@ -112,6 +112,44 @@ export function ClientForm({ client, onDone, onCancel }: { client?: Client | nul
       </div>
 
       <div className="bg-[#0d0d0d] border border-[#1e1e1e] rounded-2xl p-6 space-y-4">
+        {/* AI Auto-fill — prominent */}
+        <div className="rounded-xl border border-[#E8622A]/30 bg-gradient-to-r from-[#E8622A]/10 to-[#a855f7]/10 p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <svg viewBox="0 0 24 24" className="w-4 h-4 text-[#E8622A]" fill="currentColor"><path d="M12 2l1.5 5L19 8.5 13.5 10 12 15l-1.5-5L5 8.5 10.5 7z" /><path d="M18.3 13l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z" /></svg>
+            <h3 className="text-sm font-semibold text-white">Auto-fill with AI</h3>
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#a855f7]/20 text-[#c98bff] font-bold tracking-wide">AI</span>
+          </div>
+          <p className="text-xs text-gray-400 mb-3">Paste the business website and AI fills the name, category, services, hours and FAQs — you just review before saving.</p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              className={`${input} flex-1`}
+              value={form.website}
+              onChange={(e) => set("website", e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); autofill(); } }}
+              placeholder="https://business-website.com"
+            />
+            <button
+              type="button"
+              onClick={autofill}
+              disabled={researching || !form.website.trim()}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[#E8622A] to-[#a855f7] hover:opacity-90 shadow-[0_0_16px_rgba(168,85,247,0.5)] disabled:opacity-40 disabled:shadow-none transition-all shrink-0"
+            >
+              {researching ? (
+                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" strokeOpacity="0.3" /><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
+              ) : (
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M12 2l1.5 5L19 8.5 13.5 10 12 15l-1.5-5L5 8.5 10.5 7z" /><path d="M18.3 13l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z" /></svg>
+              )}
+              {researching ? "Researching…" : "Auto-fill"}
+            </button>
+          </div>
+          {researchMsg && (
+            <p className="text-[11px] text-emerald-400 flex items-center gap-1.5 mt-2">
+              <svg viewBox="0 0 24 24" className="w-3 h-3 shrink-0" fill="currentColor"><path d="M12 2l1.5 5L19 8.5 13.5 10 12 15l-1.5-5L5 8.5 10.5 7z" /></svg>
+              {researchMsg}
+            </p>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className={labelCls}>Business name *</label>
@@ -133,24 +171,8 @@ export function ClientForm({ client, onDone, onCancel }: { client?: Client | nul
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <div className="flex items-center justify-between mb-1.5 gap-2">
-              <label className="text-xs font-medium text-gray-400">Website</label>
-              <button
-                type="button"
-                onClick={autofill}
-                disabled={researching || !form.website.trim()}
-                title="Fill the whole form from this website, with AI"
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold text-white bg-gradient-to-r from-[#E8622A] to-[#a855f7] hover:opacity-90 shadow-[0_0_10px_rgba(168,85,247,0.45)] disabled:opacity-40 disabled:shadow-none transition-all shrink-0"
-              >
-                {researching ? (
-                  <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" strokeOpacity="0.3" /><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" className="w-3 h-3" fill="currentColor"><path d="M12 2l1.5 5L19 8.5 13.5 10 12 15l-1.5-5L5 8.5 10.5 7z" /><path d="M18.3 13l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z" /></svg>
-                )}
-                {researching ? "Researching…" : "Auto-fill"}
-              </button>
-            </div>
-            <input className={input} value={form.website} onChange={(e) => set("website", e.target.value)} placeholder="https://… then Auto-fill" />
+            <label className={labelCls}>Website</label>
+            <input className={input} value={form.website} onChange={(e) => set("website", e.target.value)} placeholder="https://…" />
           </div>
           <div>
             <label className={labelCls}>Phone</label>
@@ -162,12 +184,6 @@ export function ClientForm({ client, onDone, onCancel }: { client?: Client | nul
           </div>
         </div>
 
-        {researchMsg && (
-          <p className="text-[11px] text-emerald-400 flex items-center gap-1.5">
-            <svg viewBox="0 0 24 24" className="w-3 h-3 shrink-0" fill="currentColor"><path d="M12 2l1.5 5L19 8.5 13.5 10 12 15l-1.5-5L5 8.5 10.5 7z" /></svg>
-            {researchMsg}
-          </p>
-        )}
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
