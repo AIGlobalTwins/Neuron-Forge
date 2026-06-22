@@ -88,7 +88,7 @@ export function SocialAnalyzerModal({ onClose }: Props) {
             </div>
             <div>
               <h2 className="text-white font-semibold text-sm">Social Analyzer</h2>
-              <p className="text-gray-600 text-xs">Audit any Instagram profile — yours, a client's or a competitor's.</p>
+              <p className="text-gray-600 text-xs">Audit any Instagram profile — yours, a client&apos;s or a competitor&apos;s.</p>
             </div>
           </div>
           <button onClick={onClose} className="text-gray-600 hover:text-gray-400 transition-colors" title="Back">
