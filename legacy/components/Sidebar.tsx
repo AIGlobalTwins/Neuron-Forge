@@ -89,6 +89,7 @@ export function Sidebar({ lang, toggleLang, hasKey, onHistory, onDocs, onSetting
 
       {/* Bottom */}
       <div className="p-3 border-t border-[#1e1e1e] space-y-2 shrink-0">
+        <AuthButton />
         <div className={`flex items-center gap-2 px-2 text-[11px] text-gray-600 ${collapsed ? "justify-center px-0" : ""}`}>
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${hasKey ? "bg-green-500 animate-pulse" : "bg-yellow-500"}`} />
           {!collapsed && <span>{hasKey ? (lang === "pt" ? "Pronto" : "Ready") : (lang === "pt" ? "Sem API Key" : "No API Key")}</span>}
@@ -104,8 +105,6 @@ export function Sidebar({ lang, toggleLang, hasKey, onHistory, onDocs, onSetting
             <span style={{ color: lang === "en" ? "#E8622A" : undefined }}>EN</span>
           </button>
         )}
-
-        <AuthButton />
       </div>
     </aside>
   );
