@@ -330,7 +330,7 @@ export default function Home() {
       )}
 
       {/* Main */}
-      <main className={`flex-1 flex flex-col items-center px-6 pb-8 ${agent ? "justify-start pt-10" : "justify-center"}`}>
+      <main className="flex-1 flex flex-col items-center px-6 pb-8 pt-12 sm:pt-16">
         {agent ? (
           renderAgent()
         ) : (
