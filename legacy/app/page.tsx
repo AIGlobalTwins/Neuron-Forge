@@ -238,17 +238,8 @@ function OptionCard({ tag, title, desc, cta, icon, accent = "#E8622A", onClick }
 }
 
 export default function Home() {
-  const [showAnalyzeModal, setShowAnalyzeModal] = useState(false);
-  const [showMapsModal, setShowMapsModal] = useState(false);
+  const [agent, setAgent] = useState<string | null>(null); // active agent page (null = grid)
   const [showSettings, setShowSettings] = useState(false);
-  const [showSocialPosts, setShowSocialPosts] = useState(false);
-  const [showWhatsApp, setShowWhatsApp] = useState(false);
-  const [showConsulting, setShowConsulting] = useState(false);
-  const [showSeo, setShowSeo] = useState(false);
-  const [showSecurity, setShowSecurity] = useState(false);
-  const [showEmail, setShowEmail] = useState(false);
-  const [showAds, setShowAds] = useState(false);
-  const [showCalendar, setShowCalendar] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showDocs, setShowDocs] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -271,10 +262,24 @@ export default function Home() {
   }, []);
 
   function openTool(toolId: string) {
-    if (toolId === "analyze") setShowAnalyzeModal(true);
-    else if (toolId === "maps") setShowMapsModal(true);
-    else if (toolId === "instagram") setShowSocialPosts(true);
-    else if (toolId === "whatsapp") setShowWhatsApp(true);
+    setAgent(toolId);
+  }
+
+  const back = () => setAgent(null);
+  function renderAgent() {
+    switch (agent) {
+      case "analyze": return <AnalyzeModal onClose={back} />;
+      case "maps": return <GoogleMapsModal onClose={back} />;
+      case "instagram": return <SocialPostsModal onClose={back} />;
+      case "whatsapp": return <WhatsAppModal onClose={back} />;
+      case "consulting": return <ConsultingModal onClose={back} onOpenTool={openTool} />;
+      case "seo": return <SeoModal onClose={back} onOpenTool={openTool} />;
+      case "security": return <SecurityModal onClose={back} />;
+      case "email": return <EmailMarketingModal onClose={back} />;
+      case "ads": return <GoogleAdsModal onClose={back} />;
+      case "calendar": return <ContentCalendarModal onClose={back} />;
+      default: return null;
+    }
   }
 
   function handleOnboardingComplete() {
@@ -303,6 +308,7 @@ export default function Home() {
         onHistory={() => setShowHistory(true)}
         onDocs={() => setShowDocs(true)}
         onSettings={() => setShowSettings(true)}
+        onHome={() => setAgent(null)}
         t={T[lang]}
       />
       <div className="flex-1 flex flex-col min-w-0">
@@ -324,14 +330,18 @@ export default function Home() {
       )}
 
       {/* Main */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 pb-8">
+      <main className={`flex-1 flex flex-col items-center px-6 pb-8 ${agent ? "justify-start pt-10" : "justify-center"}`}>
+        {agent ? (
+          renderAgent()
+        ) : (
+        <>
         {/* Clients landing (no client) OR context + agents (client active) */}
         <ClientGate>
         {(() => {
           const c = T[lang].cards;
           const icons = [<SearchIcon key="0" />, <MapPinIcon key="1" />, <InstagramCardIcon key="2" />, <WhatsAppCardIcon key="3" />, <ConsultingIcon key="4" />, <SeoIcon key="5" />, <SecurityIcon key="6" />, <EmailIcon key="7" />, <AdsIcon key="8" />, <CalendarIcon key="9" />];
           const accents = ["#a855f7", "#3b82f6", "#ec4899", "#22c55e", "#E8622A", "#10b981", "#ef4444", "#06b6d4", "#f59e0b", "#8b5cf6"];
-          const clicks = [() => setShowAnalyzeModal(true), () => setShowMapsModal(true), () => setShowSocialPosts(true), () => setShowWhatsApp(true), () => setShowConsulting(true), () => setShowSeo(true), () => setShowSecurity(true), () => setShowEmail(true), () => setShowAds(true), () => setShowCalendar(true)];
+          const clicks = [() => setAgent("analyze"), () => setAgent("maps"), () => setAgent("instagram"), () => setAgent("whatsapp"), () => setAgent("consulting"), () => setAgent("seo"), () => setAgent("security"), () => setAgent("email"), () => setAgent("ads"), () => setAgent("calendar")];
           return (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 w-full max-w-4xl">
               {c.map((card, i) => (
@@ -355,23 +365,15 @@ export default function Home() {
         <p className="mt-10 text-xs text-gray-700">
           Neuron Forge Agents
         </p>
+        </>
+        )}
       </main>
       </div>
 
       {/* Modals */}
       {showOnboarding && <OnboardingModal onComplete={handleOnboardingComplete} />}
       {showDocs && <DocsModal onClose={() => setShowDocs(false)} />}
-      {showAnalyzeModal && <AnalyzeModal onClose={() => setShowAnalyzeModal(false)} />}
-      {showMapsModal && <GoogleMapsModal onClose={() => setShowMapsModal(false)} />}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
-      {showSocialPosts && <SocialPostsModal onClose={() => setShowSocialPosts(false)} />}
-      {showWhatsApp && <WhatsAppModal onClose={() => setShowWhatsApp(false)} />}
-      {showConsulting && <ConsultingModal onClose={() => setShowConsulting(false)} onOpenTool={openTool} />}
-      {showSeo && <SeoModal onClose={() => setShowSeo(false)} onOpenTool={openTool} />}
-      {showSecurity && <SecurityModal onClose={() => setShowSecurity(false)} />}
-      {showEmail && <EmailMarketingModal onClose={() => setShowEmail(false)} />}
-      {showAds && <GoogleAdsModal onClose={() => setShowAds(false)} />}
-      {showCalendar && <ContentCalendarModal onClose={() => setShowCalendar(false)} />}
       {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
     </div>
     </ClientProvider>

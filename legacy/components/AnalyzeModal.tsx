@@ -113,15 +113,11 @@ export function AnalyzeModal({ onClose }: Props) {
   const colors = result ? scoreColor(result.score) : null;
 
   return (
-    <div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-      onClick={onClose}
-    >
+    <div className="w-full max-w-5xl mx-auto fade-up">
       <div
-        className={`bg-[#111] border border-[#2a2a2a] rounded-xl shadow-2xl overflow-hidden transition-all max-h-[90vh] flex flex-col ${
+        className={`bg-[#111] border border-[#2a2a2a] rounded-xl shadow-2xl overflow-hidden transition-all flex flex-col ${
           step === "result" ? "max-w-5xl w-full" : "max-w-4xl w-full"
         }`}
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e1e] shrink-0">
