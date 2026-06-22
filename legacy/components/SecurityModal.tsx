@@ -380,6 +380,21 @@ export function SecurityModal({ onClose }: Props) {
                   </div>
                 )}
 
+                {/* Passed checks */}
+                {result.passedChecks && result.passedChecks.length > 0 && (
+                  <div className="px-5 py-4 border-t border-[#1e1e1e]">
+                    <p className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest mb-3">Passed checks ({result.passedChecks.length})</p>
+                    <div className="space-y-1.5">
+                      {result.passedChecks.map((c, i) => (
+                        <div key={i} className="flex items-start gap-1.5 text-[11px]">
+                          <svg viewBox="0 0 16 16" className="w-3 h-3 mt-0.5 shrink-0 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8.5l3 3 7-7" /></svg>
+                          <span className="text-gray-500">{c}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Restart */}
                 <div className="mt-auto px-5 py-4 border-t border-[#1e1e1e]">
                   <button

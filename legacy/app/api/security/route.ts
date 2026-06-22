@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import tls from "tls";
 import Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 import { extractJsonObject } from "@/lib/json-extract";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 async function getUserId(): Promise<string | null> {
   try {
@@ -30,71 +34,43 @@ export interface SecurityResult {
   summary: string;
   headersChecked: string[];
   techDetected: string[];
+  passedChecks: string[];
 }
 
-// Deterministic header rules — severity never changes between runs
-const HEADER_RULES: Record<string, { severity: SecurityFinding["severity"]; category: string; title: string; description: string; recommendation: string; presentIsBad?: boolean }> = {
+// Missing-header rules (only emitted when the header is absent — present & fine
+// goes to passedChecks instead, so the report is about THIS site's gaps).
+const HEADER_RULES: Record<string, { severity: SecurityFinding["severity"]; category: string; title: string; description: string; recommendation: string }> = {
   "content-security-policy": {
-    severity: "high",
-    category: "Headers",
-    title: "Content-Security-Policy missing",
-    description: "Without CSP, the browser has no restrictions on where it can load scripts, styles and other resources. This makes XSS attacks easier.",
-    recommendation: "Add the Content-Security-Policy header. Recommended minimum: default-src 'self'; script-src 'self'.",
+    severity: "high", category: "Headers", title: "Content-Security-Policy missing",
+    description: "Without a CSP the browser has no restrictions on where scripts, styles and other resources load from, making XSS far easier to exploit.",
+    recommendation: "Add a Content-Security-Policy header. Minimum: default-src 'self'; script-src 'self'.",
   },
   "strict-transport-security": {
-    severity: "high",
-    category: "SSL/TLS",
-    title: "HSTS (HTTP Strict Transport Security) missing",
-    description: "Without HSTS, the browser can be forced to use HTTP instead of HTTPS, exposing traffic to man-in-the-middle attacks.",
-    recommendation: "Adiciona: Strict-Transport-Security: max-age=31536000; includeSubDomains",
+    severity: "high", category: "TLS", title: "HSTS (Strict-Transport-Security) missing",
+    description: "Without HSTS a browser can be downgraded to HTTP, exposing traffic to man-in-the-middle attacks.",
+    recommendation: "Add: Strict-Transport-Security: max-age=31536000; includeSubDomains",
   },
   "x-frame-options": {
-    severity: "medium",
-    category: "Headers",
-    title: "X-Frame-Options missing",
-    description: "The website can be embedded in iframes on other domains, allowing clickjacking attacks.",
-    recommendation: "Add: X-Frame-Options: SAMEORIGIN — or use Content-Security-Policy: frame-ancestors 'self'",
+    severity: "medium", category: "Headers", title: "X-Frame-Options missing",
+    description: "The site can be embedded in iframes on other domains, enabling clickjacking.",
+    recommendation: "Add: X-Frame-Options: SAMEORIGIN — or CSP frame-ancestors 'self'.",
   },
   "x-content-type-options": {
-    severity: "low",
-    category: "Headers",
-    title: "X-Content-Type-Options missing",
-    description: "The browser may try to guess the MIME type of resources, which can lead to unexpected content execution.",
+    severity: "low", category: "Headers", title: "X-Content-Type-Options missing",
+    description: "The browser may MIME-sniff responses, which can lead to unexpected content execution.",
     recommendation: "Add: X-Content-Type-Options: nosniff",
   },
   "referrer-policy": {
-    severity: "low",
-    category: "Privacy",
-    title: "Referrer-Policy missing",
-    description: "The browser sends the full URL as the Referer on external requests, potentially exposing internal paths or tokens in URLs.",
+    severity: "low", category: "Privacy", title: "Referrer-Policy missing",
+    description: "The full URL is sent as the Referer on external requests, potentially leaking internal paths or tokens.",
     recommendation: "Add: Referrer-Policy: strict-origin-when-cross-origin",
   },
   "permissions-policy": {
-    severity: "low",
-    category: "Privacy",
-    title: "Permissions-Policy missing",
-    description: "Without this header, the website does not restrict access to sensitive browser features (camera, microphone, geolocation).",
+    severity: "low", category: "Privacy", title: "Permissions-Policy missing",
+    description: "The site does not restrict access to sensitive browser features (camera, microphone, geolocation).",
     recommendation: "Add: Permissions-Policy: camera=(), microphone=(), geolocation=()",
   },
-  "x-powered-by": {
-    severity: "low",
-    category: "Information Disclosure",
-    title: "X-Powered-By exposes server technology",
-    description: "The X-Powered-By header reveals the framework/platform in use, making it easier to target vulnerable versions.",
-    recommendation: "Remove the X-Powered-By header in the server configuration (e.g. Express: app.disable('x-powered-by'))",
-    presentIsBad: true,
-  },
-  "server": {
-    severity: "info",
-    category: "Information Disclosure",
-    title: "Server header exposes server software",
-    description: "The Server header reveals the software and possibly the version of the web server, which can help attackers.",
-    recommendation: "Configure the server to omit or generalize the Server header (e.g. nginx: server_tokens off)",
-    presentIsBad: true,
-  },
 };
-
-const SECURITY_HEADERS = Object.keys(HEADER_RULES);
 
 function calculateRating(findings: SecurityFinding[]): SecurityRating {
   if (findings.some((f) => f.severity === "critical")) return "critical";
@@ -103,85 +79,83 @@ function calculateRating(findings: SecurityFinding[]): SecurityRating {
   return "secure";
 }
 
-const EXPOSED_PATHS = ["/.env", "/robots.txt", "/.git/config", "/sitemap.xml", "/admin", "/phpinfo.php", "/wp-login.php"];
+// /.env and /.git/config are the dangerous ones — treat deterministically.
+const EXPOSED_PATHS: Record<string, { severity: SecurityFinding["severity"]; title: string }> = {
+  "/.env": { severity: "critical", title: "Environment file (.env) publicly accessible" },
+  "/.git/config": { severity: "critical", title: "Git repository (.git) exposed" },
+  "/phpinfo.php": { severity: "high", title: "phpinfo() page exposed" },
+  "/.htaccess": { severity: "medium", title: ".htaccess accessible" },
+  "/admin": { severity: "info", title: "Admin path responds (200)" },
+  "/wp-login.php": { severity: "info", title: "WordPress login exposed" },
+  "/server-status": { severity: "medium", title: "Apache server-status exposed" },
+};
 
-async function fetchWithTimeout(url: string, ms = 8000): Promise<Response> {
+function isPrivateHost(host: string): boolean {
+  const h = host.toLowerCase();
+  return (
+    h === "localhost" || h.endsWith(".local") || h === "127.0.0.1" || h === "0.0.0.0" ||
+    h.startsWith("10.") || h.startsWith("192.168.") || /^172\.(1[6-9]|2\d|3[01])\./.test(h) || h.startsWith("169.254.")
+  );
+}
+
+async function fetchWithTimeout(url: string, ms = 8000, redirect: RequestRedirect = "follow"): Promise<Response> {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), ms);
   try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; SecurityAudit/1.0)" },
-      redirect: "follow",
-    });
-    return res;
+    return await fetch(url, { signal: controller.signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; NeuronForge-SecurityAudit/1.0)" }, redirect });
   } finally {
     clearTimeout(id);
   }
 }
 
-// Sanitize text so it's safe to embed inside a JSON string via prompt
+// Live TLS handshake — real certificate + protocol, varies per site.
+function checkTls(hostname: string): Promise<{ ok: boolean; protocol: string | null; daysToExpiry: number | null; issuer: string | null }> {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (v: { ok: boolean; protocol: string | null; daysToExpiry: number | null; issuer: string | null }) => { if (!done) { done = true; resolve(v); } };
+    try {
+      const socket = tls.connect({ host: hostname, port: 443, servername: hostname, timeout: 8000 }, () => {
+        const cert = socket.getPeerCertificate();
+        const protocol = socket.getProtocol();
+        let daysToExpiry: number | null = null;
+        if (cert?.valid_to) {
+          const exp = Date.parse(cert.valid_to);
+          if (!Number.isNaN(exp)) daysToExpiry = Math.floor((exp - Date.now()) / 86_400_000);
+        }
+        const issuer = (cert?.issuer?.O as string) || (cert?.issuer?.CN as string) || null;
+        socket.end();
+        finish({ ok: true, protocol, daysToExpiry, issuer });
+      });
+      socket.on("error", () => finish({ ok: false, protocol: null, daysToExpiry: null, issuer: null }));
+      socket.on("timeout", () => { socket.destroy(); finish({ ok: false, protocol: null, daysToExpiry: null, issuer: null }); });
+    } catch {
+      finish({ ok: false, protocol: null, daysToExpiry: null, issuer: null });
+    }
+  });
+}
+
 function safe(s: string): string {
-  return s
-    .replace(/\\/g, "\\\\")
-    .replace(/"/g, '\\"')
-    .replace(/\r/g, "")
-    .replace(/\n/g, " ")
-    .replace(/\t/g, " ")
-    .replace(/`/g, "'")
-    .slice(0, 400);
+  return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/[\r\n\t]/g, " ").replace(/`/g, "'").slice(0, 400);
 }
-
 function extractInlineScripts(html: string): string[] {
-  const scripts: string[] = [];
-  const regex = /<script(?![^>]*src)[^>]*>([\s\S]*?)<\/script>/gi;
-  let match;
-  while ((match = regex.exec(html)) !== null) {
-    const content = match[1].trim();
-    if (content.length > 10) scripts.push(safe(content.slice(0, 500)));
-  }
-  return scripts.slice(0, 4);
+  const out: string[] = []; const re = /<script(?![^>]*\ssrc)[^>]*>([\s\S]*?)<\/script>/gi; let m;
+  while ((m = re.exec(html)) !== null) { const c = m[1].trim(); if (c.length > 10) out.push(safe(c.slice(0, 500))); }
+  return out.slice(0, 4);
 }
-
 function extractForms(html: string): string[] {
-  const forms: string[] = [];
-  const regex = /<form[\s\S]*?<\/form>/gi;
-  let match;
-  while ((match = regex.exec(html)) !== null) {
-    forms.push(safe(match[0].slice(0, 600)));
-  }
-  return forms.slice(0, 4);
+  const out: string[] = []; const re = /<form[\s\S]*?<\/form>/gi; let m;
+  while ((m = re.exec(html)) !== null) out.push(safe(m[0].slice(0, 600)));
+  return out.slice(0, 4);
 }
-
 function extractComments(html: string): string[] {
-  const comments: string[] = [];
-  const regex = /<!--([\s\S]*?)-->/g;
-  let match;
-  while ((match = regex.exec(html)) !== null) {
-    const c = match[1].trim();
-    if (c.length > 5 && !c.startsWith("[if ")) comments.push(safe(c.slice(0, 200)));
-  }
-  return comments.slice(0, 8);
+  const out: string[] = []; const re = /<!--([\s\S]*?)-->/g; let m;
+  while ((m = re.exec(html)) !== null) { const c = m[1].trim(); if (c.length > 5 && !c.startsWith("[if ")) out.push(safe(c.slice(0, 200))); }
+  return out.slice(0, 8);
 }
-
 function extractLibraries(html: string): string[] {
-  const libs: string[] = [];
-  const regex = /src=["']([^"']*(?:jquery|bootstrap|react|vue|angular|lodash|axios|moment)[^"']*)[^"']*["']/gi;
-  let match;
-  while ((match = regex.exec(html)) !== null) {
-    libs.push(match[1].slice(0, 200));
-  }
-  return [...new Set(libs)].slice(0, 8);
-}
-
-function extractMetaInfo(html: string): string {
-  const metas: string[] = [];
-  const regex = /<meta[^>]*>/gi;
-  let match;
-  while ((match = regex.exec(html)) !== null) {
-    metas.push(safe(match[0]));
-  }
-  return metas.slice(0, 15).join(" | ");
+  const out: string[] = []; const re = /src=["']([^"']*(?:jquery|bootstrap|react|vue|angular|lodash|axios|moment)[^"']*)["']/gi; let m;
+  while ((m = re.exec(html)) !== null) out.push(m[1].slice(0, 200));
+  return [...new Set(out)].slice(0, 8);
 }
 
 export async function POST(req: NextRequest) {
@@ -189,194 +163,190 @@ export async function POST(req: NextRequest) {
     const userId = await getUserId();
     const anthropicKey = getAnthropicKey(userId);
     const claudeModel = getClaudeModel(userId);
-    if (!anthropicKey) {
-      return NextResponse.json({ error: "Anthropic API Key not configured." }, { status: 500 });
-    }
+    if (!anthropicKey) return NextResponse.json({ error: "Anthropic API Key not configured." }, { status: 500 });
 
     const body = await req.json().catch(() => ({}));
-    const { url } = body;
+    const url = String(body.url ?? "").trim();
+    if (!url) return NextResponse.json({ error: "URL is required." }, { status: 400 });
 
-    if (!url?.trim()) {
-      return NextResponse.json({ error: "URL is required." }, { status: 400 });
+    let targetUrl = url;
+    if (!/^https?:\/\//i.test(targetUrl)) targetUrl = "https://" + targetUrl;
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(targetUrl);
+      if (isPrivateHost(parsedUrl.hostname)) throw new Error("private");
+    } catch {
+      return NextResponse.json({ error: "That doesn't look like a valid public URL." }, { status: 400 });
     }
 
-    let targetUrl = url.trim();
-    if (!targetUrl.startsWith("http")) targetUrl = "https://" + targetUrl;
+    const findings: SecurityFinding[] = [];
+    const passedChecks: string[] = [];
 
-    // 1. Fetch main page
+    // 1) Fetch the main page (real headers, html, cookies, final URL after redirects)
     let html = "";
-    const responseHeaders: Record<string, string> = {};
+    const headers: Record<string, string> = {};
+    let setCookies: string[] = [];
     let finalUrl = targetUrl;
-
     try {
       const res = await fetchWithTimeout(targetUrl);
       html = await res.text();
-      finalUrl = res.url;
-      res.headers.forEach((value, key) => {
-        responseHeaders[key.toLowerCase()] = value;
-      });
+      finalUrl = res.url || targetUrl;
+      res.headers.forEach((v, k) => { headers[k.toLowerCase()] = v; });
+      setCookies = (res.headers as unknown as { getSetCookie?: () => string[] }).getSetCookie?.() ?? [];
     } catch {
-      return NextResponse.json({ error: "Could not access the website. Check the URL and try again." }, { status: 400 });
+      return NextResponse.json({ error: "Could not reach the website. Check the URL and try again." }, { status: 400 });
+    }
+    const finalParsed = new URL(finalUrl);
+    const isHttps = finalParsed.protocol === "https:";
+    const origin = finalParsed.origin;
+
+    // 2) Security headers — missing => finding; present & fine => passedChecks
+    for (const [h, rule] of Object.entries(HEADER_RULES)) {
+      if (headers[h]) passedChecks.push(`${h} set`);
+      else findings.push({ ...rule, evidence: "header absent" });
+    }
+    // CSP quality (only if present)
+    const csp = headers["content-security-policy"];
+    if (csp) {
+      const weak: string[] = [];
+      if (/unsafe-inline/i.test(csp)) weak.push("'unsafe-inline'");
+      if (/unsafe-eval/i.test(csp)) weak.push("'unsafe-eval'");
+      if (/(?:script-src|default-src)[^;]*\*/i.test(csp)) weak.push("wildcard * source");
+      if (weak.length) {
+        findings.push({ severity: "medium", category: "Headers", title: "Weak Content-Security-Policy", description: `The CSP allows ${weak.join(", ")}, which largely defeats its XSS protection.`, recommendation: "Remove unsafe-inline/unsafe-eval and wildcard sources; use nonces or hashes for inline scripts.", evidence: csp.slice(0, 120) });
+      } else passedChecks.push("CSP has no unsafe-inline/eval/wildcard");
+    }
+    // Tech disclosure
+    if (headers["x-powered-by"]) findings.push({ severity: "low", category: "Information Disclosure", title: "X-Powered-By exposes the stack", description: "The X-Powered-By header reveals the framework/platform, helping attackers target known CVEs.", recommendation: "Remove it (e.g. Express: app.disable('x-powered-by')).", evidence: `x-powered-by: ${headers["x-powered-by"]}` });
+    else passedChecks.push("X-Powered-By not exposed");
+    if (headers["server"] && /\d/.test(headers["server"])) findings.push({ severity: "info", category: "Information Disclosure", title: "Server header reveals software version", description: "The Server header includes a version, aiding version-specific attacks.", recommendation: "Generalise or hide it (nginx: server_tokens off).", evidence: `server: ${headers["server"]}` });
+
+    // 3) HTTPS / redirect
+    if (!isHttps) {
+      findings.push({ severity: "high", category: "TLS", title: "Site served over HTTP (no HTTPS)", description: "Traffic is unencrypted and can be read or modified in transit.", recommendation: "Enable TLS and serve everything over HTTPS.", evidence: finalUrl });
+    } else {
+      passedChecks.push("Served over HTTPS");
+      // Does http:// redirect to https://?
+      try {
+        const httpRes = await fetchWithTimeout(`http://${finalParsed.host}`, 6000, "manual");
+        const loc = httpRes.headers.get("location") || "";
+        if (httpRes.status >= 300 && httpRes.status < 400 && /^https:/i.test(loc)) passedChecks.push("HTTP redirects to HTTPS");
+        else if (httpRes.status < 400) findings.push({ severity: "medium", category: "TLS", title: "HTTP is not redirected to HTTPS", description: "The plain-HTTP version loads without forcing HTTPS, allowing downgrade/MITM.", recommendation: "301-redirect all HTTP traffic to HTTPS and add HSTS.", evidence: `http:// returned ${httpRes.status}` });
+      } catch { /* http not reachable — fine */ }
     }
 
-    // 2. Generate deterministic header findings server-side
-    const presentHeaders: string[] = [];
-    const headerFindings: SecurityFinding[] = [];
-
-    SECURITY_HEADERS.forEach((h) => {
-      const rule = HEADER_RULES[h];
-      const value = responseHeaders[h];
-      if (rule.presentIsBad) {
-        if (value) {
-          presentHeaders.push(`${h}: ${value}`);
-          headerFindings.push({ ...rule, evidence: `${h}: ${value}` });
-        } else {
-          // good — not present
-          headerFindings.push({
-            severity: "info",
-            category: rule.category,
-            title: `${h} não exposto`,
-            description: `O header ${h} não está presente, o que é correto do ponto de vista de segurança.`,
-            recommendation: "Manter configuração atual.",
-            evidence: "(ausente — correto)",
-          });
-        }
+    // 4) TLS certificate / protocol (live handshake)
+    if (isHttps) {
+      const t = await checkTls(finalParsed.hostname);
+      if (!t.ok) {
+        findings.push({ severity: "high", category: "TLS", title: "TLS handshake failed", description: "Could not establish a valid TLS connection — possible invalid, self-signed or misconfigured certificate.", recommendation: "Fix the certificate chain and TLS configuration.", evidence: finalParsed.hostname });
       } else {
-        if (value) {
-          presentHeaders.push(`${h}: ${value}`);
-          headerFindings.push({
-            severity: "info",
-            category: rule.category,
-            title: rule.title.replace(" ausente", " configurado"),
-            description: `O header ${h} está presente e configurado.`,
-            recommendation: "Manter configuração atual.",
-            evidence: `${h}: ${value.slice(0, 80)}`,
-          });
-        } else {
-          headerFindings.push({ ...rule, evidence: "(header ausente)" });
-        }
+        if (t.protocol && /TLSv1(\.1)?$/.test(t.protocol)) findings.push({ severity: "medium", category: "TLS", title: `Outdated TLS protocol (${t.protocol})`, description: "TLS 1.0/1.1 are deprecated and vulnerable.", recommendation: "Disable TLS 1.0/1.1; require TLS 1.2+.", evidence: t.protocol });
+        if (t.daysToExpiry !== null && t.daysToExpiry < 0) findings.push({ severity: "high", category: "TLS", title: "TLS certificate expired", description: "The certificate has expired; browsers will warn or block visitors.", recommendation: "Renew the certificate (enable auto-renew, e.g. Let's Encrypt).", evidence: `expired ${Math.abs(t.daysToExpiry)}d ago` });
+        else if (t.daysToExpiry !== null && t.daysToExpiry < 14) findings.push({ severity: "medium", category: "TLS", title: "TLS certificate expiring soon", description: `The certificate expires in ${t.daysToExpiry} days.`, recommendation: "Renew now / enable auto-renew.", evidence: `${t.daysToExpiry}d left` });
+        else if (t.daysToExpiry !== null) passedChecks.push(`Valid certificate (${t.protocol}, ${t.daysToExpiry}d left${t.issuer ? `, ${t.issuer}` : ""})`);
       }
-    });
+    }
 
-    // 3. Check exposed paths (passively, only status codes)
-    const exposedPaths: string[] = [];
-    const baseUrl = new URL(finalUrl).origin;
+    // 5) Cookie flags
+    if (setCookies.length) {
+      const insecure = setCookies.filter((c) => isHttps && !/;\s*secure/i.test(c));
+      const noHttpOnly = setCookies.filter((c) => !/;\s*httponly/i.test(c));
+      const noSameSite = setCookies.filter((c) => !/;\s*samesite/i.test(c));
+      const nameOf = (c: string) => c.split("=")[0];
+      if (insecure.length) findings.push({ severity: "medium", category: "Cookies", title: "Cookies without Secure flag", description: "Cookies can be sent over plain HTTP and intercepted.", recommendation: "Set the Secure attribute on all cookies.", evidence: insecure.map(nameOf).slice(0, 4).join(", ") });
+      if (noHttpOnly.length) findings.push({ severity: "low", category: "Cookies", title: "Cookies without HttpOnly flag", description: "Cookies are readable by JavaScript, exposing them to theft via XSS.", recommendation: "Set HttpOnly on session/auth cookies.", evidence: noHttpOnly.map(nameOf).slice(0, 4).join(", ") });
+      if (noSameSite.length) findings.push({ severity: "low", category: "Cookies", title: "Cookies without SameSite", description: "Cookies are sent on cross-site requests, enabling CSRF.", recommendation: "Set SameSite=Lax or Strict.", evidence: noSameSite.map(nameOf).slice(0, 4).join(", ") });
+      if (!insecure.length && !noHttpOnly.length && !noSameSite.length) passedChecks.push("Cookies use Secure/HttpOnly/SameSite");
+    }
+
+    // 6) Mixed content (http:// resources on an https page)
+    if (isHttps) {
+      const mixed = [...html.matchAll(/(?:src|href)=["'](http:\/\/[^"']+)["']/gi)].map((m) => m[1]).filter((u) => !u.startsWith("http://www.w3.org"));
+      if (mixed.length) findings.push({ severity: "medium", category: "Mixed Content", title: "Insecure (HTTP) resources on an HTTPS page", description: "Loading HTTP resources over HTTPS breaks the security guarantee and triggers browser warnings.", recommendation: "Load every resource over HTTPS.", evidence: [...new Set(mixed)].slice(0, 3).join(", ").slice(0, 120) });
+      else passedChecks.push("No mixed (HTTP) content");
+    }
+
+    // 7) Subresource Integrity on external scripts
+    const extScripts = [...html.matchAll(/<script[^>]*\ssrc=["']https?:\/\/[^"']+["'][^>]*>/gi)].map((m) => m[0]);
+    const noSri = extScripts.filter((s) => !/integrity=/i.test(s) && !/(?:src=["']https?:\/\/[^"']*(?:googletagmanager|google-analytics|gstatic|googleapis))/i.test(s));
+    if (extScripts.length && noSri.length) findings.push({ severity: "low", category: "Supply Chain", title: "External scripts without Subresource Integrity", description: `${noSri.length} third-party script(s) load without an integrity hash; a compromised CDN could inject malicious code.`, recommendation: "Add integrity + crossorigin attributes to third-party <script> tags.", evidence: `${noSri.length}/${extScripts.length} external scripts` });
+    else if (extScripts.length) passedChecks.push("External scripts use SRI");
+
+    // 8) Exposed sensitive paths (deterministic, real status codes)
     await Promise.allSettled(
-      EXPOSED_PATHS.map(async (p) => {
+      Object.entries(EXPOSED_PATHS).map(async ([p, rule]) => {
         try {
-          const r = await fetchWithTimeout(baseUrl + p, 4000);
-          if (r.status === 200 && p !== "/robots.txt" && p !== "/sitemap.xml") {
-            exposedPaths.push(p);
+          const r = await fetchWithTimeout(origin + p, 4000, "manual");
+          if (r.status === 200) {
+            // .env/.git only count if the body looks like the real thing, not an SPA fallback
+            if (p === "/.env" || p === "/.git/config") {
+              const sample = (await r.text()).slice(0, 300);
+              if (!/[A-Z0-9_]+\s*=|\[core\]|repositoryformatversion/i.test(sample)) return;
+            }
+            findings.push({ severity: rule.severity, category: "Exposed Files", title: rule.title, description: "A sensitive path is publicly reachable and returns 200.", recommendation: "Block or remove this path from public access.", evidence: `${p} → 200` });
           }
         } catch { /* ignore */ }
-      })
+      }),
     );
 
-    // 4. Extract code artifacts
+    // 9) Content-level analysis (grounded) — inline JS secrets, forms, comments, libs
     const inlineScripts = extractInlineScripts(html);
     const forms = extractForms(html);
     const comments = extractComments(html);
     const libraries = extractLibraries(html);
-    const metaInfo = extractMetaInfo(html);
-    // Sanitize html snippet — strip script/style blocks to reduce noise, keep structure
-    const htmlStripped = html
-      .replace(/<script[\s\S]*?<\/script>/gi, "<script>[removed]</script>")
-      .replace(/<style[\s\S]*?<\/style>/gi, "")
-      .replace(/\s+/g, " ")
-      .slice(0, 1500);
+    const htmlStripped = html.replace(/<script[\s\S]*?<\/script>/gi, "<script>[js]</script>").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/\s+/g, " ").slice(0, 1500);
+    const jsThin = inlineScripts.length === 0 && forms.length === 0 && html.length < 1500;
 
-    // 5. Build Claude prompt — only for content that requires intelligent analysis
-    const prompt = `You are a web security expert. The HTTP headers have already been analysed. Your job is to analyse ONLY the website content below for security issues in: inline JavaScript, HTML forms, HTML comments, outdated libraries, and exposed sensitive paths.
+    const prompt = `You are a web security auditor. HTTP headers, TLS, cookies, redirects and exposed paths have ALREADY been analysed separately — do NOT report on those. Analyse ONLY the page content below for: hardcoded secrets/API keys, dangerous inline JS (eval with input, document.write of input), insecure forms (passwords over HTTP, missing CSRF token), sensitive data in HTML comments, and outdated JS libraries with known CVEs.
 
 <url>${finalUrl}</url>
+<inline_scripts>${inlineScripts.map((s, i) => `[${i + 1}] ${s}`).join(" | ") || "none"}</inline_scripts>
+<forms>${forms.map((f, i) => `[${i + 1}] ${f}`).join(" | ") || "none"}</forms>
+<html_comments>${comments.join(" | ") || "none"}</html_comments>
+<libraries>${libraries.join(", ") || "none"}</libraries>
+<html_snippet>${htmlStripped}</html_snippet>
 
-<exposed_paths_returning_200>
-${exposedPaths.length ? exposedPaths.join(", ") : "none"}
-</exposed_paths_returning_200>
+SEVERITY: critical = hardcoded secret/API key/password visible; high = password form over HTTP, eval() with user input; medium = outdated lib with known CVE, internal path/email in comment; low = dev comment (TODO/FIXME/debug), library version exposed.
 
-<inline_scripts>
-${inlineScripts.map((s, i) => `[Script ${i + 1}]: ${s}`).join(" | ") || "none"}
-</inline_scripts>
-
-<forms>
-${forms.map((f, i) => `[Form ${i + 1}]: ${f}`).join(" | ") || "none"}
-</forms>
-
-<html_comments>
-${comments.join(" | ") || "none"}
-</html_comments>
-
-<libraries_detected>
-${libraries.join(", ") || "none"}
-</libraries_detected>
-
-<meta_tags>
-${metaInfo || "none"}
-</meta_tags>
-
-<html_snippet>
-${htmlStripped}
-</html_snippet>
-
-SEVERITY CRITERIA — follow these strictly, do not deviate:
-- critical: hardcoded API key, password, or secret token visible in JS or HTML
-- high: exposed /.env or /.git/config returning 200; form submitting passwords over HTTP; eval() with user input
-- medium: outdated library with known CVE; form missing autocomplete=off on password field; internal paths/emails in comments
-- low: library version exposed in URL; development comments (TODO, FIXME, debug); verbose error messages
-- info: no issues found in a specific area
-
-IMPORTANT: Your entire response must be a valid JSON object — no markdown, no code fences, nothing else.
-{"findings":[{"severity":"critical|high|medium|low|info","category":"XSS|Exposed Files|Forms|JS Code|Libraries|Information Disclosure","title":"concise title","description":"what the problem is and why it matters (max 180 chars)","recommendation":"specific actionable fix (max 180 chars)","evidence":"exact snippet, path or value that triggered this — required for critical/high/medium, max 120 chars"}],"summary":"2-3 sentence summary of content-level security posture (do not mention headers — those are analysed separately)","techDetected":["detected tech/CMS/framework names only"]}
-
-Rules:
-- ONLY report findings with concrete evidence visible in the data above
-- Do NOT speculate or invent findings not supported by the data
-- Do NOT report on HTTP headers — those are handled separately
-- If nothing suspicious found in an area, do not include an info finding for it
-- techDetected: only real technology names you can identify (WordPress, jQuery 3.2.1, nginx, PHP, etc.)`;
+Respond with ONLY a JSON object (no markdown):
+{"findings":[{"severity":"critical|high|medium|low","category":"Secrets|JS Code|Forms|Libraries|Information Disclosure","title":"...","description":"why it matters (<=180 chars)","recommendation":"specific fix (<=180 chars)","evidence":"exact snippet/value (<=120 chars)"}],"techDetected":["real tech/CMS/framework names only, with version if visible"]}
+Rules: ONLY report findings with concrete evidence in the data above. Never invent. If nothing found, return "findings":[].`;
 
     const anthropic = new Anthropic({ apiKey: anthropicKey });
-    const res = await anthropic.messages.create({
-      model: claudeModel,
-      max_tokens: 4000,
-      messages: [{ role: "user", content: prompt }],
-    });
+    const res = await anthropic.messages.create({ model: claudeModel, max_tokens: 3000, messages: [{ role: "user", content: prompt }] });
+    const raw = res.content[0]?.type === "text" ? res.content[0].text.trim() : "";
+    const parsed = extractJsonObject<{ findings: SecurityFinding[]; techDetected: string[] }>(raw) || { findings: [], techDetected: [] };
 
-    const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "";
-
-    let parsed = extractJsonObject<{ findings: SecurityFinding[]; summary: string; techDetected: string[] }>(raw);
-    if (!parsed || !Array.isArray(parsed.findings)) {
-      const findingsMatch = raw.match(/"findings"\s*:\s*(\[[\s\S]*?\])/);
-      const summaryMatch = raw.match(/"summary"\s*:\s*"([^"]*)"/);
-      const techMatch = raw.match(/"techDetected"\s*:\s*(\[[^\]]*\])/);
-      if (!findingsMatch) throw new Error("Não foi possível processar a resposta. Tenta novamente.");
-      parsed = {
-        findings: JSON.parse(findingsMatch[1]),
-        summary: summaryMatch?.[1] || "",
-        techDetected: techMatch ? JSON.parse(techMatch[1]) : [],
-      };
-    }
-
-    // Combine server-side header findings + Claude content findings.
-    // Validate severity/category enums so a hallucinated value can't slip through.
     const VALID_SEV = ["critical", "high", "medium", "low", "info"];
     const contentFindings: SecurityFinding[] = (parsed.findings || []).filter(
-      (f: SecurityFinding) => f.severity && f.title && f.description && VALID_SEV.includes(f.severity)
+      (f) => f?.severity && f?.title && f?.description && VALID_SEV.includes(f.severity),
     );
-    const allFindings = [...headerFindings, ...contentFindings];
+    findings.push(...contentFindings);
+
+    // Order by severity for display
+    const order = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
+    findings.sort((a, b) => order[a.severity] - order[b.severity]);
+
+    const counts = findings.reduce((acc, f) => { acc[f.severity] = (acc[f.severity] || 0) + 1; return acc; }, {} as Record<string, number>);
+    const issueCount = (counts.critical || 0) + (counts.high || 0) + (counts.medium || 0) + (counts.low || 0);
+    const parts = (["critical", "high", "medium", "low"] as const).filter((s) => counts[s]).map((s) => `${counts[s]} ${s}`);
+    const summary = jsThin
+      ? `This page is JavaScript-rendered, so content-level checks are limited; the audit covers headers, TLS, cookies, redirects and exposed paths. Found ${issueCount} issue(s)${parts.length ? ` (${parts.join(", ")})` : ""} across ${passedChecks.length} passing checks.`
+      : `Audited HTTP headers, TLS certificate, cookies, redirects, mixed content, exposed paths and page content. Found ${issueCount} issue(s)${parts.length ? ` (${parts.join(", ")})` : ""}; ${passedChecks.length} checks passed.`;
 
     const result: SecurityResult = {
       url: finalUrl,
-      findings: allFindings,
-      rating: calculateRating(allFindings),
-      summary: parsed.summary || "",
-      headersChecked: SECURITY_HEADERS,
+      findings,
+      rating: calculateRating(findings),
+      summary,
+      headersChecked: [...Object.keys(HEADER_RULES), "TLS certificate", "HTTP→HTTPS redirect", "Cookie flags", "Mixed content", "SRI", "Exposed paths"],
       techDetected: Array.from(new Set((parsed.techDetected || []).map((t) => String(t).trim()).filter(Boolean))).slice(0, 12),
+      passedChecks,
     };
-
     return NextResponse.json(result);
   } catch (err) {
     console.error("[security] error:", err);
-    return NextResponse.json({ error: (err as Error).message || "Erro inesperado." }, { status: 500 });
+    return NextResponse.json({ error: (err as Error).message || "Unexpected error." }, { status: 500 });
   }
 }
