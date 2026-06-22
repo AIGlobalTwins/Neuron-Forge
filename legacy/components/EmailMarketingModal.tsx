@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { safeJson } from "@/lib/api";
 import { saveToHistory } from "@/lib/history";
 import { useClientWorkspace } from "@/lib/client-context";
@@ -109,12 +109,18 @@ export function EmailMarketingModal({ onClose }: Props) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(0);
 
-  // Pre-fill from the active client without clobbering anything the user typed.
+  const prefilledRef = useRef<string | null>(null);
+
+  // Pre-fill from the active client: fill once per client, overriding defaults.
   useEffect(() => {
     if (!activeClient) return;
-    if (!businessName.trim() && activeClient.name) setBusinessName(activeClient.name);
-    if (!category.trim() && activeClient.category) setCategory(activeClient.category);
-    if (!description.trim() && activeClient.description) setDescription(activeClient.description);
+    if (prefilledRef.current === activeClient.id) return; // fill once per client; don't clobber edits
+    prefilledRef.current = activeClient.id;
+    // Always set the business-name field.
+    setBusinessName(activeClient.name);
+    // Override defaults only when the client value is a non-empty string.
+    if (typeof activeClient.category === "string" && activeClient.category.trim()) setCategory(activeClient.category);
+    if (typeof activeClient.description === "string" && activeClient.description.trim()) setDescription(activeClient.description);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeClient]);
 

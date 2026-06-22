@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Question } from "@/app/api/consulting/questions/route";
 import type { ConsultingPlan } from "@/app/api/consulting/plan/route";
 import { saveToHistory } from "@/lib/history";
@@ -63,11 +63,29 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
-  // Pre-fill from the active client (only fields that exist as state here, and only if empty).
-  // This modal has no business-name/company field, so there is nothing to prefill.
+  const prefilledRef = useRef<string | null>(null);
+
+  // Pre-fill from the active client (robust: once per client, overriding defaults).
   useEffect(() => {
     if (!activeClient) return;
-    // No mappable fields in this modal (area is an enum, problem is free text).
+    if (prefilledRef.current === activeClient.id) return; // fill once per client; don't clobber edits
+    prefilledRef.current = activeClient.id;
+
+    // `area` is an enum (AREAS). Only set it when the client category maps to a known area id.
+    const cat = (activeClient.category ?? "").trim();
+    if (cat && AREAS.some((a) => a.id.toLowerCase() === cat.toLowerCase())) {
+      const match = AREAS.find((a) => a.id.toLowerCase() === cat.toLowerCase());
+      if (match) setArea(match.id);
+    }
+
+    // `problem` is the freeform context/details textarea, and there is no separate
+    // description field — seed it from the client description + services.
+    const desc = (activeClient.description ?? "").trim();
+    const services = (activeClient.services ?? []).filter((s) => s && s.trim());
+    const parts: string[] = [];
+    if (desc) parts.push(desc);
+    if (services.length) parts.push("Services: " + services.join(", "));
+    if (parts.length) setProblem(parts.join("\n\n"));
   }, [activeClient]);
 
   async function handleGetQuestions() {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { safeJson } from "@/lib/api";
 import { useClientWorkspace } from "@/lib/client-context";
 
@@ -95,19 +95,27 @@ export function WhatsAppModal({ onClose }: Props) {
   const [language, setLanguage] = useState("pt");
   const [fallback, setFallback] = useState("I don't have that information right now, but you can contact us directly.");
 
-  // Pre-fill from the active client (only fields that are still empty)
+  const prefilledRef = useRef<string | null>(null);
+
+  // Pre-fill from the active client: fill once per client, overriding defaults.
   useEffect(() => {
     if (!activeClient) return;
-    if (activeClient.name) setBusinessName((v) => v || activeClient.name);
-    if (activeClient.category) setCategory((v) => v || activeClient.category);
-    if (activeClient.description) setDescription((v) => v || activeClient.description);
-    if (activeClient.hours) setHours((v) => v || activeClient.hours);
-    if (Array.isArray(activeClient.services) && activeClient.services.length) {
-      setServices((cur) => (cur.filter((s) => s.trim()).length ? cur : activeClient.services));
-    }
-    if (Array.isArray(activeClient.faqs) && activeClient.faqs.length) {
-      setFaqs((cur) => (cur.filter((f) => f.question.trim() || f.answer.trim()).length ? cur : activeClient.faqs));
-    }
+    if (prefilledRef.current === activeClient.id) return; // fill once per client; don't clobber edits
+    prefilledRef.current = activeClient.id;
+
+    // Business name: always set (overrides any default/placeholder).
+    setBusinessName(activeClient.name || "");
+
+    // Other mapped fields: only override the default when the client value is a non-empty string.
+    if (typeof activeClient.category === "string" && activeClient.category.trim()) setCategory(activeClient.category);
+    if (typeof activeClient.description === "string" && activeClient.description.trim()) setDescription(activeClient.description);
+    if (typeof activeClient.hours === "string" && activeClient.hours.trim()) setHours(activeClient.hours);
+
+    const cleanServices = Array.isArray(activeClient.services) ? activeClient.services.filter((s) => typeof s === "string" && s.trim()) : [];
+    if (cleanServices.length) setServices(cleanServices);
+
+    const cleanFaqs = Array.isArray(activeClient.faqs) ? activeClient.faqs.filter((f) => (f?.question || "").trim() || (f?.answer || "").trim()) : [];
+    if (cleanFaqs.length) setFaqs(cleanFaqs);
   }, [activeClient]);
 
   // Live

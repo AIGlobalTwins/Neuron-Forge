@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { SecurityFinding, SecurityResult, SecurityRating } from "@/app/api/security/route";
 import { saveToHistory } from "@/lib/history";
 import { safeJson } from "@/lib/api";
@@ -67,10 +67,14 @@ export function SecurityModal({ onClose }: Props) {
 
   const ws = useClientWorkspace();
   const activeClient = ws?.activeClient ?? null;
+  const prefilledRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!activeClient) return;
-    if (activeClient.website) setUrl((prev) => (prev.trim() ? prev : activeClient.website));
+    if (prefilledRef.current === activeClient.id) return; // fill once per client; don't clobber edits
+    prefilledRef.current = activeClient.id;
+    // set EVERY form field that maps to a client property, OVERRIDING defaults:
+    if (typeof activeClient.website === "string" && activeClient.website.trim()) setUrl(activeClient.website);
   }, [activeClient]);
 
   async function handleDownloadPdf() {

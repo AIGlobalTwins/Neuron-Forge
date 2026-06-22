@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { safeJson } from "@/lib/api";
 import { saveToHistory } from "@/lib/history";
 import { useClientWorkspace } from "@/lib/client-context";
@@ -55,11 +55,16 @@ export function GoogleAdsModal({ onClose }: Props) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [activeGroup, setActiveGroup] = useState(0);
 
+  const prefilledRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!activeClient) return;
-    if (activeClient.name) setBusinessName((v) => (v ? v : activeClient.name));
-    if (activeClient.category) setCategory((v) => (v ? v : activeClient.category));
-    if (activeClient.description) setDescription((v) => (v ? v : activeClient.description));
+    if (prefilledRef.current === activeClient.id) return; // fill once per client; don't clobber edits
+    prefilledRef.current = activeClient.id;
+    // set EVERY form field that maps to a client property, OVERRIDING defaults:
+    setBusinessName(activeClient.name);
+    if (activeClient.category) setCategory(activeClient.category);
+    if (activeClient.description) setDescription(activeClient.description);
   }, [activeClient]);
 
   function copy(text: string, key: string) {

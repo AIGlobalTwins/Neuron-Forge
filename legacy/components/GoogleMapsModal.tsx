@@ -48,6 +48,7 @@ export function GoogleMapsModal({ onClose }: Props) {
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const prefilledRef = useRef<string | null>(null);
 
   // Active client workspace — pre-fill the form when a client is selected.
   const ws = useClientWorkspace();
@@ -55,8 +56,23 @@ export function GoogleMapsModal({ onClose }: Props) {
 
   useEffect(() => {
     if (!activeClient) return;
-    if (!name.trim() && activeClient.name) setName(activeClient.name);
-    if (category === "Business" && activeClient.category) setCategory(activeClient.category);
+    if (prefilledRef.current === activeClient.id) return; // fill once per client; don't clobber edits
+    prefilledRef.current = activeClient.id;
+    // Set every form field that maps to a client property, OVERRIDING defaults.
+    setName(activeClient.name); // always set the business name
+    if (typeof activeClient.category === "string" && activeClient.category.trim()) setCategory(activeClient.category);
+    if (typeof activeClient.phone === "string" && activeClient.phone.trim()) setPhone(activeClient.phone);
+    // No address on the client shape; no description/website/hours field in this file.
+    // Seed the freeform instructions textarea (there is no description field here).
+    const services = Array.isArray(activeClient.services)
+      ? activeClient.services.filter((s) => typeof s === "string" && s.trim())
+      : [];
+    const summaryParts: string[] = [];
+    if (typeof activeClient.description === "string" && activeClient.description.trim()) {
+      summaryParts.push(activeClient.description.trim());
+    }
+    if (services.length) summaryParts.push("Services: " + services.join(", "));
+    if (summaryParts.length) setInstructions(summaryParts.join("\n"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeClient]);
 

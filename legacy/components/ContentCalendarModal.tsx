@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { safeJson } from "@/lib/api";
 import { saveToHistory } from "@/lib/history";
 import { useClientWorkspace } from "@/lib/client-context";
@@ -67,12 +67,16 @@ export function ContentCalendarModal({ onClose }: Props) {
 
   const ws = useClientWorkspace();
   const activeClient = ws?.activeClient ?? null;
+  const prefilledRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!activeClient) return;
-    if (!businessName.trim() && activeClient.name) setBusinessName(activeClient.name);
-    if (!category.trim() && activeClient.category) setCategory(activeClient.category);
-    if (!description.trim() && activeClient.description) setDescription(activeClient.description);
+    if (prefilledRef.current === activeClient.id) return; // fill once per client; don't clobber edits
+    prefilledRef.current = activeClient.id;
+    // set EVERY form field that maps to a client property, OVERRIDING defaults:
+    setBusinessName(activeClient.name);
+    if (activeClient.category && activeClient.category.trim()) setCategory(activeClient.category);
+    if (activeClient.description && activeClient.description.trim()) setDescription(activeClient.description);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeClient]);
 

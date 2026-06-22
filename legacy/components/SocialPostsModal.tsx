@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { saveToHistory } from "@/lib/history";
 import { safeJson } from "@/lib/api";
 import { useClientWorkspace } from "@/lib/client-context";
@@ -98,6 +98,9 @@ export function SocialPostsModal({ onClose }: Props) {
   const [imageUrls, setImageUrls] = useState<Record<number, string>>({});
   const [publishErrors, setPublishErrors] = useState<Record<number, string>>({});
 
+  // Pre-fill guard: fill once per client, never re-clobber user edits
+  const prefilledRef = useRef<string | null>(null);
+
   useEffect(() => {
     fetch("/api/settings")
       .then((r) => safeJson(r))
@@ -108,12 +111,16 @@ export function SocialPostsModal({ onClose }: Props) {
       });
   }, []);
 
-  // Pre-fill from the active client (only fills empty fields, never clobbers user input)
+  // Pre-fill from the active client — robust: fill once per client, overriding defaults.
   useEffect(() => {
     if (!activeClient) return;
-    if (activeClient.name) setBusinessName((v) => (v.trim() ? v : activeClient.name));
-    if (activeClient.category) setCategory((v) => (v.trim() && v !== "Business" ? v : activeClient.category));
-    if (activeClient.description) setDescription((v) => (v.trim() ? v : activeClient.description));
+    if (prefilledRef.current === activeClient.id) return; // fill once per client; don't clobber edits
+    prefilledRef.current = activeClient.id;
+    // Always set the business-name field.
+    setBusinessName(activeClient.name);
+    // Override defaults only when the client value is a real non-empty string.
+    if (typeof activeClient.category === "string" && activeClient.category.trim()) setCategory(activeClient.category);
+    if (typeof activeClient.description === "string" && activeClient.description.trim()) setDescription(activeClient.description);
   }, [activeClient]);
 
   async function handleConnect() {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { SeoResult, ContentType } from "@/app/api/seo/route";
 import { saveToHistory } from "@/lib/history";
 import { safeJson } from "@/lib/api";
@@ -178,12 +178,16 @@ export function SeoModal({ onClose, onOpenTool }: Props) {
 
   const ws = useClientWorkspace();
   const activeClient = ws?.activeClient ?? null;
+  const prefilledRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!activeClient) return;
-    setBusinessName((v) => (v ? v : activeClient.name ?? ""));
-    setCategory((v) => (v ? v : activeClient.category ?? ""));
-    setDescription((v) => (v ? v : activeClient.description ?? ""));
+    if (prefilledRef.current === activeClient.id) return; // fill once per client; don't clobber edits
+    prefilledRef.current = activeClient.id;
+    // set EVERY form field that maps to a client property, OVERRIDING defaults:
+    setBusinessName(activeClient.name ?? ""); // always set business name
+    if (typeof activeClient.category === "string" && activeClient.category.trim()) setCategory(activeClient.category);
+    if (typeof activeClient.description === "string" && activeClient.description.trim()) setDescription(activeClient.description);
   }, [activeClient]);
 
   // Google Search Console import

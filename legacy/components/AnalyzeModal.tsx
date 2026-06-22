@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DesignTypePicker } from "@/components/DesignTypePicker";
 import { safeJson } from "@/lib/api";
 import { useClientWorkspace } from "@/lib/client-context";
@@ -55,13 +55,19 @@ export function AnalyzeModal({ onClose }: Props) {
 
   const ws = useClientWorkspace();
   const activeClient = ws?.activeClient ?? null;
+  const prefilledRef = useRef<string | null>(null);
 
-  // Pre-fill from the active client, but never clobber what the user already typed.
+  // Pre-fill from the active client once per client, overriding defaults but not user edits.
   useEffect(() => {
     if (!activeClient) return;
-    if (!url.trim() && activeClient.website) setUrl(activeClient.website);
-    if (!name.trim() && activeClient.name) setName(activeClient.name);
-    if (!category.trim() && activeClient.category) setCategory(activeClient.category);
+    if (prefilledRef.current === activeClient.id) return; // fill once per client; don't clobber edits
+    prefilledRef.current = activeClient.id;
+    // Always set the business-name field from the client.
+    setName(activeClient.name);
+    // Set mapped fields only when the client value is a non-empty string,
+    // so a real value (e.g. category "Restaurant") replaces the default "Business".
+    if (typeof activeClient.website === "string" && activeClient.website.trim()) setUrl(activeClient.website);
+    if (typeof activeClient.category === "string" && activeClient.category.trim()) setCategory(activeClient.category);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeClient]);
 
