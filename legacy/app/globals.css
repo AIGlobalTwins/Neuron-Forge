@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --background: #0a0a0a;
+  --background: #070708;
   --foreground: #ededed;
 }
 
@@ -11,19 +11,51 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Inter, system-ui, sans-serif;
+  letter-spacing: -0.011em;
 }
 
-/* Hexagonal grid background */
+/* Cinematic ambient background — deep black with soft orange + indigo light beams,
+   plus a barely-there hex texture. Fixed so the light stays anchored to the viewport. */
 .hex-bg {
-  background-color: #0a0a0a;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 66L0 50V16L28 0l28 16v34L28 66zm0-2l26-15V18L28 2 2 18v31l26 15z' fill='%23ffffff' fill-opacity='0.03'/%3E%3Cpath d='M28 100L0 84V50l28-16 28 16v34L28 100zm0-2l26-15V52L28 36 2 52v31l26 15z' fill='%23ffffff' fill-opacity='0.03'/%3E%3C/svg%3E");
+  background-color: #070708;
+  background-image:
+    radial-gradient(46rem 30rem at 12% -6%, rgba(232, 98, 42, 0.14), transparent 62%),
+    radial-gradient(44rem 30rem at 90% -4%, rgba(99, 102, 241, 0.14), transparent 62%),
+    radial-gradient(40rem 26rem at 50% 114%, rgba(120, 110, 255, 0.05), transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 66L0 50V16L28 0l28 16v34L28 66zm0-2l26-15V18L28 2 2 18v31l26 15z' fill='%23ffffff' fill-opacity='0.02'/%3E%3Cpath d='M28 100L0 84V50l28-16 28 16v34L28 100zm0-2l26-15V52L28 36 2 52v31l26 15z' fill='%23ffffff' fill-opacity='0.02'/%3E%3C/svg%3E");
+  background-attachment: fixed, fixed, fixed, fixed;
+}
+
+/* Premium surfaces */
+.glow-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)),
+    #0c0c0e;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Gradient glow button (orange -> violet) for primary CTAs */
+.btn-glow {
+  background: linear-gradient(90deg, #e8622a, #a855f7);
+  box-shadow: 0 10px 30px -8px rgba(168, 85, 247, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transition: filter 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.btn-glow:hover {
+  filter: brightness(1.07);
+  transform: translateY(-1px);
+}
+.btn-glow:disabled {
+  filter: grayscale(0.4) brightness(0.7);
+  box-shadow: none;
+  transform: none;
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: #111; }
-::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #444; }
+::-webkit-scrollbar-track { background: #0d0d0f; }
+::-webkit-scrollbar-thumb { background: #2a2a2e; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #3a3a40; }
 
 /* Node animations */
 @keyframes node-pulse {

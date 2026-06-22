@@ -190,15 +190,24 @@ function OptionCard({ tag, title, desc, cta, icon, accent = "#E8622A", onClick }
 
   return (
     <div
-      className="group relative text-left bg-[#0d0d0d] border rounded-2xl p-7 transition-all duration-300"
+      className="group relative text-left rounded-[20px] p-7 transition-all duration-300 overflow-hidden"
       style={{
-        borderColor: h ? `${accent}99` : "#1e1e1e",
-        backgroundColor: h ? "#111" : "#0d0d0d",
-        boxShadow: h ? `0 25px 50px -12px ${accent}1a` : "none",
+        border: `1px solid ${h ? `${accent}59` : "rgba(255,255,255,0.07)"}`,
+        background: "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0)), #0b0b0d",
+        boxShadow: h
+          ? `0 30px 60px -20px ${accent}40, inset 0 1px 0 rgba(255,255,255,0.05)`
+          : "inset 0 1px 0 rgba(255,255,255,0.04)",
+        transform: h ? "translateY(-3px)" : "none",
       }}
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
     >
+      {/* Top light beam */}
+      <div
+        className="pointer-events-none absolute -top-14 left-1/2 -translate-x-1/2 w-52 h-28 rounded-full blur-3xl transition-opacity duration-500"
+        style={{ background: accent, opacity: h ? 0.28 : 0.12 }}
+      />
+
       {/* Top row */}
       <div className="flex items-start justify-between mb-5">
         <div
