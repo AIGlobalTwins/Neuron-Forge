@@ -11,7 +11,7 @@ export async function GET() {
   const supabase = createServerSupabase();
   const { data, error } = await supabase
     .from("generations")
-    .select("id, type, name, payload, created_at")
+    .select("id, type, name, payload, client_id, created_at")
     .order("created_at", { ascending: false })
     .limit(200);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -24,13 +24,13 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
-  const { type, name, payload } = body as { type?: string; name?: string; payload?: unknown };
+  const { type, name, payload, client_id } = body as { type?: string; name?: string; payload?: unknown; client_id?: string | null };
   if (!type) return NextResponse.json({ error: "type required" }, { status: 400 });
 
   const supabase = createServerSupabase();
   const { data, error } = await supabase
     .from("generations")
-    .insert({ user_id: userId, type, name: name ?? "", payload: payload ?? {} })
+    .insert({ user_id: userId, type, name: name ?? "", payload: payload ?? {}, client_id: client_id ?? null })
     .select("id")
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

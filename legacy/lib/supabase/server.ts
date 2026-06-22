@@ -46,11 +46,12 @@ export async function saveGenerationServer(
   type: string,
   name: string,
   payload: Record<string, unknown>,
+  clientId?: string | null,
 ): Promise<void> {
   if (!userId) return;
   try {
     const supabase = createServerSupabase();
-    await supabase.from("generations").insert({ user_id: userId, type, name, payload });
+    await supabase.from("generations").insert({ user_id: userId, type, name, payload, client_id: clientId ?? null });
   } catch {
     /* don't block the generation */
   }

@@ -10,6 +10,7 @@ export interface HistoryEntry {
   type: HistoryType;
   name: string;
   date: string;
+  clientId?: string; // the client this generation belongs to (workspace grouping)
   // website (maps / analyze)
   websiteId?: string;
   score?: number;
@@ -75,20 +76,21 @@ export async function fetchHistory(): Promise<HistoryEntry[]> {
     if (!res.ok) return [];
     const { generations } = await res.json();
     return ((generations ?? []) as {
-      id: string; type: HistoryType; name: string; payload?: Record<string, unknown>; created_at: string;
-    }[]).map((g) => ({ id: g.id, type: g.type, name: g.name, date: g.created_at, ...(g.payload ?? {}) })) as HistoryEntry[];
+      id: string; type: HistoryType; name: string; payload?: Record<string, unknown>; client_id?: string | null; created_at: string;
+    }[]).map((g) => ({ id: g.id, type: g.type, name: g.name, date: g.created_at, clientId: g.client_id ?? undefined, ...(g.payload ?? {}) })) as HistoryEntry[];
   } catch {
     return [];
   }
 }
 
-export async function saveToHistory(entry: Omit<HistoryEntry, "id" | "date">): Promise<void> {
+export async function saveToHistory(entry: Omit<HistoryEntry, "id" | "date">, clientId?: string | null): Promise<void> {
   try {
-    const { type, name, ...payload } = entry;
+    const { type, name, clientId: _c, ...payload } = entry;
+    void _c;
     await fetch("/api/generations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type, name: name ?? "", payload }),
+      body: JSON.stringify({ type, name: name ?? "", payload, client_id: clientId ?? null }),
     });
   } catch {
     /* fire-and-forget; the result is already on screen */
