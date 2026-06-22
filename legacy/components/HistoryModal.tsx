@@ -706,6 +706,45 @@ function DetailView({ entry, copiedKey, onCopy, lang }: { entry: HistoryEntry; c
     );
   }
 
+  if (entry.type === "social" && entry.socialResult) {
+    const r = entry.socialResult;
+    return (
+      <div className="p-5 space-y-4">
+        <div>
+          <h3 className="text-white font-semibold text-sm">{r.displayName || `@${r.handle}`}</h3>
+          <div className="text-xs text-gray-600 mt-0.5">Score {r.score}/100 · {r.rating} · {r.engagementRate} · {r.dataSource}</div>
+        </div>
+        {r.summary && <p className="text-xs text-gray-400 leading-relaxed border-l-2 border-pink-500/40 pl-3">{r.summary}</p>}
+        {r.recommendations.length > 0 && (
+          <div>
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">Recommendations</p>
+            <div className="space-y-2">
+              {r.recommendations.map((rec, i) => (
+                <div key={i} className="bg-[#111] border border-[#1e1e1e] rounded-lg p-3">
+                  <div className="text-xs font-semibold text-white">{i + 1}. {rec.title}</div>
+                  <div className="text-[11px] text-gray-500 mt-0.5">{rec.detail}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {r.contentPlan.length > 0 && (
+          <div>
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">7-day plan</p>
+            <div className="space-y-1.5">
+              {r.contentPlan.map((d, i) => (
+                <div key={i} className="flex gap-3 bg-[#111] border border-[#1e1e1e] rounded-lg p-2.5">
+                  <span className="text-[10px] font-semibold text-pink-400 w-10 shrink-0 pt-0.5">{d.day}</span>
+                  <div className="flex-1"><span className="text-xs text-gray-300">{d.idea}</span> <span className="text-[10px] text-gray-600">· {d.format}</span></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center justify-center h-full text-gray-600 text-sm">
       No detail available.

@@ -6,6 +6,7 @@ import { AnalyzeModal } from "@/components/AnalyzeModal";
 import { GoogleMapsModal } from "@/components/GoogleMapsModal";
 import { SettingsModal } from "@/components/SettingsModal";
 import { SocialPostsModal } from "@/components/SocialPostsModal";
+import { SocialAnalyzerModal } from "@/components/SocialAnalyzerModal";
 import { WhatsAppModal } from "@/components/WhatsAppModal";
 import { ConsultingModal } from "@/components/ConsultingModal";
 import { OnboardingModal } from "@/components/OnboardingModal";
@@ -112,6 +113,17 @@ function InstagramCardIcon() {
   );
 }
 
+function SocialAnalyzerIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <rect x="3" y="3" width="13" height="13" rx="4" />
+      <circle cx="9.5" cy="9.5" r="2.6" />
+      <circle cx="18.5" cy="18.5" r="3" />
+      <path d="M20.7 20.7L23 23" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 const T = {
   pt: {
     noKeyBanner: "Sem API Key — os agentes estão em modo demo.",
@@ -134,6 +146,7 @@ const T = {
       { tag: "Email Marketing", title: "Email Marketing Agent", desc: "Gera sequências completas de email — welcome, nurturing, promoção, re-engagement. Copy profissional pronto para Mailchimp ou Brevo.", cta: "Criar sequência" },
       { tag: "Google Ads", title: "Google Ads Agent", desc: "Headlines, descriptions, sitelinks e callouts prontos a colar no Google Ads. Respeita limites de caracteres e gera keywords negativas.", cta: "Criar campanha" },
       { tag: "Calendário", title: "Content Calendar Agent", desc: "Calendário editorial mensal com 30 dias de conteúdo — temas, captions, hashtags e melhores horários. Integra com o Instagram Agent.", cta: "Gerar calendário" },
+      { tag: "Social Analyzer", title: "Social Analyzer", desc: "Audita qualquer perfil de Instagram — teu, de um cliente ou da concorrência. Nota, engagement, pilares de conteúdo, recomendações e plano de 7 dias.", cta: "Analisar perfil" },
     ],
   },
   en: {
@@ -157,6 +170,7 @@ const T = {
       { tag: "Email Marketing", title: "Email Marketing Agent", desc: "Generate complete email sequences — welcome, nurture, promotion, re-engagement. Professional copy ready for Mailchimp or Brevo.", cta: "Create sequence" },
       { tag: "Google Ads", title: "Google Ads Agent", desc: "Headlines, descriptions, sitelinks and callouts ready to paste into Google Ads. Respects character limits and generates negative keywords.", cta: "Create campaign" },
       { tag: "Calendar", title: "Content Calendar Agent", desc: "Monthly editorial calendar with 30 days of content — themes, captions, hashtags and best posting times. Integrates with Instagram Agent.", cta: "Generate calendar" },
+      { tag: "Social Analyzer", title: "Social Analyzer", desc: "Audit any Instagram profile — yours, a client's or a competitor's. Score, engagement, content pillars, recommendations and a 7-day plan.", cta: "Analyze profile" },
     ],
   },
 } as const;
@@ -278,6 +292,7 @@ export default function Home() {
       case "email": return <EmailMarketingModal onClose={back} />;
       case "ads": return <GoogleAdsModal onClose={back} />;
       case "calendar": return <ContentCalendarModal onClose={back} />;
+      case "social": return <SocialAnalyzerModal onClose={back} />;
       default: return null;
     }
   }
@@ -339,9 +354,9 @@ export default function Home() {
         <ClientGate>
         {(() => {
           const c = T[lang].cards;
-          const icons = [<SearchIcon key="0" />, <MapPinIcon key="1" />, <InstagramCardIcon key="2" />, <WhatsAppCardIcon key="3" />, <ConsultingIcon key="4" />, <SeoIcon key="5" />, <SecurityIcon key="6" />, <EmailIcon key="7" />, <AdsIcon key="8" />, <CalendarIcon key="9" />];
-          const accents = ["#a855f7", "#3b82f6", "#ec4899", "#22c55e", "#E8622A", "#10b981", "#ef4444", "#06b6d4", "#f59e0b", "#8b5cf6"];
-          const clicks = [() => setAgent("analyze"), () => setAgent("maps"), () => setAgent("instagram"), () => setAgent("whatsapp"), () => setAgent("consulting"), () => setAgent("seo"), () => setAgent("security"), () => setAgent("email"), () => setAgent("ads"), () => setAgent("calendar")];
+          const icons = [<SearchIcon key="0" />, <MapPinIcon key="1" />, <InstagramCardIcon key="2" />, <WhatsAppCardIcon key="3" />, <ConsultingIcon key="4" />, <SeoIcon key="5" />, <SecurityIcon key="6" />, <EmailIcon key="7" />, <AdsIcon key="8" />, <CalendarIcon key="9" />, <SocialAnalyzerIcon key="10" />];
+          const accents = ["#a855f7", "#3b82f6", "#ec4899", "#22c55e", "#E8622A", "#10b981", "#ef4444", "#06b6d4", "#f59e0b", "#8b5cf6", "#d946ef"];
+          const clicks = [() => setAgent("analyze"), () => setAgent("maps"), () => setAgent("instagram"), () => setAgent("whatsapp"), () => setAgent("consulting"), () => setAgent("seo"), () => setAgent("security"), () => setAgent("email"), () => setAgent("ads"), () => setAgent("calendar"), () => setAgent("social")];
           return (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 w-full max-w-4xl">
               {c.map((card, i) => (

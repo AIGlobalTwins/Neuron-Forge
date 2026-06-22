@@ -2,8 +2,9 @@
 import type { EmailEntry } from "@/app/api/email-marketing/route";
 import type { AdGroup } from "@/app/api/google-ads/route";
 import type { CalendarDay } from "@/app/api/content-calendar/route";
+import type { SocialAnalysis } from "@/app/api/social-analyzer/route";
 
-export type HistoryType = "maps" | "analyze" | "seo" | "instagram" | "consulting" | "security" | "email" | "ads" | "calendar";
+export type HistoryType = "maps" | "analyze" | "seo" | "instagram" | "consulting" | "security" | "email" | "ads" | "calendar" | "social";
 
 export interface HistoryEntry {
   id: string;
@@ -63,6 +64,12 @@ export interface HistoryEntry {
   calendarWeeklyThemes?: string[];
   calendarDays?: CalendarDay[];
   calendarTips?: string[];
+  // social analyzer
+  socialHandle?: string;
+  socialScore?: number;
+  socialRating?: string;
+  socialSummary?: string;
+  socialResult?: SocialAnalysis;
 }
 
 // History is stored per-user in Supabase (see /api/generations). RLS guarantees a
@@ -114,7 +121,7 @@ export async function clearHistory(): Promise<void> {
 }
 
 export function historyTypeLabel(type: HistoryType): string {
-  return { maps: "Website", analyze: "Redesign", seo: "SEO", instagram: "Instagram", consulting: "Consultoria", security: "Segurança", email: "Email", ads: "Google Ads", calendar: "Calendário" }[type];
+  return { maps: "Website", analyze: "Redesign", seo: "SEO", instagram: "Instagram", consulting: "Consultoria", security: "Segurança", email: "Email", ads: "Google Ads", calendar: "Calendário", social: "Social" }[type];
 }
 
 export function historyTypeColor(type: HistoryType) {
@@ -128,5 +135,6 @@ export function historyTypeColor(type: HistoryType) {
     email:       { text: "text-cyan-400",    bg: "bg-cyan-500/10",    border: "border-cyan-500/20" },
     ads:         { text: "text-amber-400",   bg: "bg-amber-500/10",   border: "border-amber-500/20" },
     calendar:    { text: "text-violet-400",  bg: "bg-violet-500/10",  border: "border-violet-500/20" },
+    social:      { text: "text-pink-400",    bg: "bg-pink-500/10",    border: "border-pink-500/20" },
   }[type];
 }
