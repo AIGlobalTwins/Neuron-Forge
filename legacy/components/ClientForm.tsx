@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { type Client, type ClientInput, EMPTY_CLIENT } from "@/lib/clients";
+import { type Client, type ClientInput, type ClientFaq, EMPTY_CLIENT } from "@/lib/clients";
 import { useClientWorkspace } from "@/lib/client-context";
 
 const CATEGORIES = [
@@ -21,9 +21,52 @@ export function ClientForm({ client, onDone, onCancel }: { client?: Client | nul
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [researching, setResearching] = useState(false);
+  const [researchMsg, setResearchMsg] = useState<string | null>(null);
 
   function set<K extends keyof ClientInput>(k: K, v: ClientInput[K]) {
     setForm((f) => ({ ...f, [k]: v }));
+  }
+
+  // Auto-fill the form from the business's own website (grounded AI extraction).
+  async function autofill() {
+    const url = form.website.trim();
+    if (!url) {
+      setError("Add a website first, then Auto-fill.");
+      return;
+    }
+    setResearching(true);
+    setError(null);
+    setResearchMsg(null);
+    try {
+      const res = await fetch("/api/client-research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.profile) {
+        setError(data?.error || "Auto-fill failed. Try again.");
+        return;
+      }
+      const p = data.profile as Partial<ClientInput> & { services?: string[]; faqs?: ClientFaq[] };
+      setForm((f) => ({
+        ...f,
+        name: f.name.trim() || p.name || f.name,
+        category: p.category || f.category,
+        description: p.description || f.description,
+        website: p.website || f.website,
+        phone: p.phone || f.phone,
+        hours: p.hours || f.hours,
+        services: p.services && p.services.length ? p.services : f.services,
+        faqs: p.faqs && p.faqs.length ? p.faqs : f.faqs,
+      }));
+      setResearchMsg("Filled from the website with AI — review and edit before saving.");
+    } catch {
+      setError("Auto-fill failed. Try again.");
+    } finally {
+      setResearching(false);
+    }
   }
 
   async function save() {
@@ -85,8 +128,24 @@ export function ClientForm({ client, onDone, onCancel }: { client?: Client | nul
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className={labelCls}>Website</label>
-            <input className={input} value={form.website} onChange={(e) => set("website", e.target.value)} placeholder="https://…" />
+            <div className="flex items-center justify-between mb-1.5 gap-2">
+              <label className="text-xs font-medium text-gray-400">Website</label>
+              <button
+                type="button"
+                onClick={autofill}
+                disabled={researching || !form.website.trim()}
+                title="Fill the whole form from this website, with AI"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold text-white bg-gradient-to-r from-[#E8622A] to-[#a855f7] hover:opacity-90 shadow-[0_0_10px_rgba(168,85,247,0.45)] disabled:opacity-40 disabled:shadow-none transition-all shrink-0"
+              >
+                {researching ? (
+                  <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" strokeOpacity="0.3" /><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" className="w-3 h-3" fill="currentColor"><path d="M12 2l1.5 5L19 8.5 13.5 10 12 15l-1.5-5L5 8.5 10.5 7z" /><path d="M18.3 13l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z" /></svg>
+                )}
+                {researching ? "Researching…" : "Auto-fill"}
+              </button>
+            </div>
+            <input className={input} value={form.website} onChange={(e) => set("website", e.target.value)} placeholder="https://… then Auto-fill" />
           </div>
           <div>
             <label className={labelCls}>Phone</label>
@@ -97,6 +156,13 @@ export function ClientForm({ client, onDone, onCancel }: { client?: Client | nul
             <input className={input} value={form.hours} onChange={(e) => set("hours", e.target.value)} placeholder="Mon-Sat 9-19" />
           </div>
         </div>
+
+        {researchMsg && (
+          <p className="text-[11px] text-emerald-400 flex items-center gap-1.5">
+            <svg viewBox="0 0 24 24" className="w-3 h-3 shrink-0" fill="currentColor"><path d="M12 2l1.5 5L19 8.5 13.5 10 12 15l-1.5-5L5 8.5 10.5 7z" /></svg>
+            {researchMsg}
+          </p>
+        )}
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
