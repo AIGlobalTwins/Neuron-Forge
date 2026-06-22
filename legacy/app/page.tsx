@@ -16,9 +16,9 @@ import { EmailMarketingModal } from "@/components/EmailMarketingModal";
 import { GoogleAdsModal } from "@/components/GoogleAdsModal";
 import { ContentCalendarModal } from "@/components/ContentCalendarModal";
 import { HistoryModal } from "@/components/HistoryModal";
-import { AuthButton } from "@/components/AuthButton";
 import { ClientProvider } from "@/lib/client-context";
 import { ClientGate } from "@/components/ClientGate";
+import { Sidebar } from "@/components/Sidebar";
 
 
 function SearchIcon() {
@@ -295,79 +295,17 @@ export default function Home() {
   return (
     <LangContext.Provider value={lang}>
     <ClientProvider>
-    <div className="min-h-screen flex flex-col hex-bg">
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e1e] bg-[#0a0a0a]/90 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 border-2 border-[#E8622A] rounded-lg flex items-center justify-center bg-[#E8622A]/10">
-            <svg viewBox="0 0 20 20" className="w-5 h-5 text-[#E8622A]" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M10 2L2 6.5v7L10 18l8-4.5v-7L10 2z" />
-              <path d="M10 8l-4 2.5v2L10 15l4-2.5v-2L10 8z" fill="currentColor" fillOpacity="0.5" />
-            </svg>
-          </div>
-          <div>
-            <div className="font-semibold text-white leading-tight">Neuron Forge Agents</div>
-            <div className="text-xs text-gray-500">The visual layer for AI agents</div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* API Key status */}
-          <div className="flex items-center gap-2 text-xs text-gray-600">
-            <div className={`w-1.5 h-1.5 rounded-full ${hasKey ? "bg-green-500 animate-pulse" : "bg-yellow-500"}`} />
-            {hasKey ? (lang === "pt" ? "Pronto" : "Ready") : (lang === "pt" ? "Sem API Key" : "No API Key")}
-          </div>
-
-          {/* Lang toggle */}
-          <button
-            onClick={toggleLang}
-            className="h-8 px-2.5 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center gap-1 text-[10px] font-semibold tracking-widest text-gray-500 hover:text-[#E8622A] hover:border-[#E8622A]/40 hover:bg-[#E8622A]/5 transition-all duration-200"
-          >
-            <span style={{ color: lang === "pt" ? "#E8622A" : undefined }}>PT</span>
-            <span className="text-gray-700">|</span>
-            <span style={{ color: lang === "en" ? "#E8622A" : undefined }}>EN</span>
-          </button>
-
-          {/* History button */}
-          <button
-            onClick={() => setShowHistory(true)}
-            className="w-8 h-8 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-gray-500 hover:text-[#E8622A] hover:border-[#E8622A]/40 hover:bg-[#E8622A]/5 transition-all duration-200"
-            title={T[lang].history}
-          >
-            <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 6h14M3 10h10M3 14h7" />
-            </svg>
-          </button>
-
-          {/* Docs button */}
-          <button
-            onClick={() => setShowDocs(true)}
-            className="w-8 h-8 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-gray-500 hover:text-[#E8622A] hover:border-[#E8622A]/40 hover:bg-[#E8622A]/5 transition-all duration-200"
-            title={T[lang].docs}
-          >
-            <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 4h12v12H4z" />
-              <path d="M7 8h6M7 11h4" />
-            </svg>
-          </button>
-
-          {/* Settings button */}
-          <button
-            onClick={() => setShowSettings(true)}
-            className="w-8 h-8 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-gray-500 hover:text-[#E8622A] hover:border-[#E8622A]/40 hover:bg-[#E8622A]/5 transition-all duration-200"
-            title={T[lang].settings}
-          >
-            <svg viewBox="0 0 20 20" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M13.5 2.5a3 3 0 0 1 0 4.2L5 15.2 2 18l2.8-3 8.5-8.5a3 3 0 0 1 .2-4z" />
-              <path d="M11.5 4.5l3 3" />
-              <circle cx="4.5" cy="15.5" r="1.5" />
-            </svg>
-          </button>
-
-          {/* Account (sign-out) — only when Clerk login is enabled */}
-          <AuthButton />
-        </div>
-      </header>
+    <div className="min-h-screen flex hex-bg">
+      <Sidebar
+        lang={lang}
+        toggleLang={toggleLang}
+        hasKey={hasKey}
+        onHistory={() => setShowHistory(true)}
+        onDocs={() => setShowDocs(true)}
+        onSettings={() => setShowSettings(true)}
+        t={T[lang]}
+      />
+      <div className="flex-1 flex flex-col min-w-0">
 
       {/* No-key banner */}
       {!hasKey && (
@@ -418,6 +356,7 @@ export default function Home() {
           Neuron Forge Agents
         </p>
       </main>
+      </div>
 
       {/* Modals */}
       {showOnboarding && <OnboardingModal onComplete={handleOnboardingComplete} />}

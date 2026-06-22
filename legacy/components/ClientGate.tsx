@@ -2,20 +2,26 @@
 
 import { useState } from "react";
 import { useClientWorkspace } from "@/lib/client-context";
-import { ClientModal } from "@/components/ClientModal";
+import { ClientForm } from "@/components/ClientForm";
 import { type Client } from "@/lib/clients";
 
 // Client-first gate: with no active client we show the clients landing; once a
 // client is picked (or "All Agents" in free mode) we show the agents (children).
+// Add / Edit client open a dedicated full-page form (not a modal).
 export function ClientGate({ children }: { children: React.ReactNode }) {
   const ws = useClientWorkspace();
-  const [modal, setModal] = useState<Client | null | undefined>(undefined); // undefined=closed, null=new, Client=edit
+  const [editing, setEditing] = useState<Client | null | undefined>(undefined); // undefined=not editing, null=new, Client=edit
   const [freeMode, setFreeMode] = useState(false); // agents without a client
 
   // Open mode (Supabase off) — just show the agents, no client layer.
   if (!ws) return <>{children}</>;
 
   const { clients, activeClient, setActiveClientId } = ws;
+
+  // ── Add / Edit client → dedicated page ───────────────────────────────────
+  if (editing !== undefined) {
+    return <ClientForm client={editing} onDone={() => setEditing(undefined)} onCancel={() => setEditing(undefined)} />;
+  }
 
   // ── Client active → context bar + the agents ─────────────────────────────
   if (activeClient) {
@@ -29,12 +35,11 @@ export function ClientGate({ children }: { children: React.ReactNode }) {
           <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">{activeClient.name}</h1>
           <p className="text-gray-500 text-sm mt-1">{activeClient.category || "Client"} — pick an agent; it pre-fills from this client.</p>
           <div className="flex items-center justify-center gap-2 mt-3">
-            <button onClick={() => setModal(activeClient)} className="px-3 py-1.5 text-xs text-gray-400 hover:text-white border border-[#2a2a2a] hover:border-[#E8622A]/40 rounded-lg transition">Edit</button>
+            <button onClick={() => setEditing(activeClient)} className="px-3 py-1.5 text-xs text-gray-400 hover:text-white border border-[#2a2a2a] hover:border-[#E8622A]/40 rounded-lg transition">Edit</button>
             <button onClick={() => setActiveClientId(null)} className="px-3 py-1.5 text-xs text-gray-400 hover:text-white border border-[#2a2a2a] hover:border-[#E8622A]/40 rounded-lg transition">← All clients</button>
           </div>
         </div>
         {children}
-        {modal !== undefined && <ClientModal client={modal} onClose={() => setModal(undefined)} />}
       </div>
     );
   }
@@ -49,7 +54,6 @@ export function ClientGate({ children }: { children: React.ReactNode }) {
           <button onClick={() => setFreeMode(false)} className="mt-3 px-3 py-1.5 text-xs text-gray-400 hover:text-white border border-[#2a2a2a] hover:border-[#E8622A]/40 rounded-lg transition">← Clients</button>
         </div>
         {children}
-        {modal !== undefined && <ClientModal client={modal} onClose={() => setModal(undefined)} />}
       </div>
     );
   }
@@ -68,7 +72,7 @@ export function ClientGate({ children }: { children: React.ReactNode }) {
 
       <div className="flex flex-wrap items-center justify-center gap-3 mb-9">
         <button
-          onClick={() => setModal(null)}
+          onClick={() => setEditing(null)}
           className="inline-flex items-center gap-2 px-5 py-3 bg-[#E8622A] hover:opacity-90 text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-[#E8622A]/20 hover:-translate-y-0.5"
         >
           <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
@@ -103,8 +107,6 @@ export function ClientGate({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       )}
-
-      {modal !== undefined && <ClientModal client={modal} onClose={() => setModal(undefined)} />}
     </div>
   );
 }
