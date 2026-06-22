@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 import { qualityBar } from "@/lib/agent-quality";
 import { extractJsonObject } from "@/lib/json-extract";
+import { buildBusinessContext, type BusinessProfile } from "@/lib/business-context";
 import fs from "fs";
 import path from "path";
 
@@ -44,6 +45,8 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const { area, problem, questions, answers } = body;
+    const clientProfile = (body.clientProfile ?? null) as BusinessProfile | null;
+    const businessContext = buildBusinessContext(clientProfile);
 
     if (!area || !problem || !questions || !answers) {
       return NextResponse.json({ error: "Incomplete data." }, { status: 400 });
@@ -72,7 +75,7 @@ ${problem}
 
 ## DIAGNOSIS ANSWERS
 ${qa}
-
+${businessContext}
 ${forgeToolsMd ? `## TOOLS AVAILABLE IN NEURON FORGE
 Below are the tools you may recommend if they are genuinely relevant to solving part of the problem. Only recommend one if there is a clear, real link between the diagnosed problem and the tool. Maximum 2 tools.
 

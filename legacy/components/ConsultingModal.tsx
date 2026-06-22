@@ -128,7 +128,7 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
       const res = await fetch("/api/consulting/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ area, problem, questions, answers }),
+        body: JSON.stringify({ area, problem, questions, answers, clientProfile: activeClient ?? null }),
       });
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error);

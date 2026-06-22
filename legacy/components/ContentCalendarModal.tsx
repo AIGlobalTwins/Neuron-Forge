@@ -106,7 +106,7 @@ export function ContentCalendarModal({ onClose }: Props) {
       const res = await fetch("/api/content-calendar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ businessName, category, description, frequency }),
+        body: JSON.stringify({ businessName, category, description, frequency, clientProfile: activeClient ?? null }),
       });
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Unknown error");

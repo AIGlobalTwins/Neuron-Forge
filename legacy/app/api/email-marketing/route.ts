@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 import { qualityBar } from "@/lib/agent-quality";
 import { extractJsonObject } from "@/lib/json-extract";
+import { buildBusinessContext, type BusinessProfile } from "@/lib/business-context";
 
 export type SequenceType = "welcome" | "nurture" | "reengagement" | "promotion" | "abandoned";
 
@@ -34,6 +35,8 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const { businessName, category, description, sequenceType = "welcome", tone = "professional", language = "pt" } = body;
+    const clientProfile = (body?.clientProfile ?? null) as BusinessProfile | null;
+    const businessContext = buildBusinessContext(clientProfile);
 
     if (!businessName?.trim()) {
       return NextResponse.json({ error: "Business name is required." }, { status: 400 });
@@ -105,7 +108,7 @@ Responde APENAS com JSON (sem markdown):
 Notas:
 - Escreve tudo em ${lang}
 - Sê específico para o negócio — nada genérico
-- Inclui dados concretos onde possível (%, tempo, quantidade)`;
+- Inclui dados concretos onde possível (%, tempo, quantidade)${businessContext}`;
 
     const anthropic = new Anthropic({ apiKey: anthropicKey });
 

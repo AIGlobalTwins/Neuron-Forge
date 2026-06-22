@@ -150,7 +150,7 @@ export function EmailMarketingModal({ onClose }: Props) {
       const res = await fetch("/api/email-marketing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ businessName, category, description, sequenceType, tone }),
+        body: JSON.stringify({ businessName, category, description, sequenceType, tone, clientProfile: activeClient ?? null }),
       });
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Unknown error");

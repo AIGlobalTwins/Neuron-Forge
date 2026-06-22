@@ -166,7 +166,7 @@ export function SocialPostsModal({ onClose }: Props) {
       const res = await fetch("/api/social-posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ businessName, category, description, postType, tone, count }),
+        body: JSON.stringify({ businessName, category, description, postType, tone, count, clientProfile: activeClient ?? null }),
       });
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Unknown error");

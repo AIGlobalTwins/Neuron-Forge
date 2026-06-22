@@ -16,6 +16,7 @@ import { extractJsonObject } from "@/lib/json-extract";
 import { waLink, whatsappPromptBlock } from "@/lib/phone";
 import { pageNav, multipagePromptBlock, PAGE_BOOT, type NavPage } from "@/lib/multipage";
 import { siteGuard } from "@/lib/site-guard";
+import { buildBusinessContext, type BusinessProfile } from "@/lib/business-context";
 
 // On the mounted disk (/app/data) so generated-site previews survive redeploys.
 const REDESIGN_DIR = "./data/redesigns";
@@ -345,6 +346,7 @@ async function generateRedesign(
   instructions: string = "",
   model: string = "claude-sonnet-4-6",
   designType: string = "auto",
+  businessContext: string = "",
 ): Promise<string> {
   // Design brief routes the ui-ux-pro-max + taste skills by the chosen type.
   const brief = buildDesignBrief(designType, category, instructions);
@@ -615,10 +617,12 @@ STRICT RULES:
 OUTPUT: ONLY the complete HTML starting with <!DOCTYPE html>. No markdown fences. No explanations.`;
 
   // Stream with a large budget so rich, complete sites are never truncated.
+  // Append the real client business context (services, hours, FAQs, etc.) so the
+  // redesign uses verified facts. businessContext is "" when there is no client.
   const stream = anthropic.messages.stream({
     model,
     max_tokens: 32000,
-    messages: [{ role: "user", content: prompt }],
+    messages: [{ role: "user", content: prompt + businessContext }],
   });
   const msg = await stream.finalMessage();
   const textBlock = msg.content.find((b: Anthropic.ContentBlock) => b.type === "text");
@@ -648,7 +652,8 @@ OUTPUT: ONLY the complete HTML starting with <!DOCTYPE html>. No markdown fences
 export async function POST(req: NextRequest) {
   try {
   const body = await req.json().catch(() => ({}));
-  const { url, name = "", category = "Business", address = "", phone = "", email = "", instructions = "", designType = "auto", clientId = null } = body;
+  const { url, name = "", category = "Business", address = "", phone = "", email = "", instructions = "", designType = "auto", clientId = null, clientProfile = null } = body;
+  const businessContext = buildBusinessContext(clientProfile as BusinessProfile | null);
 
   if (!url) return NextResponse.json({ error: "url required" }, { status: 400 });
   let userId: string | null = null;
@@ -694,7 +699,7 @@ export async function POST(req: NextRequest) {
   // 4. Generate redesign
   let html = "";
   try {
-    html = await generateRedesign(anthropic, analysis, crawlResult.pages, url, category, instructions, claudeModel, designType);
+    html = await generateRedesign(anthropic, analysis, crawlResult.pages, url, category, instructions, claudeModel, designType, businessContext);
   } catch (err) {
     return NextResponse.json({ error: `Redesign failed: ${(err as Error).message}` }, { status: 500 });
   }

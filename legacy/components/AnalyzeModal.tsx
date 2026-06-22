@@ -96,7 +96,7 @@ export function AnalyzeModal({ onClose }: Props) {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: url.trim(), name: name.trim() || url, category, instructions: instructions.trim(), designType, clientId: activeClient?.id ?? null }),
+        body: JSON.stringify({ url: url.trim(), name: name.trim() || url, category, instructions: instructions.trim(), designType, clientId: activeClient?.id ?? null, clientProfile: activeClient ?? null }),
       });
 
       const data = await safeJson(res);

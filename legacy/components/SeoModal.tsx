@@ -257,7 +257,7 @@ export function SeoModal({ onClose, onOpenTool }: Props) {
       const res = await fetch("/api/seo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contentType, businessName, category, description, targetAudience, keywords, tone, language }),
+        body: JSON.stringify({ contentType, businessName, category, description, targetAudience, keywords, tone, language, clientProfile: activeClient ?? null }),
       });
       const data = await safeJson(res);
       if (!res.ok) { setError(data.error ?? "Failed to generate"); setStep("form"); return; }

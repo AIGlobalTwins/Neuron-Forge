@@ -93,7 +93,7 @@ export function GoogleAdsModal({ onClose }: Props) {
       const res = await fetch("/api/google-ads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ businessName, category, description, campaignType, targetAudience, location }),
+        body: JSON.stringify({ businessName, category, description, campaignType, targetAudience, location, clientProfile: activeClient ?? null }),
       });
       const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || "Unknown error");

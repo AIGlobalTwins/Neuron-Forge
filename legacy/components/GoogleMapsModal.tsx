@@ -190,6 +190,7 @@ export function GoogleMapsModal({ onClose }: Props) {
           instructions: instructions.trim(),
           designType,
           clientId: activeClient?.id ?? null,
+          clientProfile: activeClient ?? null,
         }),
       });
 

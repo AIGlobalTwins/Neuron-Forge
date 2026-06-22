@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 import { qualityBar } from "@/lib/agent-quality";
 import { extractJsonObject } from "@/lib/json-extract";
+import { buildBusinessContext, type BusinessProfile } from "@/lib/business-context";
 
 export interface CalendarDay {
   day: number;
@@ -27,7 +28,8 @@ export interface ContentCalendarResult {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
-    const { businessName, category, description, month, platforms = "instagram", frequency = "daily", language = "pt" } = body;
+    const { businessName, category, description, month, platforms = "instagram", frequency = "daily", language = "pt", clientProfile } = body;
+    const businessContext = buildBusinessContext(clientProfile as BusinessProfile | null | undefined);
 
     if (!businessName?.trim()) {
       return NextResponse.json({ error: "Business name is required." }, { status: 400 });
@@ -113,7 +115,7 @@ Responde APENAS com JSON (sem markdown):
 Notas:
 - Gera TODOS os dias do mês (1 a 28/30/31 conforme o mês)
 - Escreve tudo em ${lang}
-- Sê específico para o negócio — nada genérico`;
+- Sê específico para o negócio — nada genérico${businessContext}`;
 
     const anthropic = new Anthropic({ apiKey: anthropicKey });
 

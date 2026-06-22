@@ -14,6 +14,7 @@ import { REVEAL_CSS, MOTION_SCRIPT, MOTION_PROMPT } from "@/lib/motion";
 import { balanceBlocks } from "@/lib/html-fix";
 import { waLink, whatsappPromptBlock } from "@/lib/phone";
 import { siteGuard } from "@/lib/site-guard";
+import { buildBusinessContext, type BusinessProfile } from "@/lib/business-context";
 
 // On the mounted disk (/app/data) so generated-site previews survive redeploys.
 const REDESIGN_DIR = "./data/redesigns";
@@ -271,7 +272,10 @@ function fixHtml(part1: string, part2: string, tailScript = ""): string {
 export async function POST(req: NextRequest) {
   try {
   const body = await req.json().catch(() => ({}));
-  const { mapsUrl = "", name = "", category = "Business", address = "", phone = "", email = "", images = [], instructions = "", designType = "auto", clientId = null } = body;
+  const { mapsUrl = "", name = "", category = "Business", address = "", phone = "", email = "", images = [], instructions = "", designType = "auto", clientId = null, clientProfile = null } = body;
+
+  // Full active-client business profile → prompt block (empty when no client).
+  const businessContext = buildBusinessContext(clientProfile as BusinessProfile | null);
 
   let userId: string | null = null;
   try { userId = await (await import("@/lib/supabase/server")).getSupabaseUserId(); } catch {}
@@ -414,6 +418,7 @@ Brand personality: ${plan.brandPersonality}
 Hero image: ${heroImage}
 Fonts: heading="${fonts.heading}" body="${fonts.body}"
 ${whatsappBlock ? `\n${whatsappBlock}` : ""}
+${businessContext}
 `.trim();
 
   const darkBlock = darkThemeInstruction(brief);

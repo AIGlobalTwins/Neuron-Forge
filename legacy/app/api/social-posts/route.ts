@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 import { extractJsonArray } from "@/lib/json-extract";
+import { buildBusinessContext, type BusinessProfile } from "@/lib/business-context";
 
 export interface GeneratedPost {
   caption: string;
@@ -13,6 +14,8 @@ export interface GeneratedPost {
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const { businessName, category, description, postType, tone, count = 1 } = body;
+  const clientProfile = body.clientProfile as BusinessProfile | null | undefined;
+  const businessContext = buildBusinessContext(clientProfile);
 
   if (!businessName || !description) {
     return NextResponse.json({ error: "businessName and description are required" }, { status: 400 });
@@ -69,7 +72,7 @@ Responde APENAS com um JSON array de ${count} objecto(s) (sem markdown):
     "hashtags": "#hashtag1 #hashtag2 ...",
     "imagePrompt": "descrição da imagem ideal"
   }
-]`;
+]${businessContext}`;
 
   const res = await anthropic.messages.create({
     model: claudeModel,

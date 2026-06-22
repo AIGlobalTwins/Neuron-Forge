@@ -3,6 +3,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 import { qualityBar } from "@/lib/agent-quality";
 import { extractJsonObject } from "@/lib/json-extract";
+import { buildBusinessContext } from "@/lib/business-context";
+import type { BusinessProfile } from "@/lib/business-context";
 
 async function getUserId(): Promise<string | null> {
   try {
@@ -209,11 +211,14 @@ export async function POST(req: NextRequest) {
       keywords = "",
       tone = "professional",
       language = "pt",
+      clientProfile = null,
     } = body;
 
     if (!businessName.trim()) {
       return NextResponse.json({ error: "Business name is required." }, { status: 400 });
     }
+
+    const businessContext = buildBusinessContext(clientProfile as BusinessProfile | null);
 
     const prompt = buildPrompt(
       contentType as ContentType,
@@ -224,7 +229,7 @@ export async function POST(req: NextRequest) {
       keywords,
       tone,
       language,
-    );
+    ) + businessContext;
 
     const anthropic = new Anthropic({ apiKey: anthropicKey });
     const maxTokens = contentType === "blog" ? 6000 : contentType === "landing" ? 3500 : 2500;

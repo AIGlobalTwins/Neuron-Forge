@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 import { qualityBar } from "@/lib/agent-quality";
 import { extractJsonObject } from "@/lib/json-extract";
+import { buildBusinessContext, type BusinessProfile } from "@/lib/business-context";
 
 export type CampaignType = "search" | "pmax" | "display" | "remarketing";
 
@@ -33,11 +34,13 @@ const CAMPAIGN_LABELS: Record<CampaignType, { pt: string; desc: string }> = {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
-    const { businessName, category, description, campaignType = "search", targetAudience, location, language = "pt" } = body;
+    const { businessName, category, description, campaignType = "search", targetAudience, location, language = "pt", clientProfile } = body;
 
     if (!businessName?.trim()) {
       return NextResponse.json({ error: "Business name is required." }, { status: 400 });
     }
+
+    const businessContext = buildBusinessContext(clientProfile as BusinessProfile | null | undefined);
 
     let userId: string | null = null;
     try { userId = await (await import("@/lib/supabase/server")).getSupabaseUserId(); } catch {}
@@ -103,7 +106,7 @@ Notas:
 - Cria 2-3 ad groups com temas/keywords diferentes
 - Cada ad group = ângulo diferente (ex: serviço principal, localização, benefício)
 - Escreve tudo em ${lang}
-- CONTA OS CARACTERES — é crítico que respeites os limites`;
+- CONTA OS CARACTERES — é crítico que respeites os limites${businessContext}`;
 
     const anthropic = new Anthropic({ apiKey: anthropicKey });
 
