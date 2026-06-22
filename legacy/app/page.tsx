@@ -19,7 +19,7 @@ import { HistoryModal } from "@/components/HistoryModal";
 import { AuthButton } from "@/components/AuthButton";
 import { ClientProvider } from "@/lib/client-context";
 import { ClientSelector } from "@/components/ClientSelector";
-import { WorkspaceHero } from "@/components/WorkspaceHero";
+import { ClientGate } from "@/components/ClientGate";
 
 
 function SearchIcon() {
@@ -391,10 +391,8 @@ export default function Home() {
 
       {/* Main */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 pb-8">
-        {/* Client-aware hero */}
-        <WorkspaceHero />
-
-        {/* Option cards */}
+        {/* Clients landing (no client) OR context + agents (client active) */}
+        <ClientGate>
         {(() => {
           const c = T[lang].cards;
           const icons = [<SearchIcon key="0" />, <MapPinIcon key="1" />, <InstagramCardIcon key="2" />, <WhatsAppCardIcon key="3" />, <ConsultingIcon key="4" />, <SeoIcon key="5" />, <SecurityIcon key="6" />, <EmailIcon key="7" />, <AdsIcon key="8" />, <CalendarIcon key="9" />];
@@ -417,6 +415,7 @@ export default function Home() {
             </div>
           );
         })()}
+        </ClientGate>
 
         {/* Footer note */}
         <p className="mt-10 text-xs text-gray-700">
