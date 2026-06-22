@@ -18,7 +18,6 @@ import { ContentCalendarModal } from "@/components/ContentCalendarModal";
 import { HistoryModal } from "@/components/HistoryModal";
 import { AuthButton } from "@/components/AuthButton";
 import { ClientProvider } from "@/lib/client-context";
-import { ClientSelector } from "@/components/ClientSelector";
 import { ClientGate } from "@/components/ClientGate";
 
 
@@ -313,9 +312,6 @@ export default function Home() {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Active client */}
-          <ClientSelector />
-
           {/* API Key status */}
           <div className="flex items-center gap-2 text-xs text-gray-600">
             <div className={`w-1.5 h-1.5 rounded-full ${hasKey ? "bg-green-500 animate-pulse" : "bg-yellow-500"}`} />
