@@ -42,7 +42,7 @@ export function AuthButton() {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 w-56 bg-[#141414] border border-white/10 rounded-xl shadow-xl p-1.5 z-50">
+          <div className="absolute left-0 bottom-full mb-2 w-56 max-w-[calc(100vw-1rem)] bg-[#141414] border border-white/10 rounded-xl shadow-xl p-1.5 z-50">
             <div className="px-3 py-2 text-xs text-gray-500 truncate border-b border-white/5 mb-1">{email}</div>
             <button
               onClick={signOut}
