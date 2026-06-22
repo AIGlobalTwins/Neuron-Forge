@@ -99,6 +99,8 @@ export function HistoryModal({ onClose }: Props) {
   const ws = useClientWorkspace();
   const activeClient = ws?.activeClient ?? null;
   const [clientOnly, setClientOnly] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   useEffect(() => {
     fetchHistory().then(setEntries);
@@ -145,14 +147,30 @@ export function HistoryModal({ onClose }: Props) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {entries.length > 0 && (
-              <button
-                onClick={handleClear}
-                className="text-xs text-gray-600 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-500/10"
-              >
-                {lang === "en" ? "Clear all" : "Limpar tudo"}
-              </button>
-            )}
+            {entries.length > 0 &&
+              (confirmClear ? (
+                <span className="flex items-center gap-1">
+                  <button
+                    onClick={() => { handleClear(); setConfirmClear(false); }}
+                    className="text-xs font-semibold text-red-400 hover:text-red-300 transition-colors px-2 py-1 rounded-lg bg-red-500/10"
+                  >
+                    {lang === "en" ? "Delete all?" : "Apagar tudo?"}
+                  </button>
+                  <button
+                    onClick={() => setConfirmClear(false)}
+                    className="text-xs text-gray-600 hover:text-gray-300 transition-colors px-2 py-1"
+                  >
+                    {lang === "en" ? "Cancel" : "Cancelar"}
+                  </button>
+                </span>
+              ) : (
+                <button
+                  onClick={() => setConfirmClear(true)}
+                  className="text-xs text-gray-600 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-500/10"
+                >
+                  {lang === "en" ? "Clear all" : "Limpar tudo"}
+                </button>
+              ))}
             <button onClick={onClose} className="text-gray-600 hover:text-gray-400 transition-colors">
               <svg viewBox="0 0 16 16" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                 <path d="M3 3l10 10M13 3L3 13" />
@@ -246,14 +264,34 @@ export function HistoryModal({ onClose }: Props) {
                           <span className="text-[10px] text-gray-700 ml-auto">{timeAgo(entry.date, lang)}</span>
                         </div>
                       </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleRemove(entry.id); }}
-                        className="opacity-0 group-hover:opacity-100 text-gray-700 hover:text-red-400 transition-all flex-shrink-0"
-                      >
-                        <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-                          <path d="M3 3l10 10M13 3L3 13" />
-                        </svg>
-                      </button>
+                      {confirmId === entry.id ? (
+                        <span className="flex items-center gap-1.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleRemove(entry.id); setConfirmId(null); }}
+                            className="text-[10px] font-semibold text-red-400 hover:text-red-300 transition-colors"
+                            title={lang === "en" ? "Confirm delete" : "Confirmar"}
+                          >
+                            {lang === "en" ? "Delete" : "Apagar"}
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setConfirmId(null); }}
+                            className="text-gray-600 hover:text-gray-300 transition-colors"
+                            title={lang === "en" ? "Cancel" : "Cancelar"}
+                          >
+                            <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M3 3l10 10M13 3L3 13" /></svg>
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmId(entry.id); }}
+                          className="opacity-0 group-hover:opacity-100 text-gray-700 hover:text-red-400 transition-all flex-shrink-0"
+                          title={lang === "en" ? "Delete" : "Apagar"}
+                        >
+                          <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                            <path d="M3 3l10 10M13 3L3 13" />
+                          </svg>
+                        </button>
+                      )}
                     </button>
                   );
                 })}
