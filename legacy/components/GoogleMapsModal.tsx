@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { safeJson } from "@/lib/api";
+import { useClientWorkspace } from "@/lib/client-context";
 import { DesignTypePicker } from "@/components/DesignTypePicker";
 import type { BusinessLocation } from "@/lib/google-api";
 
@@ -47,6 +48,17 @@ export function GoogleMapsModal({ onClose }: Props) {
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Active client workspace — pre-fill the form when a client is selected.
+  const ws = useClientWorkspace();
+  const activeClient = ws?.activeClient ?? null;
+
+  useEffect(() => {
+    if (!activeClient) return;
+    if (!name.trim() && activeClient.name) setName(activeClient.name);
+    if (category === "Business" && activeClient.category) setCategory(activeClient.category);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeClient]);
 
   // Google Business Profile import
   const [gbAvailable, setGbAvailable] = useState(false);
@@ -161,6 +173,7 @@ export function GoogleMapsModal({ onClose }: Props) {
           images,
           instructions: instructions.trim(),
           designType,
+          clientId: activeClient?.id ?? null,
         }),
       });
 

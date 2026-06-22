@@ -10,6 +10,7 @@ import {
   type HistoryEntry,
   type HistoryType,
 } from "@/lib/history";
+import { useClientWorkspace } from "@/lib/client-context";
 import { useLang, type Lang } from "@/lib/lang";
 
 function getFilters(lang: Lang): { id: HistoryType | "all"; label: string }[] {
@@ -95,6 +96,9 @@ export function HistoryModal({ onClose }: Props) {
   const [selected, setSelected] = useState<HistoryEntry | null>(null);
   const { copiedKey, copy } = useCopy();
   const TYPE_FILTERS = getFilters(lang);
+  const ws = useClientWorkspace();
+  const activeClient = ws?.activeClient ?? null;
+  const [clientOnly, setClientOnly] = useState(false);
 
   useEffect(() => {
     fetchHistory().then(setEntries);
@@ -112,7 +116,9 @@ export function HistoryModal({ onClose }: Props) {
     setSelected(null);
   }
 
-  const filtered = filter === "all" ? entries : entries.filter((e) => e.type === filter);
+  const filtered = entries
+    .filter((e) => (clientOnly && activeClient ? e.clientId === activeClient.id : true))
+    .filter((e) => (filter === "all" ? true : e.type === filter));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -156,7 +162,20 @@ export function HistoryModal({ onClose }: Props) {
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-1 px-6 py-3 border-b border-[#1e1e1e] shrink-0">
+        <div className="flex items-center gap-1 px-6 py-3 border-b border-[#1e1e1e] shrink-0 overflow-x-auto">
+          {activeClient && (
+            <>
+              <button
+                onClick={() => setClientOnly((v) => !v)}
+                title="Filter to this client"
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 shrink-0 ${clientOnly ? "bg-[#E8622A]/15 text-[#E8622A] border border-[#E8622A]/30" : "text-gray-500 hover:text-gray-300 border border-transparent"}`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[#E8622A]" />
+                {clientOnly ? activeClient.name : lang === "en" ? "This client" : "Este cliente"}
+              </button>
+              <span className="w-px h-4 bg-[#2a2a2a] mx-1 shrink-0" />
+            </>
+          )}
           {TYPE_FILTERS.map((f) => {
             const count = f.id === "all" ? entries.length : entries.filter((e) => e.type === f.id).length;
             return (

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { safeJson } from "@/lib/api";
 import { saveToHistory } from "@/lib/history";
+import { useClientWorkspace } from "@/lib/client-context";
 import type { EmailEntry, SequenceType } from "@/app/api/email-marketing/route";
 
 interface Props {
@@ -90,6 +91,9 @@ function CopyIcon() {
 }
 
 export function EmailMarketingModal({ onClose }: Props) {
+  const ws = useClientWorkspace();
+  const activeClient = ws?.activeClient ?? null;
+
   const [step, setStep] = useState<Step>("form");
   const [businessName, setBusinessName] = useState("");
   const [category, setCategory] = useState("Business");
@@ -104,6 +108,15 @@ export function EmailMarketingModal({ onClose }: Props) {
   const [subjectVariants, setSubjectVariants] = useState<string[]>([]);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(0);
+
+  // Pre-fill from the active client without clobbering anything the user typed.
+  useEffect(() => {
+    if (!activeClient) return;
+    if (!businessName.trim() && activeClient.name) setBusinessName(activeClient.name);
+    if (!category.trim() && activeClient.category) setCategory(activeClient.category);
+    if (!description.trim() && activeClient.description) setDescription(activeClient.description);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeClient]);
 
   function copy(text: string, key: string) {
     navigator.clipboard.writeText(text);
@@ -148,7 +161,7 @@ export function EmailMarketingModal({ onClose }: Props) {
         emailEmails: data.emails,
         emailTips: data.tips,
         emailSubjectVariants: data.subjectLineVariants,
-      });
+      }, activeClient?.id ?? null);
     } catch (e) {
       setError((e as Error).message);
       setStep("form");

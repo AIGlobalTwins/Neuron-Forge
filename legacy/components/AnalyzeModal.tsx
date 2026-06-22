@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DesignTypePicker } from "@/components/DesignTypePicker";
 import { safeJson } from "@/lib/api";
+import { useClientWorkspace } from "@/lib/client-context";
 
 interface Props {
   onClose: () => void;
@@ -52,6 +53,18 @@ export function AnalyzeModal({ onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<"before" | "after">("after");
 
+  const ws = useClientWorkspace();
+  const activeClient = ws?.activeClient ?? null;
+
+  // Pre-fill from the active client, but never clobber what the user already typed.
+  useEffect(() => {
+    if (!activeClient) return;
+    if (!url.trim() && activeClient.website) setUrl(activeClient.website);
+    if (!name.trim() && activeClient.name) setName(activeClient.name);
+    if (!category.trim() && activeClient.category) setCategory(activeClient.category);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeClient]);
+
   async function handleSubmit() {
     if (!url.trim()) return;
     setStep("loading");
@@ -77,7 +90,7 @@ export function AnalyzeModal({ onClose }: Props) {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: url.trim(), name: name.trim() || url, category, instructions: instructions.trim(), designType }),
+        body: JSON.stringify({ url: url.trim(), name: name.trim() || url, category, instructions: instructions.trim(), designType, clientId: activeClient?.id ?? null }),
       });
 
       const data = await safeJson(res);

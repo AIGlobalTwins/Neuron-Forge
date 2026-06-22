@@ -271,7 +271,7 @@ function fixHtml(part1: string, part2: string, tailScript = ""): string {
 export async function POST(req: NextRequest) {
   try {
   const body = await req.json().catch(() => ({}));
-  const { mapsUrl = "", name = "", category = "Business", address = "", phone = "", email = "", images = [], instructions = "", designType = "auto" } = body;
+  const { mapsUrl = "", name = "", category = "Business", address = "", phone = "", email = "", images = [], instructions = "", designType = "auto", clientId = null } = body;
 
   let userId: string | null = null;
   try { userId = await (await import("@/lib/supabase/server")).getSupabaseUserId(); } catch {}
@@ -663,7 +663,7 @@ Output ONLY raw HTML. No markdown. No explanations.`;
   console.log(`[maps] "${finalName}" | ${finalCategory} | ${Math.round(html.length / 1024)}KB | photos=${savedImageUrls.length}${deployed ? ` | deployed: ${deployed.url}` : ""}`);
 
   // Persist to history server-side — the client navigates to the site before its save lands.
-  await (await import("@/lib/supabase/server")).saveGenerationServer(userId, "maps", finalName, { category: finalCategory, websiteId: id });
+  await (await import("@/lib/supabase/server")).saveGenerationServer(userId, "maps", finalName, { category: finalCategory, websiteId: id }, clientId);
 
   return NextResponse.json({ id, name: finalName, category: finalCategory, address: finalAddress, deployUrl: deployed?.url ?? null });
   } catch (err) {

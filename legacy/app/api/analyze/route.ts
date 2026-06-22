@@ -648,7 +648,7 @@ OUTPUT: ONLY the complete HTML starting with <!DOCTYPE html>. No markdown fences
 export async function POST(req: NextRequest) {
   try {
   const body = await req.json().catch(() => ({}));
-  const { url, name = "", category = "Business", address = "", phone = "", email = "", instructions = "", designType = "auto" } = body;
+  const { url, name = "", category = "Business", address = "", phone = "", email = "", instructions = "", designType = "auto", clientId = null } = body;
 
   if (!url) return NextResponse.json({ error: "url required" }, { status: 400 });
   let userId: string | null = null;
@@ -715,7 +715,7 @@ export async function POST(req: NextRequest) {
 
   // Persist to history server-side — the client navigates to the generated site
   // before a fire-and-forget client save can complete.
-  await (await import("@/lib/supabase/server")).saveGenerationServer(userId, "analyze", analysis.businessName || url, { category, websiteId: id, score: analysis.score });
+  await (await import("@/lib/supabase/server")).saveGenerationServer(userId, "analyze", analysis.businessName || url, { category, websiteId: id, score: analysis.score }, clientId);
 
   return NextResponse.json({
     id,

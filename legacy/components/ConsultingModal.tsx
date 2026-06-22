@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Question } from "@/app/api/consulting/questions/route";
 import type { ConsultingPlan } from "@/app/api/consulting/plan/route";
 import { saveToHistory } from "@/lib/history";
 import { safeJson } from "@/lib/api";
+import { useClientWorkspace } from "@/lib/client-context";
 
 interface Props {
   onClose: () => void;
@@ -48,6 +49,9 @@ function ForgeIcon() {
 }
 
 export function ConsultingModal({ onClose, onOpenTool }: Props) {
+  const ws = useClientWorkspace();
+  const activeClient = ws?.activeClient ?? null;
+
   const [step, setStep] = useState<Step>("topic");
   const [area, setArea] = useState("");
   const [problem, setProblem] = useState("");
@@ -58,6 +62,13 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
   const [error, setError] = useState("");
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  // Pre-fill from the active client (only fields that exist as state here, and only if empty).
+  // This modal has no business-name/company field, so there is nothing to prefill.
+  useEffect(() => {
+    if (!activeClient) return;
+    // No mappable fields in this modal (area is an enum, problem is free text).
+  }, [activeClient]);
 
   async function handleGetQuestions() {
     if (!area || !problem.trim()) return;
@@ -118,7 +129,7 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
           kpis: data.plan.kpis,
           risks: data.plan.risks,
         },
-      });
+      }, activeClient?.id ?? null);
     } catch (e) {
       setError((e as Error).message);
       setStep("questions");

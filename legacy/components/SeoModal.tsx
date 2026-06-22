@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { SeoResult, ContentType } from "@/app/api/seo/route";
 import { saveToHistory } from "@/lib/history";
 import { safeJson } from "@/lib/api";
+import { useClientWorkspace } from "@/lib/client-context";
 
 interface Props {
   onClose: () => void;
@@ -175,6 +176,16 @@ export function SeoModal({ onClose, onOpenTool }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
+  const ws = useClientWorkspace();
+  const activeClient = ws?.activeClient ?? null;
+
+  useEffect(() => {
+    if (!activeClient) return;
+    setBusinessName((v) => (v ? v : activeClient.name ?? ""));
+    setCategory((v) => (v ? v : activeClient.category ?? ""));
+    setDescription((v) => (v ? v : activeClient.description ?? ""));
+  }, [activeClient]);
+
   // Google Search Console import
   const [gscAvailable, setGscAvailable] = useState(false);
   const [gscBusy, setGscBusy] = useState(false);
@@ -248,7 +259,7 @@ export function SeoModal({ onClose, onOpenTool }: Props) {
       if (!res.ok) { setError(data.error ?? "Failed to generate"); setStep("form"); return; }
       setResult(data);
       setStep("result");
-      saveToHistory({ type: "seo", name: businessName, seoType: contentType, seoSections: data.sections, seoKeywords: data.keywords, seoTips: data.seoTips, seoWordCount: data.wordCount });
+      saveToHistory({ type: "seo", name: businessName, seoType: contentType, seoSections: data.sections, seoKeywords: data.keywords, seoTips: data.seoTips, seoWordCount: data.wordCount }, activeClient?.id ?? null);
     } catch (err) {
       setError((err as Error).message);
       setStep("form");

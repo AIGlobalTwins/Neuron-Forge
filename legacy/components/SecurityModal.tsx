@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { SecurityFinding, SecurityResult, SecurityRating } from "@/app/api/security/route";
 import { saveToHistory } from "@/lib/history";
 import { safeJson } from "@/lib/api";
+import { useClientWorkspace } from "@/lib/client-context";
 
 interface Props {
   onClose: () => void;
@@ -63,6 +64,14 @@ export function SecurityModal({ onClose }: Props) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [filterSeverity, setFilterSeverity] = useState<string>("all");
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const ws = useClientWorkspace();
+  const activeClient = ws?.activeClient ?? null;
+
+  useEffect(() => {
+    if (!activeClient) return;
+    if (activeClient.website) setUrl((prev) => (prev.trim() ? prev : activeClient.website));
+  }, [activeClient]);
 
   async function handleDownloadPdf() {
     if (!result) return;
@@ -129,7 +138,7 @@ export function SecurityModal({ onClose }: Props) {
         securitySummary: data.summary,
         securityFindings: data.findings.map((f: SecurityFinding) => ({ severity: f.severity, title: f.title, category: f.category })),
         securityTechDetected: data.techDetected,
-      });
+      }, activeClient?.id ?? null);
     } catch (e) {
       setError((e as Error).message);
       setStep("form");

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { safeJson } from "@/lib/api";
 import { saveToHistory } from "@/lib/history";
+import { useClientWorkspace } from "@/lib/client-context";
 import type { CalendarDay } from "@/app/api/content-calendar/route";
 
 interface Props {
@@ -64,6 +65,17 @@ export function ContentCalendarModal({ onClose }: Props) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<string>("all");
 
+  const ws = useClientWorkspace();
+  const activeClient = ws?.activeClient ?? null;
+
+  useEffect(() => {
+    if (!activeClient) return;
+    if (!businessName.trim() && activeClient.name) setBusinessName(activeClient.name);
+    if (!category.trim() && activeClient.category) setCategory(activeClient.category);
+    if (!description.trim() && activeClient.description) setDescription(activeClient.description);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeClient]);
+
   function copy(text: string, key: string) {
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
@@ -110,7 +122,7 @@ export function ContentCalendarModal({ onClose }: Props) {
         calendarWeeklyThemes: data.weeklyThemes,
         calendarDays: data.days,
         calendarTips: data.tips,
-      });
+      }, activeClient?.id ?? null);
     } catch (e) {
       setError((e as Error).message);
       setStep("form");

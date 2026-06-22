@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { safeJson } from "@/lib/api";
 import { saveToHistory } from "@/lib/history";
+import { useClientWorkspace } from "@/lib/client-context";
 import type { AdGroup, CampaignType } from "@/app/api/google-ads/route";
 
 interface Props {
@@ -35,6 +36,8 @@ function AdsIcon({ className = "w-5 h-5" }: { className?: string }) {
 }
 
 export function GoogleAdsModal({ onClose }: Props) {
+  const ws = useClientWorkspace();
+  const activeClient = ws?.activeClient ?? null;
   const [step, setStep] = useState<Step>("form");
   const [businessName, setBusinessName] = useState("");
   const [category, setCategory] = useState("Business");
@@ -51,6 +54,13 @@ export function GoogleAdsModal({ onClose }: Props) {
   const [budgetSuggestion, setBudgetSuggestion] = useState("");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [activeGroup, setActiveGroup] = useState(0);
+
+  useEffect(() => {
+    if (!activeClient) return;
+    if (activeClient.name) setBusinessName((v) => (v ? v : activeClient.name));
+    if (activeClient.category) setCategory((v) => (v ? v : activeClient.category));
+    if (activeClient.description) setDescription((v) => (v ? v : activeClient.description));
+  }, [activeClient]);
 
   function copy(text: string, key: string) {
     navigator.clipboard.writeText(text);
@@ -97,7 +107,7 @@ export function GoogleAdsModal({ onClose }: Props) {
         adsNegativeKeywords: data.negativeKeywords,
         adsTips: data.tips,
         adsBudget: data.budgetSuggestion,
-      });
+      }, activeClient?.id ?? null);
     } catch (e) {
       setError((e as Error).message);
       setStep("form");

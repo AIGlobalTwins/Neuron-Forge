@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { saveToHistory } from "@/lib/history";
 import { safeJson } from "@/lib/api";
+import { useClientWorkspace } from "@/lib/client-context";
 
 interface Props {
   onClose: () => void;
@@ -61,6 +62,9 @@ function EyeIcon({ open }: { open: boolean }) {
 }
 
 export function SocialPostsModal({ onClose }: Props) {
+  const ws = useClientWorkspace();
+  const activeClient = ws?.activeClient ?? null;
+
   const [step, setStep] = useState<Step>("connect");
   const [isConnected, setIsConnected] = useState(false);
 
@@ -103,6 +107,14 @@ export function SocialPostsModal({ onClose }: Props) {
         if (connected) setStep("form");
       });
   }, []);
+
+  // Pre-fill from the active client (only fills empty fields, never clobbers user input)
+  useEffect(() => {
+    if (!activeClient) return;
+    if (activeClient.name) setBusinessName((v) => (v.trim() ? v : activeClient.name));
+    if (activeClient.category) setCategory((v) => (v.trim() && v !== "Business" ? v : activeClient.category));
+    if (activeClient.description) setDescription((v) => (v.trim() ? v : activeClient.description));
+  }, [activeClient]);
 
   async function handleConnect() {
     if (!igToken.trim() || !igAccountId.trim()) {
@@ -153,7 +165,7 @@ export function SocialPostsModal({ onClose }: Props) {
       if (!res.ok) throw new Error(data.error || "Unknown error");
       setPosts(data.posts);
       setStep("result");
-      saveToHistory({ type: "instagram", name: businessName, posts: data.posts });
+      saveToHistory({ type: "instagram", name: businessName, posts: data.posts }, activeClient?.id ?? null);
     } catch (e) {
       setError((e as Error).message);
       setStep("form");

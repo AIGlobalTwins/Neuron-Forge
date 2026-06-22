@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { safeJson } from "@/lib/api";
+import { useClientWorkspace } from "@/lib/client-context";
 
 interface Props {
   onClose: () => void;
@@ -68,6 +69,9 @@ const stepLabels: Record<Step, string> = {
 const STEPS: Step[] = ["connect", "configure", "webhook", "live"];
 
 export function WhatsAppModal({ onClose }: Props) {
+  const ws = useClientWorkspace();
+  const activeClient = ws?.activeClient ?? null;
+
   const [step, setStep] = useState<Step>("connect");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -90,6 +94,21 @@ export function WhatsAppModal({ onClose }: Props) {
   const [personality, setPersonality] = useState("friendly");
   const [language, setLanguage] = useState("pt");
   const [fallback, setFallback] = useState("I don't have that information right now, but you can contact us directly.");
+
+  // Pre-fill from the active client (only fields that are still empty)
+  useEffect(() => {
+    if (!activeClient) return;
+    if (activeClient.name) setBusinessName((v) => v || activeClient.name);
+    if (activeClient.category) setCategory((v) => v || activeClient.category);
+    if (activeClient.description) setDescription((v) => v || activeClient.description);
+    if (activeClient.hours) setHours((v) => v || activeClient.hours);
+    if (Array.isArray(activeClient.services) && activeClient.services.length) {
+      setServices((cur) => (cur.filter((s) => s.trim()).length ? cur : activeClient.services));
+    }
+    if (Array.isArray(activeClient.faqs) && activeClient.faqs.length) {
+      setFaqs((cur) => (cur.filter((f) => f.question.trim() || f.answer.trim()).length ? cur : activeClient.faqs));
+    }
+  }, [activeClient]);
 
   // Live
   const [status, setStatus] = useState<{ active: boolean; totalConversations: number; recentConversations: { phone: string; lastMessage: string; ts: number }[] } | null>(null);
