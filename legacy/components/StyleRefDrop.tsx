@@ -49,7 +49,7 @@ export function StyleRefDrop({ value, onChange }: { value: string; onChange: (v:
       ) : (
         <label className="flex items-center gap-3 px-4 py-3 border border-dashed border-[#2a2a2a] rounded-xl cursor-pointer hover:border-[#a855f7]/40 transition-colors">
           <svg viewBox="0 0 24 24" className="w-5 h-5 text-[#a855f7] shrink-0" fill="currentColor"><path d="M12 2l1.5 5L19 8.5 13.5 10 12 15l-1.5-5L5 8.5 10.5 7z" /><path d="M18.3 13l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z" /></svg>
-          <span className="text-xs text-gray-500">{busy ? "Processing…" : "Drop / choose a reference design (Dribbble, a site you like)"}</span>
+          <span className="text-xs text-gray-500">{busy ? "Processing…" : "Drop / choose a design you like — the site will match its style"}</span>
           <input type="file" accept="image/*" className="hidden" onChange={onFile} />
         </label>
       )}

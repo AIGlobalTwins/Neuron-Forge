@@ -1,16 +1,12 @@
 /**
- * Runtime safety net injected into every generated site. It guarantees — at load
- * time, regardless of what the model emitted — that:
- *   1. No dead links: <a href="#"> / empty / javascript: → routed to contact.
- *   2. Buttons always do something: a non-submit <button> with no handler routes
- *      to contact (nav/dropdown/hamburger are left alone).
- *   3. Contact forms never dead-reload: submit is intercepted and a success
- *      message is shown (the sites are static, no backend).
- *   4. WhatsApp is always reachable: if the site has NO wa.me link, a floating
- *      WhatsApp button is added (only when a phone number exists).
- *
- * This is deterministic and complements the prompt rules — it catches whatever the
- * model missed. Injected after the page router so it sees the final DOM.
+ * Runtime safety net injected into every generated site. At load (and again after
+ * AI edits, since it re-runs) it guarantees EVERY link/button does something
+ * visible — works on both multi-page (data-page router) and single-page sites:
+ *   - real targets (tel:/mailto:/http/wa.me, a valid #/page, a valid #id) are kept,
+ *   - a route to a non-existent page is remapped (by the link text, else home),
+ *   - anything else scrolls to a relevant section or the contact destination,
+ *   - contact forms show a success message (sites are static),
+ *   - a floating WhatsApp button is added when a number exists and none is present.
  */
 export function siteGuard(opts: { waUrl?: string; contactHref?: string; waLabel?: string }): string {
   const waUrl = opts.waUrl || "";
@@ -22,61 +18,73 @@ export function siteGuard(opts: { waUrl?: string; contactHref?: string; waLabel?
   return `
 <script>(function(){
   var WA=${JSON.stringify(waUrl)}, CONTACT=${JSON.stringify(contactHref)}, WALABEL=${JSON.stringify(waLabel)};
-  function go(){ location.hash=CONTACT.replace(/^#/,''); }
   function run(){
     try{
-      // Known views (router pages) + their first one (home).
-      var pageSet={}, firstPage='';
-      document.querySelectorAll('[data-page]').forEach(function(p){var n=p.getAttribute('data-page')||'';pageSet[n]=1;if(!firstPage)firstPage=n;});
-      function guessPage(txt){
-        txt=(txt||'').toLowerCase();
-        for(var n in pageSet){ if(n && txt.indexOf(n.toLowerCase())>=0) return n; }
-        return '';
+      var pages=Array.prototype.slice.call(document.querySelectorAll('[data-page]'));
+      var pageNames=pages.map(function(p){return p.getAttribute('data-page')||'';});
+      var multipage=pageNames.length>0;
+      var home=multipage?pageNames[0]:'';
+
+      function matchPage(txt){txt=(txt||'').toLowerCase();for(var i=0;i<pageNames.length;i++){if(pageNames[i]&&txt.indexOf(pageNames[i].toLowerCase())>=0)return pageNames[i];}return '';}
+      function matchId(txt){txt=(txt||'').toLowerCase().trim();if(!txt)return '';var els=document.querySelectorAll('[id]');for(var i=0;i<els.length;i++){var id=els[i].id;if(id&&id.length>2&&txt.indexOf(id.toLowerCase())>=0)return id;}return '';}
+      function contactTarget(){
+        for(var i=0;i<pageNames.length;i++){if(/contact|contacto|marcar|book|agenda/i.test(pageNames[i]))return {page:pageNames[i]};}
+        var el=document.querySelector('[id*="contact" i],[id*="contacto" i],[id*="marcar" i]');
+        if(el)return {id:el.id};
+        var form=document.querySelector('form');if(form){var s=form.closest('[id]');if(s)return {id:s.id};}
+        return null;
       }
+      var CT=contactTarget();
+      function gotoContact(){
+        if(CT&&CT.page){location.hash='/'+CT.page;}
+        else if(CT&&CT.id){var e=document.getElementById(CT.id);if(e){e.scrollIntoView({behavior:'smooth'});return;}}
+        if(CONTACT&&CONTACT.charAt(0)==='#'){location.hash=CONTACT.replace(/^#/,'');}
+        else{window.scrollTo({top:0,behavior:'smooth'});}
+      }
+      function scrollId(id){var e=document.getElementById(id);if(e)e.scrollIntoView({behavior:'smooth'});else gotoContact();}
+
       document.querySelectorAll('a').forEach(function(a){
         var h=(a.getAttribute('href')||'').trim();
-        // 1) Empty / placeholder → contact.
-        if(h===''||h==='#'||h.toLowerCase().indexOf('javascript:')===0){ a.setAttribute('href',CONTACT); return; }
-        // 2) Real protocols / external / wa.me → leave alone.
-        if(/^(tel:|mailto:|https?:|\\/\\/)/i.test(h) || h.indexOf('wa.me')>=0) return;
-        if(h.charAt(0)!=='#') return;
-        // 3) Page route #/name — if the page doesn't exist, remap (by link text, else home).
+        if(/^(tel:|mailto:|https?:|\\/\\/)/i.test(h)||h.indexOf('wa.me')>=0)return; // real
+        if(h===''||h==='#'||h.toLowerCase().indexOf('javascript:')===0){a.addEventListener('click',function(e){e.preventDefault();gotoContact();});return;}
+        if(h.charAt(0)!=='#')return;
         var rm=h.match(/^#\\/([^#]+)/);
         if(rm){
-          if(firstPage && !pageSet[rm[1]]){ a.setAttribute('href','#/'+(guessPage(a.textContent)||firstPage)); }
+          if(multipage){ if(pageNames.indexOf(rm[1])<0)a.setAttribute('href','#/'+(matchPage(a.textContent)||home)); }
+          else{ var sid=matchId(rm[1])||matchId(a.textContent); a.addEventListener('click',function(e){e.preventDefault();if(sid)scrollId(sid);else gotoContact();}); }
           return;
         }
-        // 4) Plain #anchor — only valid if the element exists; else remap to a page or contact.
         var id=h.slice(1);
-        if(id && !document.getElementById(id)){
-          var g=guessPage(a.textContent);
-          a.setAttribute('href', g?('#/'+g):CONTACT);
+        if(id&&!document.getElementById(id)){
+          var g=matchPage(a.textContent),sid2=matchId(a.textContent);
+          if(g)a.setAttribute('href','#/'+g);
+          else if(sid2)a.setAttribute('href','#'+sid2);
+          else a.addEventListener('click',function(e){e.preventDefault();gotoContact();});
         }
       });
+
       document.querySelectorAll('button').forEach(function(b){
         var t=(b.getAttribute('type')||'').toLowerCase();
         if(t==='submit'||t==='reset')return;
-        if(b.id==='hamburger'||b.hasAttribute('data-dropdown-toggle'))return;
+        if(b.id==='hamburger'||b.hasAttribute('data-dropdown-toggle')||b.hasAttribute('data-dropdown'))return;
         if(b.closest('a'))return;
-        if(b.hasAttribute('onclick')){
-          // A handler exists but may be broken — add a safe fallback that only fires
-          // if the click didn't already navigate/scroll.
-          b.addEventListener('click',function(){var y=window.scrollY;setTimeout(function(){if(window.scrollY===y && (location.hash||'')==='')go();},120);});
-          return;
-        }
-        b.addEventListener('click',go);
+        if(b.hasAttribute('onclick')){b.addEventListener('click',function(){var y=window.scrollY,hsh=location.hash;setTimeout(function(){if(window.scrollY===y&&location.hash===hsh)gotoContact();},160);});return;}
+        var pg=matchPage(b.textContent),sid=matchId(b.textContent);
+        b.addEventListener('click',function(){if(pg){location.hash='/'+pg;}else if(sid){scrollId(sid);}else{gotoContact();}});
       });
+
       document.querySelectorAll('form').forEach(function(f){
         f.addEventListener('submit',function(e){
           e.preventDefault();
           var ok=f.querySelector('[data-form-success]');
           if(!ok){ok=document.createElement('p');ok.setAttribute('data-form-success','');ok.className='mt-4 font-medium';ok.style.color='#16a34a';ok.textContent='Mensagem enviada! Entraremos em contacto em breve.';f.appendChild(ok);}
-          ok.style.display='block'; try{f.reset();}catch(_){}
+          ok.style.display='block';try{f.reset();}catch(_){}
         });
       });
+
       if(WA && !document.querySelector('a[href*="wa.me"]')){
         var fab=document.createElement('a');
-        fab.href=WA; fab.target='_blank'; fab.rel='noopener noreferrer'; fab.setAttribute('aria-label',WALABEL);
+        fab.href=WA;fab.target='_blank';fab.rel='noopener noreferrer';fab.setAttribute('aria-label',WALABEL);
         fab.style.cssText='position:fixed;right:20px;bottom:20px;z-index:9999;width:56px;height:56px;border-radius:9999px;background:#25D366;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.28)';
         fab.innerHTML=${JSON.stringify(WA_SVG)};
         document.body.appendChild(fab);

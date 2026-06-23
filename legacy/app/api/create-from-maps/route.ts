@@ -14,7 +14,7 @@ import { balanceBlocks } from "@/lib/html-fix";
 import { waLink, whatsappPromptBlock } from "@/lib/phone";
 import { siteGuard } from "@/lib/site-guard";
 import { buildBusinessContext, type BusinessProfile } from "@/lib/business-context";
-import { styleBriefFromImage } from "@/lib/style-ref";
+import { styleImageBlock, STYLE_DIRECTIVE } from "@/lib/style-ref";
 
 // On the mounted disk (/app/data) so generated-site previews survive redeploys.
 const REDESIGN_DIR = "./data/redesigns";
@@ -283,9 +283,6 @@ export async function POST(req: NextRequest) {
   const claudeModel = getClaudeModel(userId);
   if (!anthropicKey) return NextResponse.json({ error: "Anthropic API Key not configured. Add it in Settings." }, { status: 500 });
 
-  // Optional reference-design brief (Dribbble shot / a site they like) → folded into the prompt.
-  const designDirection = styleRef ? await styleBriefFromImage(anthropicKey, String(styleRef)) : "";
-
   // ── Extract from Maps ──────────────────────────────────────────────────
   let finalName = name;
   let finalCategory = category;
@@ -421,7 +418,7 @@ Brand personality: ${plan.brandPersonality}
 Hero image: ${heroImage}
 Fonts: heading="${fonts.heading}" body="${fonts.body}"
 ${whatsappBlock ? `\n${whatsappBlock}` : ""}
-${businessContext}${designDirection}
+${businessContext}
 `.trim();
 
   const darkBlock = darkThemeInstruction(brief);
@@ -577,10 +574,11 @@ ${!isFood ? `WHY US (id="why") — <section id="why" class="py-24 px-6 bg-white"
 
 Stop after the ${isFood ? "ABOUT" : "WHY US"} closing </section>. Do NOT add </body> or </html>. Output ONLY valid HTML, no markdown, no explanations.`;
 
+  const styleBlock = styleImageBlock(styleRef ? String(styleRef) : "");
   const res1 = await anthropic.messages.create({
     model: claudeModel,
     max_tokens: 8000,
-    messages: [{ role: "user", content: [...imageBlocks, { type: "text", text: prompt1 }] }],
+    messages: [{ role: "user", content: [...(styleBlock ? [styleBlock] : []), ...imageBlocks, { type: "text", text: prompt1 + (styleBlock ? STYLE_DIRECTIVE : "") }] }],
   });
   let part1 = res1.content[0].type === "text" ? res1.content[0].text.trim() : "";
   part1 = part1.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();

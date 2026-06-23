@@ -1,5 +1,23 @@
 import Anthropic from "@anthropic-ai/sdk";
 
+type ImgType = "image/jpeg" | "image/png" | "image/webp" | "image/gif";
+
+// Turn a base64/data-URL reference image into an Anthropic vision content block, or
+// null. Passing the actual image to the generator (vision) matches the design far
+// better than a text description.
+export function styleImageBlock(input?: string | null): { type: "image"; source: { type: "base64"; media_type: ImgType; data: string } } | null {
+  if (!input) return null;
+  const m = input.match(/^data:(image\/[\w.+-]+);base64,(.*)$/);
+  const raw = m?.[1] || "image/jpeg";
+  const media_type = (["image/jpeg", "image/png", "image/webp", "image/gif"].includes(raw) ? raw : "image/jpeg") as ImgType;
+  const data = m?.[2] || input.replace(/^data:image\/[\w.+-]+;base64,/, "");
+  if (!data || data.length < 50) return null;
+  return { type: "image", source: { type: "base64", media_type, data } };
+}
+
+export const STYLE_DIRECTIVE =
+  "\n\nThe first attached image is a DESIGN REFERENCE supplied by the user. Recreate its visual design closely for THIS business: the overall layout & section structure, colour palette, typography (families / weights / scale), button and card styles, spacing & density, hero treatment, and overall mood. Use ORIGINAL content (never copy any text or logos from the image). This reference takes PRIORITY over the default style.";
+
 // Turn a user-supplied reference design (a Dribbble shot, a screenshot of a site
 // they like) into a concise DESIGN DIRECTION brief that the website generators
 // append to their prompt — so the output matches the aesthetic without copying.

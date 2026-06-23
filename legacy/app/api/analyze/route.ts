@@ -16,7 +16,7 @@ import { waLink, whatsappPromptBlock } from "@/lib/phone";
 import { pageNav, multipagePromptBlock, PAGE_BOOT, type NavPage } from "@/lib/multipage";
 import { siteGuard } from "@/lib/site-guard";
 import { buildBusinessContext, type BusinessProfile } from "@/lib/business-context";
-import { styleBriefFromImage } from "@/lib/style-ref";
+import { styleImageBlock, STYLE_DIRECTIVE } from "@/lib/style-ref";
 
 // On the mounted disk (/app/data) so generated-site previews survive redeploys.
 const REDESIGN_DIR = "./data/redesigns";
@@ -371,6 +371,7 @@ async function generateRedesign(
   model: string = "claude-sonnet-4-6",
   designType: string = "auto",
   businessContext: string = "",
+  styleRefData: string = "",
 ): Promise<string> {
   // Design brief routes the ui-ux-pro-max + taste skills by the chosen type.
   const brief = buildDesignBrief(designType, category, instructions);
@@ -643,10 +644,14 @@ OUTPUT: ONLY the complete HTML starting with <!DOCTYPE html>. No markdown fences
   // Stream with a large budget so rich, complete sites are never truncated.
   // Append the real client business context (services, hours, FAQs, etc.) so the
   // redesign uses verified facts. businessContext is "" when there is no client.
+  const styleBlock = styleImageBlock(styleRefData);
+  const userContent = styleBlock
+    ? [styleBlock, { type: "text" as const, text: prompt + businessContext + STYLE_DIRECTIVE }]
+    : prompt + businessContext;
   const stream = anthropic.messages.stream({
     model,
     max_tokens: 32000,
-    messages: [{ role: "user", content: prompt + businessContext }],
+    messages: [{ role: "user", content: userContent }],
   });
   const msg = await stream.finalMessage();
   const textBlock = msg.content.find((b: Anthropic.ContentBlock) => b.type === "text");
@@ -722,11 +727,10 @@ export async function POST(req: NextRequest) {
   if (email) analysis.email = email;
   else if (crawlResult.email) analysis.email = crawlResult.email;
 
-  // 4. Generate redesign — fold in an optional reference-design brief.
-  const designDirection = styleRef ? await styleBriefFromImage(anthropicKey, String(styleRef)) : "";
+  // 4. Generate redesign — pass an optional reference design (vision) to match.
   let html = "";
   try {
-    html = await withOverloadRetry(() => generateRedesign(anthropic, analysis, crawlResult.pages, url, category, instructions, claudeModel, designType, businessContext + designDirection));
+    html = await withOverloadRetry(() => generateRedesign(anthropic, analysis, crawlResult.pages, url, category, instructions, claudeModel, designType, businessContext, styleRef ? String(styleRef) : ""));
   } catch (err) {
     return NextResponse.json({ error: `Redesign failed: ${(err as Error).message}` }, { status: 500 });
   }
