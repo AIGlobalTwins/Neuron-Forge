@@ -32,14 +32,14 @@ const ANTI_SLOP: string[] = [
   "Hover states required (background shift, scale or translate); animate transform/opacity only, 200–300ms",
 ];
 
-// ── Minimalist rules (from minimalist-skill, only for the minimal type) ─────
+// ── Minimalist rules (strict monochrome editorial, only for the minimal type) ─
 const MINIMALIST: string[] = [
-  "Warm off-white backgrounds (#F7F6F3 / #FBFBFA), card surfaces #FFFFFF or #F9F9F8",
-  "Borders 1px solid #EAEAEA everywhere — consistent; radius 8–12px (no rounded-full on cards/large buttons)",
-  "Max diffuse shadow opacity 0.05 — no shadow-md / shadow-lg",
-  "Primary CTA: solid near-black (#111) bg, white text, 4–6px radius, no shadow",
-  "Massive vertical rhythm (py-24 / py-32), constrained content width (max-w-4xl / max-w-5xl)",
-  "Highly desaturated pastel accents only — no bright primary-colored section backgrounds",
+  "Strict black-on-pure-white monochrome (#FFFFFF canvas, #111111 ink) — NO colour; greys only for secondary text. Photography in black & white",
+  "Bold, neutral GROTESK display headings (Archivo), often UPPERCASE and oversized — the type IS the design",
+  "Swiss editorial layout: massive negative space, hairline rules, big stat numbers, eyebrow/numbered labels, an optional running marquee strip",
+  "Photography overlaps the headline; circular badge/seal stamps; CTA is a black pill or a thin-outline button",
+  "Sharp, confident, restrained — whitespace and contrast carry it; no gradients, no soft shadows, no rounded blobs",
+  "Use inverted blocks (white-on-black) sparingly for rhythm",
 ];
 
 export type ThemeMode = "light" | "dark";
@@ -87,17 +87,17 @@ export const DESIGN_TYPES: DesignType[] = [
     id: "minimal",
     label: "Minimal",
     labelPt: "Minimalista",
-    descPt: "Editorial, muito espaço branco, tipografia forte",
+    descPt: "Preto & branco estrito, grotesk forte, editorial",
     theme: "light",
-    fonts: { heading: "Space Grotesk", body: "Manrope", import: gf("family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@300;400;500;600") },
-    palette: { primary: "#1a1a1a", accent: "#475569", bg: "#f7f6f3", text: "#1a1a1a" },
+    fonts: { heading: "Archivo", body: "Inter", import: gf("family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600") },
+    palette: { primary: "#111111", accent: "#111111", bg: "#ffffff", text: "#111111" },
     spacingScale: "generous",
     cornerRadius: "sharp",
-    styleQuery: "Minimalism Swiss Style clean grid",
-    typographyQuery: "modern geometric clean",
-    vibeKeywords: "minimal clean bright airy",
+    styleQuery: "Minimalism Swiss Style monochrome editorial",
+    typographyQuery: "neutral grotesk heavy uppercase",
+    vibeKeywords: "minimal monochrome black white swiss editorial bold grotesk",
     principles: MINIMALIST,
-    swatch: ["#1a1a1a", "#475569", "#f7f6f3"],
+    swatch: ["#111111", "#6b7280", "#ffffff"],
   },
   {
     id: "elegant",
