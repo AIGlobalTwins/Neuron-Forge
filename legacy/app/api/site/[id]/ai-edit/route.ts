@@ -95,14 +95,15 @@ Return ONLY the full updated HTML document, starting with <!DOCTYPE html>.`;
   try {
     const anthropic = new Anthropic({ apiKey: anthropicKey });
     const msg = await withRetry(() =>
-      anthropic.messages.stream({ model: "claude-sonnet-4-6", max_tokens: 64000, messages: [{ role: "user", content: prompt }] }).finalMessage(),
+      anthropic.messages.stream({ model: "claude-sonnet-4-6", max_tokens: 32000, messages: [{ role: "user", content: prompt }] }).finalMessage(),
     );
     const block = msg.content.find((b: Anthropic.ContentBlock) => b.type === "text");
     out = block && block.type === "text" ? block.text : "";
   } catch (e) {
     const m = String((e as Error).message || "");
+    console.error("[ai-edit] error:", m);
     if (/overloaded|529/i.test(m)) return NextResponse.json({ error: "Anthropic is overloaded right now — try again in a moment." }, { status: 503 });
-    return NextResponse.json({ error: "AI edit failed. Try again." }, { status: 502 });
+    return NextResponse.json({ error: `AI edit failed: ${m.slice(0, 200)}` }, { status: 502 });
   }
 
   // Clean fences + locate the document.
