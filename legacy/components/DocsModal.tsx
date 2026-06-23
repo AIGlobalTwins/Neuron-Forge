@@ -72,7 +72,7 @@ const DOCS = [
     title: "Instagram Posts",
     subtitle: "Social media",
     tag: "Social Media",
-    what: "Generates professional captions, optimized hashtags, and image ideas for your business's Instagram.",
+    what: "Generates professional captions, optimized hashtags and image ideas for Instagram. Pre-fills from your active client and tailors the copy to their business. Optional direct publishing if you connect an Instagram Business account.",
     needs: ["Basic information about the business", "Anthropic API Key", "(Optional) Instagram Token for direct publishing"],
     steps: [
       "Click 'Instagram Posts'",
@@ -127,7 +127,7 @@ const DOCS = [
     title: "SEO Content Agent",
     subtitle: "Organic content",
     tag: "SEO",
-    what: "Generates search-engine-optimized content in 5 formats: blog articles, landing page copy, meta tags, FAQs, and service descriptions — all ready to publish.",
+    what: "Generates search-engine-optimized content in 5 formats: blog articles, landing page copy, meta tags, FAQs, and service descriptions — all ready to publish. Pre-fills from your active client and tailors everything to their business.",
     needs: ["Basic information about the business", "Target keywords (optional — the agent suggests the best ones)", "Anthropic API Key in Settings"],
     steps: [
       "Click 'SEO Content Agent'",
@@ -154,7 +154,7 @@ const DOCS = [
     title: "Consulting Agent",
     subtitle: "Business plan",
     tag: "Strategy",
-    what: "Runs an intelligent diagnosis of your business through tailored questions and generates a professional action plan as a PDF.",
+    what: "Runs an intelligent diagnosis of your business through tailored questions and generates a professional action plan as a PDF. Pre-fills from your active client and grounds the plan in their real business context.",
     needs: ["Anthropic API Key", "10-15 minutes to answer the questions"],
     steps: [
       "Click 'Consulting Agent'",
@@ -180,18 +180,18 @@ const DOCS = [
     title: "Security Agent",
     subtitle: "Security audit",
     tag: "Security",
-    what: "Runs a passive security audit of any website: analyzes HTTP headers, forms, scripts, exposed paths, and detected technologies — without touching the server.",
+    what: "Runs a real, passive security audit of any website: a live TLS certificate check, HTTPS enforcement and HTTP→HTTPS redirect, security headers (CSP and its quality, HSTS, X-Frame-Options…), cookie flags (Secure/HttpOnly/SameSite), mixed content, Subresource Integrity, exposed sensitive paths (.env / .git), and page-content issues.",
     needs: ["URL of the website to audit (public)", "Anthropic API Key in Settings"],
     steps: [
-      "Click 'Security Agent'",
+      "Open 'Security Agent'",
       "Paste the URL of the website you want to audit",
-      "Forge passively analyzes: HTTP headers, forms, external scripts, common paths, and technologies",
-      "The AI classifies each issue by severity: Critical, High, Medium, Low, Info",
-      "Receive a score from 0-100 with a rating (Critical, Weak, Fair, Good, Excellent)",
-      "Download the complete report as a PDF to deliver to the client",
+      "Forge runs the network checks: TLS handshake (protocol + certificate), HTTP→HTTPS redirect, security headers, cookie flags, mixed content and SRI",
+      "It probes common sensitive paths (.env, .git/config, phpinfo…) and verifies the actual response",
+      "The AI reviews the page content for hardcoded secrets, insecure forms and outdated libraries",
+      "You get a score with a rating (Secure / Moderate / Vulnerable / Critical), the real issues by severity, a 'Passed checks' list, and a PDF report",
     ],
-    tip: "The audit is 100% passive — it makes no intrusive requests, tests no active vulnerabilities, and breaks no laws. It is a surface-level analysis based on headers and public code.",
-    example: "Restaurant website → score 42/100 (Weak) — missing Content-Security-Policy, contact form without CSRF protection, outdated jQuery, and an accessible /admin path.",
+    tip: "100% passive and per-site: TLS, cookies, headers and redirects vary by website, so every report is genuinely different — no generic boilerplate. Run it on 2-3 sites to compare.",
+    example: "Restaurant website → 'Vulnerable': missing Content-Security-Policy and HSTS, cookies without the Secure flag, TLS certificate valid for 41 more days, no mixed content (passed), and an accessible /admin path.",
   },
   {
     id: "email",
@@ -206,7 +206,7 @@ const DOCS = [
     title: "Email Marketing",
     subtitle: "Email sequences",
     tag: "Email",
-    what: "Generates complete email marketing sequences for 5 scenarios: welcome, lead nurturing, promotion, customer re-engagement, and abandoned cart recovery.",
+    what: "Generates complete email marketing sequences for 5 scenarios: welcome, lead nurturing, promotion, customer re-engagement, and abandoned cart recovery. Pre-fills from your active client and tailors the copy to their business.",
     needs: ["Basic information about the business", "Anthropic API Key in Settings"],
     steps: [
       "Click 'Email Marketing'",
@@ -234,7 +234,7 @@ const DOCS = [
     title: "Google Ads",
     subtitle: "Campaign copy",
     tag: "Paid Ads",
-    what: "Generates complete copy for Google Ads campaigns in 4 formats: Search, Performance Max, Display, and Remarketing — with headlines, descriptions, sitelinks, and callouts within the character limits.",
+    what: "Generates complete copy for Google Ads campaigns in 4 formats: Search, Performance Max, Display, and Remarketing — with headlines, descriptions, sitelinks, and callouts within the character limits. Pre-fills from your active client and tailors the copy to their business.",
     needs: ["Basic information about the business", "Anthropic API Key in Settings"],
     steps: [
       "Click 'Google Ads'",
@@ -262,7 +262,7 @@ const DOCS = [
     title: "Content Calendar",
     subtitle: "Editorial calendar",
     tag: "Content",
-    what: "Generates a complete 30-day editorial calendar with themes, ready-to-use captions, hashtags, posting times, and image ideas — for any social network.",
+    what: "Generates a complete 30-day editorial calendar with themes, ready-to-use captions, hashtags, posting times, and image ideas — for any social network. Pre-fills from your active client and tailors everything to their business.",
     needs: ["Basic information about the business", "Anthropic API Key in Settings"],
     steps: [
       "Click 'Content Calendar'",
@@ -275,6 +275,34 @@ const DOCS = [
     ],
     tip: "Use the content-type filters (Educational, Promotional, Entertainment, Testimonial, Behind-the-scenes) to find the right balance for your business. The ideal is 40% educational, 20% promotional, 40% other.",
     example: "Beauty salon + daily + Instagram → 30 days with fixed weekly themes: Monday (beauty tip), Wednesday (before/after), Friday (weekend promotion), Sunday (inspiration). Each post with a caption + 10 hashtags + ideal time.",
+  },
+  {
+    id: "social",
+    color: "fuchsia",
+    colorClass: { bg: "from-fuchsia-500/20 to-pink-500/20", border: "border-fuchsia-500/30", text: "text-fuchsia-400", active: "bg-fuchsia-500/10 border-r-2 border-fuchsia-500", tag: "text-fuchsia-400", tip: "bg-fuchsia-500/5 border-fuchsia-500/20", stepNum: "border-fuchsia-500/30 text-fuchsia-400 bg-fuchsia-500/10" },
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.6">
+        <rect x="3" y="3" width="13" height="13" rx="4" />
+        <circle cx="9.5" cy="9.5" r="2.6" />
+        <circle cx="18.5" cy="18.5" r="3" />
+        <path d="M20.7 20.7L23 23" strokeLinecap="round" />
+      </svg>
+    ),
+    title: "Social Analyzer",
+    subtitle: "Instagram audit",
+    tag: "Social Media",
+    what: "Audits any Instagram profile — your client's, a prospect's, or a competitor's — and returns a scored report: engagement, content pillars, hashtag strategy, bio, strengths, issues, recommendations and a 7-day content plan.",
+    needs: ["An Instagram handle or profile URL", "(Optional) a screenshot of the profile for a real visual content audit", "Anthropic API Key in Settings"],
+    steps: [
+      "Open 'Social Analyzer'",
+      "Paste the Instagram handle or URL (e.g. @business or instagram.com/business)",
+      "Optionally drop a screenshot of the profile + feed for a visual content audit",
+      "Click 'Analyze profile' and wait up to a minute",
+      "Read the score, engagement, content pillars, issues and recommendations",
+      "Use the 7-day content plan — or hand it to the Instagram Posts agent to generate the posts",
+    ],
+    tip: "No login or account connection needed — it works on any public profile, which makes it a sales weapon: analyse a prospect's Instagram live in a meeting. With an APIFY_TOKEN configured the handle alone pulls the posts automatically; without it, add a screenshot for the deepest content analysis.",
+    example: "A competitor restaurant profile → score 61/100 ('Average'), 1.8% engagement, pillars: dishes / behind-the-scenes / promos, issues: inconsistent posting + weak bio CTA, plus a tailored 7-day plan.",
   },
 ];
 
