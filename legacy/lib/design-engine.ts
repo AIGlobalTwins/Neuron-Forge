@@ -211,6 +211,29 @@ export const DESIGN_TYPES: DesignType[] = [
     principles: ["Dark canvas (#0B0B0C), elevated surfaces (#141416), warm gold accent", "High contrast light text (#F5F5F4) on dark; muted text #A1A1AA", "Borders as white/10; glow-free, restrained elegance"],
     swatch: ["#0b0b0c", "#d4a056", "#141416"],
   },
+  {
+    id: "pixel",
+    label: "Pixel",
+    labelPt: "Pixel / Retro",
+    descPt: "Fonte pixel retro, fundo neutro, laranja vivo, layout editorial",
+    theme: "light",
+    fonts: { heading: "Space Grotesk", body: "Inter", import: gf("family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Press+Start+2P") },
+    palette: { primary: "#111111", accent: "#f15a24", bg: "#ececec", text: "#1a1a1a" },
+    spacingScale: "generous",
+    cornerRadius: "soft",
+    styleQuery: "Retro Pixel Y2K 3D claymorphism editorial",
+    typographyQuery: "bold grotesque pixel display",
+    vibeKeywords: "retro pixel 3d clay render playful bold orange neutral",
+    principles: [
+      "Neutral light-grey canvas (#ECECEC) with ONE vivid orange accent (#F15A24) and solid black CTAs — no other colours",
+      "SIGNATURE: render one or two GIANT hero words (e.g. the brand name) in the 'Press Start 2P' pixel font, oversized, layered around the hero — this is the defining trait of this style",
+      "Headline in a heavy uppercase grotesk (Space Grotesk 700), tight tracking, large scale, asymmetric placement",
+      "Frosted glass nav pill, centred, rounded-full; a solid black 'Login / Register' (or primary) button top-right",
+      "Editorial details: a big stat callout (e.g. '132% GROWTH'), an optional [n / total] slide marker, generous whitespace, asymmetric layout",
+      "Playful floating objects / 3D-clay-style imagery around the hero when images allow; soft shadows, rounded cards (no harsh borders)",
+    ],
+    swatch: ["#1a1a1a", "#f15a24", "#ececec"],
+  },
 ];
 
 export function getDesignType(id?: string): DesignType {

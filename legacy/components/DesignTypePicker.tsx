@@ -12,6 +12,7 @@ export const DESIGN_TYPES = [
   { id: "playful", label: "Vibrant", desc: "Vivid colors, rounded shapes", swatch: ["#0ea5a4", "#f97316", "#fffdf8"], theme: "light" },
   { id: "tech", label: "Tech / Startup", desc: "Modern, geometric, precise", swatch: ["#0f172a", "#0ea5e9", "#f8fafc"], theme: "light" },
   { id: "dark", label: "Dark Premium", desc: "Dark background, dramatic", swatch: ["#0b0b0c", "#d4a056", "#141416"], theme: "dark" },
+  { id: "pixel", label: "Pixel / Retro", desc: "Retro pixel font, neutral canvas, orange pop", swatch: ["#1a1a1a", "#f15a24", "#ececec"], theme: "light" },
 ] as const;
 
 interface Props {
