@@ -47,10 +47,22 @@ export const PAGE_BOOT = `
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',route);else route();
 })();</script>`;
 
+/** Stable anchor id for a dropdown service, e.g. "Medicina do Trabalho" → "srv-medicina-do-trabalho". Must match the id the model puts on that service's block. */
+export function serviceSlug(name: string): string {
+  const s = (name || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .slice(0, 40)
+    .replace(/^-+|-+$/g, "");
+  return "srv-" + (s || "item");
+}
+
 /**
  * Ready-to-use fixed navbar with a Serviços dropdown (desktop hover + mobile/touch
- * click) and a mobile accordion menu. All links are page routes (#/name) or the
- * services dropdown. Returned verbatim so generation is deterministic.
+ * click) and a mobile accordion menu. Each dropdown item routes to its OWN service
+ * anchor (#/servicos#srv-slug); other links are page routes (#/name). Deterministic.
  */
 export function pageNav(opts: {
   businessName: string;
@@ -69,7 +81,7 @@ export function pageNav(opts: {
       ? `<div class="relative">
         <button type="button" data-dropdown-toggle class="flex items-center gap-1 text-slate-600 hover:text-primary text-sm font-medium transition">${p.label}<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
         <div data-dropdown class="hidden absolute left-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 p-2 z-50">
-          ${items.map((s) => `<a href="#/${servicesName}" data-nav="${servicesName}" class="block px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 hover:text-primary transition">${s}</a>`).join("\n          ")}
+          ${items.map((s) => `<a href="#/${servicesName}#${serviceSlug(s)}" data-nav="${servicesName}" class="block px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 hover:text-primary transition">${s}</a>`).join("\n          ")}
         </div>
       </div>`
       : `<a href="#/${p.name}" data-nav="${p.name}" class="text-slate-600 hover:text-primary text-sm font-medium transition">${p.label}</a>`;
@@ -77,7 +89,7 @@ export function pageNav(opts: {
   const mobileLink = (p: NavPage) =>
     p.name === servicesName && items.length
       ? `<div><p class="px-1 py-2 text-xs uppercase tracking-wider text-slate-400">${p.label}</p>${items
-          .map((s) => `<a href="#/${servicesName}" data-nav="${servicesName}" class="block px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50">${s}</a>`)
+          .map((s) => `<a href="#/${servicesName}#${serviceSlug(s)}" data-nav="${servicesName}" class="block px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50">${s}</a>`)
           .join("")}</div>`
       : `<a href="#/${p.name}" data-nav="${p.name}" class="block px-1 py-2 text-slate-700 font-medium">${p.label}</a>`;
 

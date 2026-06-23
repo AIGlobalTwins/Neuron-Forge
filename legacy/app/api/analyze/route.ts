@@ -13,7 +13,7 @@ import { REVEAL_CSS, MOTION_SCRIPT, MOTION_PROMPT } from "@/lib/motion";
 import { balanceBlocks } from "@/lib/html-fix";
 import { extractJsonObject } from "@/lib/json-extract";
 import { waLink, whatsappPromptBlock } from "@/lib/phone";
-import { pageNav, multipagePromptBlock, PAGE_BOOT, type NavPage } from "@/lib/multipage";
+import { pageNav, multipagePromptBlock, serviceSlug, PAGE_BOOT, type NavPage } from "@/lib/multipage";
 import { siteGuard } from "@/lib/site-guard";
 import { buildBusinessContext, type BusinessProfile } from "@/lib/business-context";
 import { styleImageBlock, STYLE_DIRECTIVE } from "@/lib/style-ref";
@@ -531,7 +531,11 @@ The <footer> stays OUTSIDE the page containers (shared across all pages), after 
     navCta,
     ctaName: "contacto",
   });
-  const multipageBlock = multipagePromptBlock({ pages: navPages, mapping: pageMapping });
+  const serviceAnchors = analysis.services.filter(Boolean).slice(0, 6).map((s) => `"${s}" → id="${serviceSlug(s)}"`).join("  ·  ");
+  const dropdownRule = serviceAnchors
+    ? `\nDROPDOWN TARGETS (MANDATORY) — the navbar dropdown links jump to a specific service via #/${servId}#srv-slug. On the "${servId}" page, render EACH of these services as its OWN block/card and give that block the EXACT id shown, so every dropdown item lands on its own service: ${serviceAnchors}. Never collapse them into one untargeted list.`
+    : "";
+  const multipageBlock = multipagePromptBlock({ pages: navPages, mapping: pageMapping + dropdownRule });
 
   const prompt = `You are a world-class web designer creating a premium redesign of a real business site. Produce the highest quality HTML possible — Lovable-level design with flawless typography, generous spacing, and polished visual hierarchy. Wow the viewer on first impression. This is a MULTI-PAGE website: a fixed navbar with a Serviços dropdown switches between separate pages (Início, ${isFood ? "Menu" : "Serviços"}, Sobre, Contacto) — not one long scroll.
 ${instructions ? `\n🔴🔴 USER INSTRUCTIONS — MANDATORY, HIGHEST PRIORITY. These are direct orders and OVERRIDE every default below (layout, colors, sections, copy). Implement ALL of them, exactly and visibly. If anything conflicts with the defaults, the USER WINS. Re-read them before each section:\n"""\n${instructions}\n"""\n` : ""}

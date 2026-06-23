@@ -73,6 +73,19 @@ export function siteGuard(opts: { waUrl?: string; contactHref?: string; waLabel?
         b.addEventListener('click',function(){if(pg){location.hash='/'+pg;}else if(sid){scrollId(sid);}else{gotoContact();}});
       });
 
+      // Ensure each dropdown service anchor (#/page#srv-x) has a real target: if the
+      // service block was not id'd by the model, tag the matching heading by its text.
+      document.querySelectorAll('a[href*="#srv-"]').forEach(function(a){
+        var hh=a.getAttribute('href')||'';var mm=hh.match(/#([^#]+)$/);if(!mm)return;
+        var id=mm[1];if(!id||document.getElementById(id))return;
+        var label=(a.textContent||'').trim().toLowerCase();if(label.length<3)return;
+        var hs=document.querySelectorAll('h1,h2,h3,h4,h5');
+        for(var i=0;i<hs.length;i++){var ht=(hs[i].textContent||'').trim().toLowerCase();
+          if(ht.length>2&&(ht===label||ht.indexOf(label)>=0||label.indexOf(ht)>=0)){
+            var cont=hs[i].closest('section,article')||hs[i].parentElement||hs[i];
+            if(!cont.id){cont.id=id;}else{hs[i].id=id;}break;}}
+      });
+
       // Fix Google Maps embeds that need a paid API key → key-less embed.
       document.querySelectorAll('iframe').forEach(function(f){
         var s=f.getAttribute('src')||'';var sl=s.toLowerCase();
