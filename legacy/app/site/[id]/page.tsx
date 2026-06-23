@@ -19,6 +19,11 @@ export default function SitePage() {
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [previewKey, setPreviewKey] = useState(0);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiMsg, setAiMsg] = useState<string | null>(null);
+  const [aiErr, setAiErr] = useState<string | null>(null);
+  const [canUndo, setCanUndo] = useState(false);
 
   useEffect(() => {
     const n = new URLSearchParams(window.location.search).get("name");
@@ -62,6 +67,55 @@ export default function SitePage() {
     }
   }
 
+  async function runAi(instruction: string) {
+    if (!instruction.trim() || aiBusy) return;
+    setAiBusy(true);
+    setAiErr(null);
+    setAiMsg(null);
+    try {
+      const res = await fetch(`/api/site/${id}/ai-edit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instruction }),
+      });
+      const d = await res.json().catch(() => null);
+      if (!res.ok || !d?.ok) {
+        setAiErr(d?.error || "Edit failed.");
+        return;
+      }
+      setAiPrompt("");
+      setCanUndo(true);
+      setAiMsg("Done — preview updated. Re-publish to push it live.");
+      setPreviewKey((k) => k + 1);
+    } catch {
+      setAiErr("Edit failed.");
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
+  async function undoAi() {
+    setAiBusy(true);
+    setAiErr(null);
+    try {
+      const res = await fetch(`/api/site/${id}/ai-edit`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ undo: true }) });
+      const d = await res.json().catch(() => null);
+      if (!res.ok || !d?.ok) {
+        setAiErr(d?.error || "Undo failed.");
+        return;
+      }
+      setCanUndo(false);
+      setAiMsg("Reverted to the previous version.");
+      setPreviewKey((k) => k + 1);
+    } catch {
+      setAiErr("Undo failed.");
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
+  const SUGGESTIONS = ["Modernize the design", "Make the hero more striking", "Stronger call-to-action", "More whitespace & cleaner spacing", "Improve it on mobile", "Add a testimonials section", "Add an FAQ section"];
+
   const input = "w-full bg-[#111] border border-[#2a2a2a] rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#E8622A]/50 focus:ring-1 focus:ring-[#E8622A]/20 transition-colors";
   const label = "block text-xs font-medium text-gray-400 mb-1.5";
 
@@ -104,18 +158,62 @@ export default function SitePage() {
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6">
         {tab === "design" && (
-          <div className="max-w-5xl mx-auto fade-up">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm text-gray-400">Live preview</p>
-              <a href={`/editor/${id}`} className="btn-glow px-4 py-2 text-white text-sm font-semibold rounded-xl inline-flex items-center gap-2">
-                <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M11 2l3 3-9 9H2v-3L11 2z" /></svg>
-                Open visual editor
+          <div className="max-w-6xl mx-auto fade-up grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-5">
+            {/* AI panel */}
+            <div className="space-y-4">
+              <div className="glow-card rounded-2xl p-5">
+                <div className="flex items-center gap-2 mb-1">
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 text-[#E8622A]" fill="currentColor"><path d="M12 2l1.5 5L19 8.5 13.5 10 12 15l-1.5-5L5 8.5 10.5 7z" /><path d="M18.3 13l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z" /></svg>
+                  <h3 className="text-sm font-semibold text-white">Edit with AI</h3>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">Describe a change in plain language — the site updates.</p>
+                <textarea
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); runAi(aiPrompt); } }}
+                  rows={3}
+                  disabled={aiBusy}
+                  placeholder="e.g. make the hero more modern, change the palette to blue, add a testimonials section…"
+                  className={`${input} resize-none`}
+                />
+                <div className="flex items-center gap-2 mt-2">
+                  <button onClick={() => runAi(aiPrompt)} disabled={aiBusy || !aiPrompt.trim()} className="btn-glow flex-1 py-2.5 text-white text-sm font-semibold rounded-xl">
+                    {aiBusy ? "Applying…" : "Apply change"}
+                  </button>
+                  <button onClick={undoAi} disabled={!canUndo || aiBusy} className="px-3 py-2.5 text-xs text-gray-400 hover:text-white border border-[#2a2a2a] hover:border-[#E8622A]/40 rounded-xl transition disabled:opacity-40">Undo</button>
+                </div>
+                {aiErr && <p className="text-xs text-red-400 mt-2">{aiErr}</p>}
+                {aiMsg && <p className="text-xs text-emerald-400 mt-2">{aiMsg}</p>}
+              </div>
+
+              <div className="glow-card rounded-2xl p-5">
+                <p className="text-[10px] uppercase tracking-widest text-gray-600 mb-3">Quick improvements</p>
+                <div className="flex flex-wrap gap-2">
+                  {SUGGESTIONS.map((s) => (
+                    <button key={s} onClick={() => runAi(s)} disabled={aiBusy} className="text-xs px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/10 text-gray-300 hover:border-[#E8622A]/40 hover:text-white transition disabled:opacity-50">{s}</button>
+                  ))}
+                </div>
+              </div>
+
+              <a href={`/editor/${id}`} className="block text-center px-4 py-2.5 rounded-xl border border-[#2a2a2a] text-gray-400 hover:text-white hover:border-[#E8622A]/40 text-sm transition">
+                Fine-tune manually (visual editor) →
               </a>
             </div>
-            <div className="rounded-2xl overflow-hidden border border-white/[0.07] bg-white">
-              <iframe key={previewKey} src={`/api/preview/${id}`} className="w-full h-[70vh] border-0" title="Site preview" />
+
+            {/* Preview */}
+            <div>
+              <div className="relative rounded-2xl overflow-hidden border border-white/[0.07] bg-white">
+                {aiBusy && (
+                  <div className="absolute inset-0 z-10 bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-2 text-white">
+                      <svg className="w-7 h-7 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" strokeOpacity="0.3" /><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" /></svg>
+                      <span className="text-xs">Applying your change…</span>
+                    </div>
+                  </div>
+                )}
+                <iframe key={previewKey} src={`/api/preview/${id}`} className="w-full h-[72vh] border-0" title="Site preview" />
+              </div>
             </div>
-            <p className="text-[11px] text-gray-600 mt-2">Edit text, colours, images and layout in the visual editor. Integrations are added in the next tab.</p>
           </div>
         )}
 
