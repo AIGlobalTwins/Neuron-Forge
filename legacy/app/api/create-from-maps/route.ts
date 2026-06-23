@@ -411,6 +411,8 @@ ${MOTION_PROMPT}
 
 BUTTONS & LINKS — every button/link MUST have a real destination: an existing #section to scroll to, tel:/mailto:, or https://wa.me/NUMBER (target="_blank"). NEVER output a decorative or placeholder button that does nothing — if a CTA has no destination, OMIT it.
 
+MAPS without an API key — if you embed a map use <iframe src="https://www.google.com/maps?q=ADDRESS&output=embed" loading="lazy"></iframe> (URL-encode the real address). NEVER use the Google Maps Embed API (/maps/embed/v1) or any key= — it needs a paid key and shows an error.
+
 ${planBlock}
 
 BUSINESS: ${finalName} | ${finalCategory}

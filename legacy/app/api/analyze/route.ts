@@ -640,6 +640,7 @@ STRICT RULES:
 5. Mobile responsive: sm: md: lg: prefixes
 6. Inline SVG icons only
 7. NO testimonials section
+8. MAPS without an API key — if you embed a map use <iframe src="https://www.google.com/maps?q=ADDRESS&output=embed" loading="lazy"></iframe> (URL-encode the real address). NEVER use the Google Maps Embed API (/maps/embed/v1) or any key= — it requires a paid key and shows an error.
 
 OUTPUT: ONLY the complete HTML starting with <!DOCTYPE html>. No markdown fences. No explanations.`;
 

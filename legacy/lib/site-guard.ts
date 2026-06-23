@@ -73,6 +73,16 @@ export function siteGuard(opts: { waUrl?: string; contactHref?: string; waLabel?
         b.addEventListener('click',function(){if(pg){location.hash='/'+pg;}else if(sid){scrollId(sid);}else{gotoContact();}});
       });
 
+      // Fix Google Maps embeds that need a paid API key → key-less embed.
+      document.querySelectorAll('iframe').forEach(function(f){
+        var s=f.getAttribute('src')||'';var sl=s.toLowerCase();
+        if(sl.indexOf('/maps/embed')>=0 || (sl.indexOf('google.')>=0 && sl.indexOf('/maps')>=0 && /[?&]key=/i.test(s))){
+          var q='';var m=s.match(/[?&]q=([^&]+)/i);if(m)q=decodeURIComponent(m[1].replace(/\\+/g,' '));
+          if(!q){var p=s.match(/place[\\/]+([^\\/?&]+)/i);if(p)q=decodeURIComponent(p[1].replace(/\\+/g,' '));}
+          if(q)f.setAttribute('src','https://www.google.com/maps?q='+encodeURIComponent(q)+'&output=embed');
+        }
+      });
+
       document.querySelectorAll('form').forEach(function(f){
         f.addEventListener('submit',function(e){
           e.preventDefault();
