@@ -10,7 +10,7 @@ export const DESIGN_TYPES = [
   { id: "warm", label: "Warm / Rustic", desc: "Earthy tones, welcoming", swatch: ["#7c4a2d", "#c2703d", "#faf6f1"], theme: "light" },
   { id: "bold", label: "Bold / Editorial", desc: "High contrast, large type", swatch: ["#111111", "#ff4d2e", "#ffffff"], theme: "light" },
   { id: "playful", label: "Vibrant", desc: "Vivid colors, rounded shapes", swatch: ["#0ea5a4", "#f97316", "#fffdf8"], theme: "light" },
-  { id: "tech", label: "Tech / Startup", desc: "Modern, geometric, precise", swatch: ["#0f172a", "#0ea5e9", "#f8fafc"], theme: "light" },
+  { id: "tech", label: "Tech / Crypto", desc: "Dark premium, glassmorphism, ambient glow", swatch: ["#0a0e1a", "#7c8cff", "#121829"], theme: "dark" },
   { id: "dark", label: "Dark Premium", desc: "Dark background, dramatic", swatch: ["#0b0b0c", "#d4a056", "#141416"], theme: "dark" },
   { id: "pixel", label: "Pixel / Retro", desc: "Retro pixel font, neutral canvas, orange pop", swatch: ["#1a1a1a", "#f15a24", "#ececec"], theme: "light" },
 ] as const;
