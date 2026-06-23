@@ -292,7 +292,7 @@ export function AnalyzeModal({ onClose }: Props) {
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-500">Palette: {result.palette}</span>
                 <a
-                  href={`/editor/${result.id}`}
+                  href={`/site/${result.id}?name=${encodeURIComponent(name || "Site")}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-3 py-1.5 bg-[#111] hover:bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#E8622A]/50 text-gray-300 hover:text-[#E8622A] text-xs font-medium rounded-lg transition-all flex items-center gap-1.5"

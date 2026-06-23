@@ -327,6 +327,12 @@ function DetailView({ entry, copiedKey, onCopy, lang }: { entry: HistoryEntry; c
           </div>
           <div className="flex items-center gap-2">
             <a
+              href={`/site/${entry.websiteId}?name=${encodeURIComponent(entry.name)}`}
+              className="px-3 py-1.5 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-gray-200 text-xs font-medium rounded-lg transition-all"
+            >
+              {lang === "en" ? "Manage / Edit" : "Gerir / Editar"}
+            </a>
+            <a
               href={`/api/preview/${entry.websiteId}`}
               target="_blank"
               rel="noopener noreferrer"
