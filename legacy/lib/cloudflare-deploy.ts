@@ -59,14 +59,18 @@ export async function deploySite(scriptName: string, html: string): Promise<Depl
     body: JSON.stringify({ enabled: true }),
   }).catch(() => {});
 
-  // The account's workers.dev subdomain (the middle part of the URL).
-  let sub = "";
-  try {
-    const r = await fetch(`${CF_API}/accounts/${accountId}/workers/subdomain`, { headers: auth });
-    const j = (await r.json()) as { result?: { subdomain?: string } };
-    sub = j?.result?.subdomain || "";
-  } catch {
-    /* ignore — URL falls back below */
+  // The account's workers.dev subdomain (the middle part of the URL). Prefer the
+  // env value (stable per account; avoids needing read perms on the subdomain
+  // endpoint), fall back to the API.
+  let sub = (process.env.CLOUDFLARE_WORKERS_SUBDOMAIN || "").trim().replace(/\.workers\.dev$/i, "");
+  if (!sub) {
+    try {
+      const r = await fetch(`${CF_API}/accounts/${accountId}/workers/subdomain`, { headers: auth });
+      const j = (await r.json()) as { result?: { subdomain?: string } };
+      sub = j?.result?.subdomain || "";
+    } catch {
+      /* ignore — URL falls back below */
+    }
   }
 
   return { url: sub ? `https://${name}.${sub}.workers.dev` : "", scriptName: name };
