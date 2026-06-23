@@ -157,8 +157,17 @@ window.addEventListener('scroll',function(){
   if(sel)upd(sb,sel);
 });
 window.addEventListener('message',function(e){
-  if(!e.data||!sel)return;
+  if(!e.data)return;
   var d=e.data;
+  if(d.type==='GET_HTML'){
+    var sc=document.getElementById('__nf_ed');
+    var s2=document.getElementById('__nf_sb');
+    var h2=document.getElementById('__nf_hb');
+    if(sc)sc.remove();if(s2)s2.remove();if(h2)h2.remove();
+    window.parent.postMessage({type:'CLEAN_HTML',html:'<!DOCTYPE html>\\n'+document.documentElement.outerHTML},'*');
+    return;
+  }
+  if(!sel)return;
   if(d.type==='UPDATE_STYLE'){
     if(d.prop==='textContent'){if(sel.children.length===0)sel.textContent=d.value;}
     else{sel.style[d.prop]=d.value;}
@@ -181,12 +190,19 @@ window.addEventListener('message',function(e){
     }
   }
   if(d.type==='DESELECT'){sel=null;sb.style.display='none';hb.style.display='none';}
-  if(d.type==='GET_HTML'){
-    var sc=document.getElementById('__nf_ed');
-    var s2=document.getElementById('__nf_sb');
-    var h2=document.getElementById('__nf_hb');
-    if(sc)sc.remove();if(s2)s2.remove();if(h2)h2.remove();
-    window.parent.postMessage({type:'CLEAN_HTML',html:'<!DOCTYPE html>\\n'+document.documentElement.outerHTML},'*');
+  if(d.type==='SELECT_ANCESTOR'){
+    var t=sel,lv=d.levels||1;
+    for(var i=0;i<lv;i++){if(t.parentElement&&t.parentElement!==document.body)t=t.parentElement;}
+    sel=t;upd(sb,sel);sendSel(sel);
+  }
+  if(d.type==='DELETE'){sel.remove();sel=null;sb.style.display='none';hb.style.display='none';window.parent.postMessage({type:'ELEMENT_DELETED'},'*');}
+  if(d.type==='DUPLICATE'){var cl=sel.cloneNode(true);if(sel.parentNode)sel.parentNode.insertBefore(cl,sel.nextSibling);}
+  if(d.type==='MOVE_UP'){var pv=sel.previousElementSibling;if(pv&&sel.parentNode)sel.parentNode.insertBefore(sel,pv);upd(sb,sel);}
+  if(d.type==='MOVE_DOWN'){var nx=sel.nextElementSibling;if(nx&&sel.parentNode)sel.parentNode.insertBefore(nx,sel);upd(sb,sel);}
+  if(d.type==='AI_GET_ELEMENT'){window.parent.postMessage({type:'ELEMENT_HTML',html:sel.outerHTML},'*');}
+  if(d.type==='AI_REPLACE_ELEMENT'){
+    var tmp=document.createElement('div');tmp.innerHTML=d.html;var node=tmp.firstElementChild;
+    if(node){sel.replaceWith(node);sel=node;upd(sb,sel);sendSel(sel);}
   }
 });
 })();
@@ -371,6 +387,7 @@ export default function EditorPage() {
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const cleanHtmlResolver = useRef<((html: string) => void) | null>(null);
+  const elementHtmlResolver = useRef<((html: string) => void) | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const [srcDoc, setSrcDoc] = useState("");
@@ -387,6 +404,9 @@ export default function EditorPage() {
   const [saveError, setSaveError] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imgDragging, setImgDragging] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiErr, setAiErr] = useState("");
 
   // Load HTML and inject editor script
   useEffect(() => {
@@ -426,9 +446,14 @@ export default function EditorPage() {
         cleanHtmlResolver.current = null;
       }
 
-      if (e.data.type === "IMAGE_REMOVED") {
+      if (e.data.type === "IMAGE_REMOVED" || e.data.type === "ELEMENT_DELETED") {
         setElement(null);
         setLocalStyles(null);
+      }
+
+      if (e.data.type === "ELEMENT_HTML") {
+        elementHtmlResolver.current?.(e.data.html as string);
+        elementHtmlResolver.current = null;
       }
     }
     window.addEventListener("message", onMessage);
@@ -529,6 +554,49 @@ export default function EditorPage() {
     setElement(null);
     setLocalStyles(null);
     send({ type: "DESELECT" });
+  }
+
+  // ── Quick actions (direct DOM ops in the iframe, no AI) ─────────────────
+  function selectAncestor(levels: number) { send({ type: "SELECT_ANCESTOR", levels }); }
+  function delEl() { send({ type: "DELETE" }); }
+  function dupEl() { send({ type: "DUPLICATE" }); }
+  function moveEl(dir: "up" | "down") { send({ type: dir === "up" ? "MOVE_UP" : "MOVE_DOWN" }); }
+
+  // ── AI edit on the selected element only (scoped → fast, never truncates) ─
+  function getElementHtml(): Promise<string> {
+    return new Promise((resolve) => {
+      elementHtmlResolver.current = resolve;
+      send({ type: "AI_GET_ELEMENT" });
+    });
+  }
+
+  async function runElementAi() {
+    const instruction = aiPrompt.trim();
+    if (!instruction || aiBusy || !element) return;
+    setAiBusy(true);
+    setAiErr("");
+    try {
+      const elementHtml = await Promise.race([
+        getElementHtml(),
+        new Promise<never>((_, rej) => setTimeout(() => rej(new Error("timeout")), 5000)),
+      ]);
+      const res = await fetch(`/api/site/${id}/ai-edit-element`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instruction, elementHtml }),
+      });
+      const d = await res.json().catch(() => null);
+      if (!res.ok || !d?.html) {
+        setAiErr(d?.error || "AI edit failed.");
+        return;
+      }
+      send({ type: "AI_REPLACE_ELEMENT", html: d.html });
+      setAiPrompt("");
+    } catch {
+      setAiErr("AI edit failed.");
+    } finally {
+      setAiBusy(false);
+    }
   }
 
   // ── Computed style values ──────────────────────────────────────────────
@@ -744,9 +812,21 @@ export default function EditorPage() {
                       &lt;{element.tagName}&gt;
                     </span>
                   </div>
-                  <p className="text-[10px] text-gray-600 truncate leading-relaxed" title={element.path}>
-                    {element.path}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-0.5 text-[10px] text-gray-600 leading-relaxed" title={element.path}>
+                    {element.path.split(" > ").map((seg, i, arr) => {
+                      const last = i === arr.length - 1;
+                      return (
+                        <span key={i} className="flex items-center gap-0.5">
+                          {i > 0 && <span className="text-gray-700">›</span>}
+                          {last ? (
+                            <span className="text-gray-400">{seg}</span>
+                          ) : (
+                            <button onClick={() => selectAncestor(arr.length - 1 - i)} className="hover:text-[#E8622A] transition-colors">{seg}</button>
+                          )}
+                        </span>
+                      );
+                    })}
+                  </div>
                 </div>
                 <button
                   onClick={deselect}
@@ -757,6 +837,39 @@ export default function EditorPage() {
                   </svg>
                 </button>
               </div>
+
+              {/* Quick actions */}
+              <div className="px-4 py-2.5 border-b border-[#1a1a1a] grid grid-cols-4 gap-1.5">
+                <button onClick={() => moveEl("up")} title="Mover para cima" className="flex items-center justify-center py-2 rounded-lg border border-[#2a2a2a] text-gray-400 hover:text-white hover:border-[#E8622A]/40 transition">
+                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+                </button>
+                <button onClick={() => moveEl("down")} title="Mover para baixo" className="flex items-center justify-center py-2 rounded-lg border border-[#2a2a2a] text-gray-400 hover:text-white hover:border-[#E8622A]/40 transition">
+                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12l7 7 7-7" /></svg>
+                </button>
+                <button onClick={dupEl} title="Duplicar" className="flex items-center justify-center py-2 rounded-lg border border-[#2a2a2a] text-gray-400 hover:text-white hover:border-[#E8622A]/40 transition">
+                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
+                </button>
+                <button onClick={delEl} title="Apagar" className="flex items-center justify-center py-2 rounded-lg border border-red-500/25 text-red-400/80 hover:text-red-400 hover:border-red-500/50 transition">
+                  <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg>
+                </button>
+              </div>
+
+              {/* Ask AI — edits just this element (scoped, fast) */}
+              <Section label="Ask AI">
+                <textarea
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); runElementAi(); } }}
+                  rows={2}
+                  disabled={aiBusy}
+                  placeholder="Descreve a mudança a este elemento… (ex: põe verde e maior, centra o texto)"
+                  className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 resize-none focus:outline-none focus:border-[#E8622A]/50 focus:ring-1 focus:ring-[#E8622A]/15 leading-relaxed"
+                />
+                <button onClick={runElementAi} disabled={aiBusy || !aiPrompt.trim()} className="mt-2 w-full py-2 rounded-lg bg-[#E8622A] hover:bg-[#d4571f] text-white text-xs font-semibold transition disabled:opacity-40">
+                  {aiBusy ? "A aplicar…" : "Aplicar com IA"}
+                </button>
+                {aiErr && <p className="text-[10px] text-red-400 mt-1.5">{aiErr}</p>}
+              </Section>
 
               {/* Image section — only for <img> elements */}
               {element.tagName === "img" && (
