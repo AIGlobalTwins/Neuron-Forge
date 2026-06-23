@@ -8,7 +8,7 @@ export const DESIGN_TYPES = [
   { id: "elegant", label: "Classic Elegant", desc: "Refined serif, timeless", swatch: ["#1f2937", "#9a7b4f", "#fbfaf8"], theme: "light" },
   { id: "luxury", label: "Luxury / Premium", desc: "Cinematic dark, elegant serif, gold accent", swatch: ["#0c0a08", "#c6a35c", "#1a1611"], theme: "dark" },
   { id: "warm", label: "Warm / Rustic", desc: "Cream, terracotta & sage, elegant serif", swatch: ["#3a2418", "#c2703d", "#f3ead9"], theme: "light" },
-  { id: "bold", label: "Bold / Editorial", desc: "High contrast, large type", swatch: ["#111111", "#ff4d2e", "#ffffff"], theme: "light" },
+  { id: "bold", label: "Bold / Editorial", desc: "Oversized grotesk, color blocks, mono tags", swatch: ["#111111", "#ff4d2e", "#ffffff"], theme: "light" },
   { id: "playful", label: "Vibrant", desc: "Electric magenta + lime, bento blocks, rounded", swatch: ["#ec1e63", "#b4e019", "#ffffff"], theme: "light" },
   { id: "tech", label: "Tech / Crypto", desc: "Dark premium, glassmorphism, ambient glow", swatch: ["#0a0e1a", "#7c8cff", "#121829"], theme: "dark" },
   { id: "dark", label: "Dark Premium", desc: "Dark background, dramatic", swatch: ["#0b0b0c", "#d4a056", "#141416"], theme: "dark" },
