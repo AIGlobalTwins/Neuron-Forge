@@ -11,7 +11,7 @@ export const DESIGN_TYPES = [
   { id: "bold", label: "Bold / Editorial", desc: "Oversized grotesk, color blocks, mono tags", swatch: ["#111111", "#ff4d2e", "#ffffff"], theme: "light" },
   { id: "playful", label: "Vibrant", desc: "Electric magenta + lime, bento blocks, rounded", swatch: ["#ec1e63", "#b4e019", "#ffffff"], theme: "light" },
   { id: "tech", label: "Tech / Crypto", desc: "Dark premium, glassmorphism, ambient glow", swatch: ["#0a0e1a", "#7c8cff", "#121829"], theme: "dark" },
-  { id: "dark", label: "Dark Premium", desc: "Dark background, dramatic", swatch: ["#0b0b0c", "#d4a056", "#141416"], theme: "dark" },
+  { id: "dark", label: "Dark Premium", desc: "Near-black, amber glow, bold sans, dramatic", swatch: ["#0a0a0b", "#f59e0b", "#15120e"], theme: "dark" },
   { id: "pixel", label: "Pixel / Retro", desc: "Retro pixel font, neutral canvas, orange pop", swatch: ["#1a1a1a", "#f15a24", "#ececec"], theme: "light" },
 ] as const;
 
