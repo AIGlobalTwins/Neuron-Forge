@@ -16,6 +16,7 @@ import { waLink, whatsappPromptBlock } from "@/lib/phone";
 import { pageNav, multipagePromptBlock, PAGE_BOOT, type NavPage } from "@/lib/multipage";
 import { siteGuard } from "@/lib/site-guard";
 import { buildBusinessContext, type BusinessProfile } from "@/lib/business-context";
+import { styleBriefFromImage } from "@/lib/style-ref";
 
 // On the mounted disk (/app/data) so generated-site previews survive redeploys.
 const REDESIGN_DIR = "./data/redesigns";
@@ -675,7 +676,7 @@ OUTPUT: ONLY the complete HTML starting with <!DOCTYPE html>. No markdown fences
 export async function POST(req: NextRequest) {
   try {
   const body = await req.json().catch(() => ({}));
-  const { url, name = "", category = "Business", address = "", phone = "", email = "", instructions = "", designType = "auto", clientId = null, clientProfile = null } = body;
+  const { url, name = "", category = "Business", address = "", phone = "", email = "", instructions = "", designType = "auto", clientId = null, clientProfile = null, styleRef = null } = body;
   const businessContext = buildBusinessContext(clientProfile as BusinessProfile | null);
 
   if (!url) return NextResponse.json({ error: "url required" }, { status: 400 });
@@ -721,10 +722,11 @@ export async function POST(req: NextRequest) {
   if (email) analysis.email = email;
   else if (crawlResult.email) analysis.email = crawlResult.email;
 
-  // 4. Generate redesign
+  // 4. Generate redesign — fold in an optional reference-design brief.
+  const designDirection = styleRef ? await styleBriefFromImage(anthropicKey, String(styleRef)) : "";
   let html = "";
   try {
-    html = await withOverloadRetry(() => generateRedesign(anthropic, analysis, crawlResult.pages, url, category, instructions, claudeModel, designType, businessContext));
+    html = await withOverloadRetry(() => generateRedesign(anthropic, analysis, crawlResult.pages, url, category, instructions, claudeModel, designType, businessContext + designDirection));
   } catch (err) {
     return NextResponse.json({ error: `Redesign failed: ${(err as Error).message}` }, { status: 500 });
   }

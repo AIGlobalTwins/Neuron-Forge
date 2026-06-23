@@ -14,6 +14,7 @@ import { balanceBlocks } from "@/lib/html-fix";
 import { waLink, whatsappPromptBlock } from "@/lib/phone";
 import { siteGuard } from "@/lib/site-guard";
 import { buildBusinessContext, type BusinessProfile } from "@/lib/business-context";
+import { styleBriefFromImage } from "@/lib/style-ref";
 
 // On the mounted disk (/app/data) so generated-site previews survive redeploys.
 const REDESIGN_DIR = "./data/redesigns";
@@ -271,7 +272,7 @@ function fixHtml(part1: string, part2: string, tailScript = ""): string {
 export async function POST(req: NextRequest) {
   try {
   const body = await req.json().catch(() => ({}));
-  const { mapsUrl = "", name = "", category = "Business", address = "", phone = "", email = "", images = [], instructions = "", designType = "auto", clientId = null, clientProfile = null } = body;
+  const { mapsUrl = "", name = "", category = "Business", address = "", phone = "", email = "", images = [], instructions = "", designType = "auto", clientId = null, clientProfile = null, styleRef = null } = body;
 
   // Full active-client business profile → prompt block (empty when no client).
   const businessContext = buildBusinessContext(clientProfile as BusinessProfile | null);
@@ -281,6 +282,9 @@ export async function POST(req: NextRequest) {
   const anthropicKey = getAnthropicKey(userId);
   const claudeModel = getClaudeModel(userId);
   if (!anthropicKey) return NextResponse.json({ error: "Anthropic API Key not configured. Add it in Settings." }, { status: 500 });
+
+  // Optional reference-design brief (Dribbble shot / a site they like) → folded into the prompt.
+  const designDirection = styleRef ? await styleBriefFromImage(anthropicKey, String(styleRef)) : "";
 
   // ── Extract from Maps ──────────────────────────────────────────────────
   let finalName = name;
@@ -417,7 +421,7 @@ Brand personality: ${plan.brandPersonality}
 Hero image: ${heroImage}
 Fonts: heading="${fonts.heading}" body="${fonts.body}"
 ${whatsappBlock ? `\n${whatsappBlock}` : ""}
-${businessContext}
+${businessContext}${designDirection}
 `.trim();
 
   const darkBlock = darkThemeInstruction(brief);

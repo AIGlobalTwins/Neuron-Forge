@@ -5,6 +5,7 @@ import { DesignTypePicker } from "@/components/DesignTypePicker";
 import { safeJson } from "@/lib/api";
 import { useClientWorkspace } from "@/lib/client-context";
 import { PublishButton } from "@/components/PublishButton";
+import { StyleRefDrop } from "@/components/StyleRefDrop";
 
 interface Props {
   onClose: () => void;
@@ -49,6 +50,7 @@ export function AnalyzeModal({ onClose }: Props) {
   const [category, setCategory] = useState("Business");
   const [instructions, setInstructions] = useState("");
   const [designType, setDesignType] = useState("auto");
+  const [styleRef, setStyleRef] = useState("");
   const [loadingStep, setLoadingStep] = useState(0);
   const [result, setResult] = useState<AnalyzeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +99,7 @@ export function AnalyzeModal({ onClose }: Props) {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: url.trim(), name: name.trim() || url, category, instructions: instructions.trim(), designType, clientId: activeClient?.id ?? null, clientProfile: activeClient ?? null }),
+        body: JSON.stringify({ url: url.trim(), name: name.trim() || url, category, instructions: instructions.trim(), designType, clientId: activeClient?.id ?? null, clientProfile: activeClient ?? null, styleRef: styleRef || null }),
       });
 
       const data = await safeJson(res);
@@ -189,6 +191,10 @@ export function AnalyzeModal({ onClose }: Props) {
 
             {/* Design type */}
             <DesignTypePicker value={designType} onChange={setDesignType} />
+
+            <div className="mt-4">
+              <StyleRefDrop value={styleRef} onChange={setStyleRef} />
+            </div>
 
             <div>
               <label className="block text-xs text-gray-500 mb-1.5 uppercase tracking-wide">

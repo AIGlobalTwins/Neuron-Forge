@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { safeJson } from "@/lib/api";
 import { useClientWorkspace } from "@/lib/client-context";
 import { PublishButton } from "@/components/PublishButton";
+import { StyleRefDrop } from "@/components/StyleRefDrop";
 import { DesignTypePicker } from "@/components/DesignTypePicker";
 import type { BusinessLocation } from "@/lib/google-api";
 
@@ -44,6 +45,7 @@ export function GoogleMapsModal({ onClose }: Props) {
   const [images, setImages] = useState<string[]>([]); // base64 data URLs
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [instructions, setInstructions] = useState("");
+  const [styleRef, setStyleRef] = useState("");
   const [designType, setDesignType] = useState("auto");
   const [loadingStep, setLoadingStep] = useState(0);
   const [result, setResult] = useState<Result | null>(null);
@@ -192,6 +194,7 @@ export function GoogleMapsModal({ onClose }: Props) {
           designType,
           clientId: activeClient?.id ?? null,
           clientProfile: activeClient ?? null,
+          styleRef: styleRef || null,
         }),
       });
 
@@ -414,6 +417,10 @@ export function GoogleMapsModal({ onClose }: Props) {
                 className="w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#E8622A] transition-colors placeholder-gray-600 resize-none"
                 placeholder="E.g. Use dark blue tones. The site should have a minimal, modern style. Highlight the home delivery service..."
               />
+            </div>
+
+            <div>
+              <StyleRefDrop value={styleRef} onChange={setStyleRef} />
             </div>
 
             {/* Actions */}
