@@ -111,7 +111,7 @@ export function ClientForm({ client, onDone, onCancel }: { client?: Client | nul
         </div>
       </div>
 
-      <div className="bg-[#0d0d0d] border border-[#1e1e1e] rounded-2xl p-6 space-y-4">
+      <div className="glow-card rounded-2xl p-6 space-y-4">
         {/* AI Auto-fill — prominent */}
         <div className="rounded-xl border border-[#E8622A]/30 bg-gradient-to-r from-[#E8622A]/10 to-[#a855f7]/10 p-4">
           <div className="flex items-center gap-2 mb-1">
@@ -225,7 +225,7 @@ export function ClientForm({ client, onDone, onCancel }: { client?: Client | nul
 
       <div className="flex items-center justify-end gap-2 mt-4">
         <button onClick={onCancel} className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors">Cancel</button>
-        <button onClick={save} disabled={saving} className="px-5 py-2 bg-[#E8622A] hover:opacity-90 disabled:opacity-60 text-white text-sm font-semibold rounded-xl transition-all">
+        <button onClick={save} disabled={saving} className="btn-glow px-5 py-2 text-white text-sm font-semibold rounded-xl">
           {saving ? "Saving…" : client ? "Save changes" : "Create client"}
         </button>
       </div>

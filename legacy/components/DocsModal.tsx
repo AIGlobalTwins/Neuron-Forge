@@ -287,14 +287,18 @@ export function DocsModal({ onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div
-        className="relative z-10 bg-[#0d0d0d] border border-[#1e1e1e] rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden"
+        className="relative z-10 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden"
+        style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0)), #0a0a0c", border: "1px solid rgba(255,255,255,0.08)" }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Top light beam */}
+        <div className="pointer-events-none absolute -top-16 left-1/3 -translate-x-1/2 w-64 h-32 rounded-full blur-3xl bg-[#E8622A]/15" />
+
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-[#1e1e1e] flex-shrink-0">
+        <div className="relative flex items-center justify-between px-6 py-5 border-b border-[#1e1e1e] flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-500/20 to-gray-400/10 border border-gray-700/50 flex items-center justify-center">
-              <svg viewBox="0 0 20 20" className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#E8622A]/25 to-[#E8622A]/5 border border-[#E8622A]/30 flex items-center justify-center shadow-[0_0_14px_rgba(232,98,42,0.35)]">
+              <svg viewBox="0 0 20 20" className="w-4 h-4 text-[#E8622A]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 4H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4" />
                 <path d="M14 2l4 4-7 7H7v-4l7-7z" />
               </svg>

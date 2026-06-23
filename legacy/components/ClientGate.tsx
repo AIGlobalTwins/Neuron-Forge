@@ -73,7 +73,7 @@ export function ClientGate({ children }: { children: React.ReactNode }) {
       <div className="flex flex-wrap items-center justify-center gap-3 mb-9">
         <button
           onClick={() => setEditing(null)}
-          className="inline-flex items-center gap-2 px-5 py-3 bg-[#E8622A] hover:opacity-90 text-white text-sm font-semibold rounded-xl transition shadow-lg shadow-[#E8622A]/20 hover:-translate-y-0.5"
+          className="btn-glow inline-flex items-center gap-2 px-5 py-3 text-white text-sm font-semibold rounded-xl"
         >
           <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           Add client
@@ -95,13 +95,15 @@ export function ClientGate({ children }: { children: React.ReactNode }) {
               <button
                 key={c.id}
                 onClick={() => setActiveClientId(c.id)}
-                className="group text-left p-5 bg-white/[0.02] border border-white/[0.06] rounded-2xl hover:border-[#E8622A]/40 hover:bg-white/[0.04] hover:-translate-y-0.5 transition"
+                className="group relative overflow-hidden text-left p-5 rounded-2xl border border-white/[0.07] hover:border-[#E8622A]/40 hover:-translate-y-0.5 transition-all"
+                style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0)), #0b0b0d" }}
               >
-                <div className="w-10 h-10 rounded-xl bg-[#E8622A]/10 border border-[#E8622A]/20 flex items-center justify-center text-[#E8622A] font-semibold mb-3">
+                <span className="pointer-events-none absolute -top-12 left-1/2 -translate-x-1/2 w-40 h-24 rounded-full blur-3xl bg-[#E8622A]/0 group-hover:bg-[#E8622A]/15 transition-colors duration-500" />
+                <div className="relative w-10 h-10 rounded-xl bg-[#E8622A]/10 border border-[#E8622A]/30 flex items-center justify-center text-[#E8622A] font-semibold mb-3 transition-shadow group-hover:shadow-[0_0_14px_rgba(232,98,42,0.4)]">
                   {(c.name[0] || "C").toUpperCase()}
                 </div>
-                <div className="text-white font-semibold truncate">{c.name}</div>
-                <div className="text-xs text-gray-600 truncate">{c.category || "Client"}</div>
+                <div className="relative text-white font-semibold truncate">{c.name}</div>
+                <div className="relative text-xs text-gray-600 truncate">{c.category || "Client"}</div>
               </button>
             ))}
           </div>
