@@ -26,8 +26,15 @@ async function takeScreenshot(url: string): Promise<string> {
   try {
     const page = await browser.newPage();
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto(url, { waitUntil: "networkidle", timeout: 20_000 });
-    await page.waitForTimeout(1000);
+    try {
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    } catch {
+      // Even slower sites: settle for the first byte, then render below.
+      await page.goto(url, { waitUntil: "commit", timeout: 15_000 }).catch(() => {});
+    }
+    // Real sites rarely reach networkidle (analytics / chat / ads keep the network
+    // busy), so don't wait for it — give fonts/hero/images a fixed beat, then capture.
+    await page.waitForTimeout(3000);
     const buf = await page.screenshot({ fullPage: false });
     return buf.toString("base64");
   } finally {
