@@ -6,7 +6,6 @@ import fs from "fs";
 import path from "path";
 
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
-import { deployToVercel } from "@/lib/vercel-deploy";
 import { searchUnsplashImages, buildImageSearchQuery, validateImages } from "@/lib/image-search";
 import { planWebsite, formatPlanForPrompt } from "@/lib/website-planner";
 import { buildDesignBrief, formatDesignBriefForPrompt, darkThemeInstruction, heroGuidance } from "@/lib/design-engine";
@@ -662,15 +661,12 @@ Output ONLY raw HTML. No markdown. No explanations.`;
   const id = randomUUID();
   fs.writeFileSync(path.join(REDESIGN_DIR, `maps_${id}.html`), html, "utf-8");
 
-  // ── Deploy to Vercel (if token configured) ─────────────────────────────
-  const deployed = await deployToVercel(html, finalName);
-
-  console.log(`[maps] "${finalName}" | ${finalCategory} | ${Math.round(html.length / 1024)}KB | photos=${savedImageUrls.length}${deployed ? ` | deployed: ${deployed.url}` : ""}`);
+  console.log(`[maps] "${finalName}" | ${finalCategory} | ${Math.round(html.length / 1024)}KB | photos=${savedImageUrls.length}`);
 
   // Persist to history server-side — the client navigates to the site before its save lands.
   await (await import("@/lib/supabase/server")).saveGenerationServer(userId, "maps", finalName, { category: finalCategory, websiteId: id }, clientId);
 
-  return NextResponse.json({ id, name: finalName, category: finalCategory, address: finalAddress, deployUrl: deployed?.url ?? null });
+  return NextResponse.json({ id, name: finalName, category: finalCategory, address: finalAddress });
   } catch (err) {
     console.error("[maps] unhandled error:", err);
     const raw = (err as Error).message || "";

@@ -14,7 +14,6 @@ export const DEFAULT_MODEL = "claude-sonnet-4-6";
 
 export interface AppSettings {
   anthropicApiKey: string;
-  vercelToken: string;
   claudeModel: string;
   instagramToken: string;
   instagramAccountId: string;
@@ -32,7 +31,6 @@ export interface AppSettings {
 
 const DEFAULTS: AppSettings = {
   anthropicApiKey: "",
-  vercelToken: "",
   claudeModel: DEFAULT_MODEL,
   instagramToken: "",
   instagramAccountId: "",
@@ -95,12 +93,6 @@ export function getAnthropicKey(userId?: string | null): string {
   const own = readSettings(userId).anthropicApiKey;
   if (own) return own;
   return requireOwnKeys() ? "" : process.env.ANTHROPIC_API_KEY || "";
-}
-
-export function getVercelToken(userId?: string | null): string {
-  const own = readSettings(userId).vercelToken;
-  if (own) return own;
-  return requireOwnKeys() ? "" : process.env.VERCEL_TOKEN || "";
 }
 
 export function getClaudeModel(userId?: string | null): string {

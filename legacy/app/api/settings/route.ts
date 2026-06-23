@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readSettings, writeSettings, getGoogleConnection, getGoogleClientId, clearGoogleConnection, getAnthropicKey, getVercelToken, getInstagramToken, getInstagramAccountId } from "@/lib/settings";
+import { readSettings, writeSettings, getGoogleConnection, getGoogleClientId, clearGoogleConnection, getAnthropicKey, getInstagramToken, getInstagramAccountId } from "@/lib/settings";
 import { PRODUCT_SCOPES, type GoogleProduct } from "@/lib/google";
 
 // Which products a connection covers, derived from the granted scopes.
@@ -28,12 +28,10 @@ export async function GET() {
   const gc = getGoogleConnection(userId);
   return NextResponse.json({
     anthropicApiKey: s.anthropicApiKey ? maskKey(s.anthropicApiKey) : "",
-    vercelToken: s.vercelToken ? maskKey(s.vercelToken) : "",
     claudeModel: s.claudeModel || "claude-sonnet-4-6",
     // has* reflect the resolved value (settings file OR environment variable),
     // so a key set via Render env vars correctly clears the "No API Key" banner.
     hasAnthropicKey: !!getAnthropicKey(userId),
-    hasVercelToken: !!getVercelToken(userId),
     hasInstagramToken: !!getInstagramToken(userId),
     hasInstagramAccountId: !!getInstagramAccountId(userId),
     instagramAccountId: s.instagramAccountId ? maskKey(s.instagramAccountId) : "",
@@ -54,9 +52,6 @@ export async function POST(req: NextRequest) {
 
   if (typeof body.anthropicApiKey === "string" && body.anthropicApiKey.trim()) {
     update.anthropicApiKey = body.anthropicApiKey.trim();
-  }
-  if (typeof body.vercelToken === "string") {
-    update.vercelToken = body.vercelToken.trim();
   }
   if (typeof body.instagramToken === "string") {
     update.instagramToken = body.instagramToken.trim();

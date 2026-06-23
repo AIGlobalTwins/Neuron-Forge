@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { safeJson } from "@/lib/api";
 import { useClientWorkspace } from "@/lib/client-context";
+import { PublishButton } from "@/components/PublishButton";
 import { DesignTypePicker } from "@/components/DesignTypePicker";
 import type { BusinessLocation } from "@/lib/google-api";
 
@@ -521,6 +522,7 @@ export function GoogleMapsModal({ onClose }: Props) {
                 >
                   Open Full Page ↗
                 </a>
+                <PublishButton websiteId={result.id} name={result.name || "site"} />
               </div>
             </div>
 

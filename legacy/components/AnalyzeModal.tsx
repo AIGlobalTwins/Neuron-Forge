@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { DesignTypePicker } from "@/components/DesignTypePicker";
 import { safeJson } from "@/lib/api";
 import { useClientWorkspace } from "@/lib/client-context";
+import { PublishButton } from "@/components/PublishButton";
 
 interface Props {
   onClose: () => void;
@@ -309,6 +310,7 @@ export function AnalyzeModal({ onClose }: Props) {
                 >
                   Open Full Page ↗
                 </a>
+                <PublishButton websiteId={result.id} name={name || "site"} />
               </div>
             </div>
 

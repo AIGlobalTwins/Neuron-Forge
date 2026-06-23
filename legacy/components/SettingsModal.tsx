@@ -13,7 +13,6 @@ const S = {
     modelTitle: "Modelo de IA",
     modelDesc: "O modelo usado por todos os agentes. Modelos mais capazes produzem melhores resultados mas são mais lentos.",
     modelDescs: ["Mais capaz — melhor qualidade", "Muito capaz — topo anterior", "Equilibrado — rápido e capaz", "Mais rápido e barato"],
-    vercelDesc: "Opcional. Para deploy automático dos websites gerados. Obtém em",
     securityNote: "Keys are stored locally on the server and never leave your machine. They are only used to authenticate API requests.",
     saving: "Saving...", saved: "Saved!", save: "Save Settings",
   },
@@ -25,7 +24,6 @@ const S = {
     modelTitle: "Model",
     modelDesc: "The model used by all agents. More capable models produce better results but are slower.",
     modelDescs: ["Most capable — best quality", "Very capable — previous flagship", "Balanced — fast and capable", "Fastest and cheapest"],
-    vercelDesc: "Optional. For automatic deployment of generated websites. Get it at",
     securityNote: "Keys are stored locally on the server and never leave your machine. They are only used to authenticate API requests.",
     saving: "Saving...", saved: "Saved!", save: "Save Settings",
   },
@@ -63,12 +61,9 @@ export function SettingsModal({ onClose }: Props) {
   const lang = useLang();
   const t = S[lang];
   const [anthropicKey, setAnthropicKey] = useState("");
-  const [vercelToken, setVercelToken] = useState("");
   const [claudeModel, setClaudeModel] = useState("claude-sonnet-4-6");
   const [showAnthropic, setShowAnthropic] = useState(false);
-  const [showVercel, setShowVercel] = useState(false);
   const [hasAnthropicKey, setHasAnthropicKey] = useState(false);
-  const [hasVercelToken, setHasVercelToken] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -90,7 +85,6 @@ export function SettingsModal({ onClose }: Props) {
       .then((r) => safeJson(r))
       .then((data) => {
         setHasAnthropicKey(data.hasAnthropicKey);
-        setHasVercelToken(data.hasVercelToken);
         if (data.claudeModel) setClaudeModel(data.claudeModel);
         setHasGoogleClientId(data.hasGoogleClientId);
         setHasGoogleClientSecret(data.hasGoogleClientSecret);
@@ -149,7 +143,6 @@ export function SettingsModal({ onClose }: Props) {
     try {
       const payload: Record<string, string> = { claudeModel };
       if (anthropicKey) payload.anthropicApiKey = anthropicKey;
-      if (vercelToken) payload.vercelToken = vercelToken;
       if (googleClientId) payload.googleClientId = googleClientId;
       if (googleClientSecret) payload.googleClientSecret = googleClientSecret;
       const res = await fetch("/api/settings", {
@@ -160,11 +153,9 @@ export function SettingsModal({ onClose }: Props) {
       if (!res.ok) throw new Error("Failed to save");
       setSaved(true);
       if (anthropicKey) setHasAnthropicKey(true);
-      if (vercelToken) setHasVercelToken(true);
       if (googleClientId) setHasGoogleClientId(true);
       if (googleClientSecret) setHasGoogleClientSecret(true);
       setAnthropicKey("");
-      setVercelToken("");
       setGoogleClientId("");
       setGoogleClientSecret("");
       setTimeout(() => setSaved(false), 3000);
@@ -269,41 +260,6 @@ export function SettingsModal({ onClose }: Props) {
                   </div>
                 </button>
               ))}
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="border-t border-[#1a1a1a]" />
-
-          {/* Vercel */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-gray-300">Vercel Token</label>
-              {hasVercelToken && (
-                <span className="flex items-center gap-1 text-[10px] text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
-                  <CheckIcon /> {t.configured}
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-gray-600 mb-3">
-              {t.vercelDesc}{" "}
-              <span className="text-[#E8622A]">vercel.com/account/tokens</span>
-            </p>
-            <div className="relative">
-              <input
-                type={showVercel ? "text" : "password"}
-                value={vercelToken}
-                onChange={(e) => setVercelToken(e.target.value)}
-                placeholder={hasVercelToken ? t.keepPlaceholder : "vck_..."}
-                className="w-full bg-[#111] border border-[#2a2a2a] rounded-xl px-4 py-3 pr-10 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#E8622A]/50 focus:ring-1 focus:ring-[#E8622A]/20 transition-colors"
-              />
-              <button
-                type="button"
-                onClick={() => setShowVercel((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400 transition-colors"
-              >
-                <EyeIcon open={showVercel} />
-              </button>
             </div>
           </div>
 

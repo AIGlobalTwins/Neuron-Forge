@@ -6,7 +6,6 @@ import fs from "fs";
 import path from "path";
 
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
-import { deployToVercel } from "@/lib/vercel-deploy";
 import { searchUnsplashImages, buildImageSearchQuery, validateImages } from "@/lib/image-search";
 import { deriveDesignDirection } from "@/lib/website-planner";
 import { buildDesignBrief, formatDesignBriefForPrompt, darkThemeInstruction, heroGuidance } from "@/lib/design-engine";
@@ -713,10 +712,7 @@ export async function POST(req: NextRequest) {
   const id = randomUUID();
   fs.writeFileSync(path.join(REDESIGN_DIR, `analyze_${id}.html`), html, "utf-8");
 
-  // 6. Deploy to Vercel (if token configured)
-  const deployed = await deployToVercel(html, analysis.businessName);
-
-  console.log(`[analyze] ${analysis.businessName} | score=${analysis.score} | pages=${crawlResult.pages.length} | ${Math.round(html.length / 1024)}KB${deployed ? ` | deployed: ${deployed.url}` : ""}`);
+  console.log(`[analyze] ${analysis.businessName} | score=${analysis.score} | pages=${crawlResult.pages.length} | ${Math.round(html.length / 1024)}KB`);
 
   // Persist to history server-side — the client navigates to the generated site
   // before a fire-and-forget client save can complete.
@@ -736,7 +732,6 @@ export async function POST(req: NextRequest) {
       colors: { primary: analysis.primaryColor, accent: analysis.accentColor },
     },
     htmlSize: html.length,
-    deployUrl: deployed?.url ?? null,
   });
   } catch (err) {
     console.error("[analyze] unhandled error:", err);
