@@ -46,6 +46,7 @@ export function GoogleMapsModal({ onClose }: Props) {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [instructions, setInstructions] = useState("");
   const [styleRef, setStyleRef] = useState("");
+  const [booking, setBooking] = useState(false);
   const [designType, setDesignType] = useState("auto");
   const [loadingStep, setLoadingStep] = useState(0);
   const [result, setResult] = useState<Result | null>(null);
@@ -195,6 +196,7 @@ export function GoogleMapsModal({ onClose }: Props) {
           clientId: activeClient?.id ?? null,
           clientProfile: activeClient ?? null,
           styleRef: styleRef || null,
+          booking,
         }),
       });
 
@@ -422,6 +424,14 @@ export function GoogleMapsModal({ onClose }: Props) {
             <div>
               <StyleRefDrop value={styleRef} onChange={setStyleRef} />
             </div>
+
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <span className="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors" style={{ background: booking ? "#E8622A" : "#2a2a2a" }}>
+                <span className="inline-block h-4 w-4 rounded-full bg-white transition-transform" style={{ transform: booking ? "translateX(18px)" : "translateX(2px)" }} />
+              </span>
+              <span className="text-xs text-gray-300">Online booking — add an appointment calendar (confirms via WhatsApp)</span>
+              <input type="checkbox" checked={booking} onChange={(e) => setBooking(e.target.checked)} className="hidden" />
+            </label>
 
             {/* Actions */}
             <div className="flex gap-3 pt-1">

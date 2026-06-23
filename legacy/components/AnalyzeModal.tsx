@@ -51,6 +51,7 @@ export function AnalyzeModal({ onClose }: Props) {
   const [instructions, setInstructions] = useState("");
   const [designType, setDesignType] = useState("auto");
   const [styleRef, setStyleRef] = useState("");
+  const [booking, setBooking] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [result, setResult] = useState<AnalyzeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -99,7 +100,7 @@ export function AnalyzeModal({ onClose }: Props) {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: url.trim(), name: name.trim() || url, category, instructions: instructions.trim(), designType, clientId: activeClient?.id ?? null, clientProfile: activeClient ?? null, styleRef: styleRef || null }),
+        body: JSON.stringify({ url: url.trim(), name: name.trim() || url, category, instructions: instructions.trim(), designType, clientId: activeClient?.id ?? null, clientProfile: activeClient ?? null, styleRef: styleRef || null, booking }),
       });
 
       const data = await safeJson(res);
@@ -195,6 +196,14 @@ export function AnalyzeModal({ onClose }: Props) {
             <div className="mt-4">
               <StyleRefDrop value={styleRef} onChange={setStyleRef} />
             </div>
+
+            <label className="mt-4 flex items-center gap-3 cursor-pointer select-none">
+              <span className="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors" style={{ background: booking ? "#E8622A" : "#2a2a2a" }}>
+                <span className="inline-block h-4 w-4 rounded-full bg-white transition-transform" style={{ transform: booking ? "translateX(18px)" : "translateX(2px)" }} />
+              </span>
+              <span className="text-xs text-gray-300">Online booking — add an appointment calendar (confirms via WhatsApp)</span>
+              <input type="checkbox" checked={booking} onChange={(e) => setBooking(e.target.checked)} className="hidden" />
+            </label>
 
             <div>
               <label className="block text-xs text-gray-500 mb-1.5 uppercase tracking-wide">

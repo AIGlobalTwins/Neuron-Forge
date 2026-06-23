@@ -17,6 +17,7 @@ import { pageNav, multipagePromptBlock, PAGE_BOOT, type NavPage } from "@/lib/mu
 import { siteGuard } from "@/lib/site-guard";
 import { buildBusinessContext, type BusinessProfile } from "@/lib/business-context";
 import { styleImageBlock, STYLE_DIRECTIVE } from "@/lib/style-ref";
+import { BOOKING_SECTION_SPEC } from "@/lib/booking-spec";
 
 // On the mounted disk (/app/data) so generated-site previews survive redeploys.
 const REDESIGN_DIR = "./data/redesigns";
@@ -683,7 +684,7 @@ OUTPUT: ONLY the complete HTML starting with <!DOCTYPE html>. No markdown fences
 export async function POST(req: NextRequest) {
   try {
   const body = await req.json().catch(() => ({}));
-  const { url, name = "", category = "Business", address = "", phone = "", email = "", instructions = "", designType = "auto", clientId = null, clientProfile = null, styleRef = null } = body;
+  const { url, name = "", category = "Business", address = "", phone = "", email = "", instructions = "", designType = "auto", clientId = null, clientProfile = null, styleRef = null, booking = false } = body;
   const businessContext = buildBusinessContext(clientProfile as BusinessProfile | null);
 
   if (!url) return NextResponse.json({ error: "url required" }, { status: 400 });
@@ -733,7 +734,8 @@ export async function POST(req: NextRequest) {
   // 4. Generate redesign — pass an optional reference design (vision) to match.
   let html = "";
   try {
-    html = await withOverloadRetry(() => generateRedesign(anthropic, analysis, crawlResult.pages, url, category, instructions, claudeModel, designType, businessContext, styleRef ? String(styleRef) : ""));
+    const bookingBlock = booking ? `\n\nALSO ADD AN ONLINE BOOKING SECTION:\n${BOOKING_SECTION_SPEC}` : "";
+    html = await withOverloadRetry(() => generateRedesign(anthropic, analysis, crawlResult.pages, url, category, instructions, claudeModel, designType, businessContext + bookingBlock, styleRef ? String(styleRef) : ""));
   } catch (err) {
     return NextResponse.json({ error: `Redesign failed: ${(err as Error).message}` }, { status: 500 });
   }
