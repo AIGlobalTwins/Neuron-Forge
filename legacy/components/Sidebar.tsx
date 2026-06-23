@@ -66,7 +66,7 @@ export function Sidebar({ lang, toggleLang, hasKey, onHistory, onDocs, onSetting
           <svg viewBox="0 0 20 20" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h14M3 10h10M3 14h7" /></svg>
         } />
         <NavItem collapsed={collapsed} onClick={onSettings} label={t.settings} icon={
-          <svg viewBox="0 0 20 20" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M13.5 2.5a3 3 0 0 1 0 4.2L5 15.2 2 18l2.8-3 8.5-8.5a3 3 0 0 1 .2-4z" /><path d="M11.5 4.5l3 3" /><circle cx="4.5" cy="15.5" r="1.5" /></svg>
+          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3.2" /><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1l-.4-2.6h-3.8l-.4 2.6a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1l.4 2.6h3.8l.4-2.6a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6z" /></svg>
         } />
         <NavItem collapsed={collapsed} onClick={onDocs} label={t.docs} icon={
           <svg viewBox="0 0 20 20" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h12v12H4z" /><path d="M7 8h6M7 11h4" /></svg>
