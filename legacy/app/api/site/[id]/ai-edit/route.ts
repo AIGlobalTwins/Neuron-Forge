@@ -78,12 +78,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const prompt = `You are an expert web designer editing an existing single-file HTML website. Apply ONLY the change the user asks for, then return the COMPLETE updated HTML document — nothing else (no markdown fences, no explanation).
 
 RULES:
-- Preserve everything not related to the request: structure, ALL <script> blocks (hash router, motion, site-guard, WhatsApp logic), and any integration blocks between <!-- nf:... --> markers. Never remove these.
+- SURGICAL EDIT — change ONLY what the request asks. Return the COMPLETE document with EVERY existing section, heading, paragraph, image and <script> kept intact and in the same order. Do NOT delete, shorten, summarise, rebuild from scratch, or omit ANY content the request did not explicitly ask to change. The output must be at least as long as the input unless the user explicitly asked to remove something.
+- If the request is ambiguous, or you are not sure exactly which element to change, make the SMALLEST safe change (or none) and keep everything else byte-for-byte — NEVER guess by deleting or regenerating sections.
+- Preserve structure, ALL <script> blocks (hash router, motion, site-guard, WhatsApp logic), and any integration blocks between <!-- nf:... --> markers. Never remove these.
 - Every button/link must point to a REAL target: an existing page route (#/name, where a matching <div data-page="name"> exists), tel:/mailto:/a wa.me link, or an existing #id to scroll to. Never output href="#" or a route to a page that does not exist. If you add a new page, also add its <div data-page="..."> section and a matching nav entry.
-- Keep it ONE self-contained HTML file (inline CSS/JS; images stay as their URLs).
-- Make the result polished, modern and responsive. Improve visual hierarchy, spacing and typography where it helps.
-- If the request is vague (e.g. "make it better"), elevate the design (hero, contrast, whitespace, type scale) without changing the meaning of the content.
-- Keep the same language as the site.
+- Maps: use a key-less embed — <iframe src="https://www.google.com/maps?q=ADDRESS&output=embed">. Never use the Google Maps Embed API (/maps/embed/v1) or any key=.
+- Keep it ONE self-contained HTML file (inline CSS/JS; images stay as their URLs). Keep the same language as the site.
+- For a "make it better" request, improve styling (spacing, contrast, type scale) IN PLACE — do not remove sections or content.
 
 USER REQUEST: ${instruction}
 
@@ -115,6 +116,34 @@ Return ONLY the full updated HTML document, starting with <!DOCTYPE html>.`;
   // Safety: only overwrite if it really looks like a full HTML document.
   if (out.length < 500 || !/<html[\s>]/i.test(out) || !/<\/body>/i.test(out)) {
     return NextResponse.json({ error: "The edit didn't produce a valid page. Try rephrasing." }, { status: 422 });
+  }
+
+  // Preservation guard: unless the user explicitly asked to remove something, refuse an
+  // edit that wipes out a large chunk of the site (the model rebuilding from scratch and
+  // dropping sections). Ask for specifics instead of nuking the page.
+  const removalIntent = /\b(remov|apag|delete|elimin|tira|tirar|retir)/i.test(instruction);
+  if (!removalIntent) {
+    const strip = (h: string) => h.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    const count = (h: string, re: RegExp) => (h.match(re) || []).length;
+    const inText = strip(html).length;
+    const outText = strip(out).length;
+    const inSec = count(html, /<section\b/gi) + count(html, /data-page=/gi);
+    const outSec = count(out, /<section\b/gi) + count(out, /data-page=/gi);
+    const inImg = count(html, /<img\b/gi);
+    const outImg = count(out, /<img\b/gi);
+    const lostText = inText > 400 && outText < inText * 0.6;
+    const lostSecs = inSec >= 3 && outSec < inSec * 0.6;
+    const lostImgs = inImg >= 3 && outImg < inImg * 0.5;
+    if (lostText || lostSecs || lostImgs) {
+      return NextResponse.json(
+        {
+          error:
+            'Não apliquei: a edição ia remover grande parte do site. Sê mais específico — diz a secção e o que mudar (ex: "na secção Contacto, corrige o mapa"), ou anexa um print do que queres alterado. Para mudanças cirúrgicas usa "Fine-tune manually" e seleciona o elemento.',
+          needsDetail: true,
+        },
+        { status: 422 },
+      );
+    }
   }
 
   try {
