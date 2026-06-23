@@ -25,15 +25,45 @@ export function siteGuard(opts: { waUrl?: string; contactHref?: string; waLabel?
   function go(){ location.hash=CONTACT.replace(/^#/,''); }
   function run(){
     try{
+      // Known views (router pages) + their first one (home).
+      var pageSet={}, firstPage='';
+      document.querySelectorAll('[data-page]').forEach(function(p){var n=p.getAttribute('data-page')||'';pageSet[n]=1;if(!firstPage)firstPage=n;});
+      function guessPage(txt){
+        txt=(txt||'').toLowerCase();
+        for(var n in pageSet){ if(n && txt.indexOf(n.toLowerCase())>=0) return n; }
+        return '';
+      }
       document.querySelectorAll('a').forEach(function(a){
         var h=(a.getAttribute('href')||'').trim();
-        if(h===''||h==='#'||h.toLowerCase().indexOf('javascript:')===0) a.setAttribute('href',CONTACT);
+        // 1) Empty / placeholder → contact.
+        if(h===''||h==='#'||h.toLowerCase().indexOf('javascript:')===0){ a.setAttribute('href',CONTACT); return; }
+        // 2) Real protocols / external / wa.me → leave alone.
+        if(/^(tel:|mailto:|https?:|\\/\\/)/i.test(h) || h.indexOf('wa.me')>=0) return;
+        if(h.charAt(0)!=='#') return;
+        // 3) Page route #/name — if the page doesn't exist, remap (by link text, else home).
+        var rm=h.match(/^#\\/([^#]+)/);
+        if(rm){
+          if(firstPage && !pageSet[rm[1]]){ a.setAttribute('href','#/'+(guessPage(a.textContent)||firstPage)); }
+          return;
+        }
+        // 4) Plain #anchor — only valid if the element exists; else remap to a page or contact.
+        var id=h.slice(1);
+        if(id && !document.getElementById(id)){
+          var g=guessPage(a.textContent);
+          a.setAttribute('href', g?('#/'+g):CONTACT);
+        }
       });
       document.querySelectorAll('button').forEach(function(b){
         var t=(b.getAttribute('type')||'').toLowerCase();
         if(t==='submit'||t==='reset')return;
-        if(b.hasAttribute('onclick')||b.id==='hamburger'||b.hasAttribute('data-dropdown-toggle'))return;
+        if(b.id==='hamburger'||b.hasAttribute('data-dropdown-toggle'))return;
         if(b.closest('a'))return;
+        if(b.hasAttribute('onclick')){
+          // A handler exists but may be broken — add a safe fallback that only fires
+          // if the click didn't already navigate/scroll.
+          b.addEventListener('click',function(){var y=window.scrollY;setTimeout(function(){if(window.scrollY===y && (location.hash||'')==='')go();},120);});
+          return;
+        }
         b.addEventListener('click',go);
       });
       document.querySelectorAll('form').forEach(function(f){

@@ -79,6 +79,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
 RULES:
 - Preserve everything not related to the request: structure, ALL <script> blocks (hash router, motion, site-guard, WhatsApp logic), and any integration blocks between <!-- nf:... --> markers. Never remove these.
+- Every button/link must point to a REAL target: an existing page route (#/name, where a matching <div data-page="name"> exists), tel:/mailto:/a wa.me link, or an existing #id to scroll to. Never output href="#" or a route to a page that does not exist. If you add a new page, also add its <div data-page="..."> section and a matching nav entry.
 - Keep it ONE self-contained HTML file (inline CSS/JS; images stay as their URLs).
 - Make the result polished, modern and responsive. Improve visual hierarchy, spacing and typography where it helps.
 - If the request is vague (e.g. "make it better"), elevate the design (hero, contrast, whitespace, type scale) without changing the meaning of the content.
