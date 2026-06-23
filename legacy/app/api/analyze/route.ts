@@ -20,6 +20,23 @@ import { buildBusinessContext, type BusinessProfile } from "@/lib/business-conte
 // On the mounted disk (/app/data) so generated-site previews survive redeploys.
 const REDESIGN_DIR = "./data/redesigns";
 
+// Anthropic 529 "Overloaded" + transient 429/502/503 are common on Opus — retry
+// the whole call with backoff before failing the generation.
+async function withOverloadRetry<T>(fn: () => Promise<T>, tries = 4): Promise<T> {
+  const delays = [1500, 4000, 9000];
+  for (let i = 0; ; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      const status = (e as { status?: number })?.status;
+      const msg = String((e as Error)?.message || "");
+      const transient = status === 529 || status === 429 || status === 503 || status === 502 || /overloaded|rate.?limit|\b(529|503|502)\b/i.test(msg);
+      if (!transient || i >= tries - 1) throw e;
+      await new Promise((r) => setTimeout(r, delays[i] ?? 9000));
+    }
+  }
+}
+
 // ── Step 1: Screenshot ────────────────────────────────────────────────────
 async function takeScreenshot(url: string): Promise<string> {
   const browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
@@ -689,9 +706,11 @@ export async function POST(req: NextRequest) {
   // 3. Vision analysis
   let analysis: SiteAnalysis;
   try {
-    analysis = await analyzeWithVision(anthropic, screenshotBase64, crawlResult.home, url, name, category, crawlResult.pages, crawlResult.source, claudeModel);
+    analysis = await withOverloadRetry(() => analyzeWithVision(anthropic, screenshotBase64, crawlResult.home, url, name, category, crawlResult.pages, crawlResult.source, claudeModel));
   } catch (err) {
-    return NextResponse.json({ error: `Analysis failed: ${(err as Error).message}` }, { status: 500 });
+    const m = String((err as Error).message || "");
+    if (/overloaded|\b529\b/i.test(m)) return NextResponse.json({ error: "Anthropic is overloaded right now — please try again in a moment." }, { status: 503 });
+    return NextResponse.json({ error: `Analysis failed: ${m}` }, { status: 500 });
   }
 
   // Merge provided overrides + crawl data
@@ -705,7 +724,7 @@ export async function POST(req: NextRequest) {
   // 4. Generate redesign
   let html = "";
   try {
-    html = await generateRedesign(anthropic, analysis, crawlResult.pages, url, category, instructions, claudeModel, designType, businessContext);
+    html = await withOverloadRetry(() => generateRedesign(anthropic, analysis, crawlResult.pages, url, category, instructions, claudeModel, designType, businessContext));
   } catch (err) {
     return NextResponse.json({ error: `Redesign failed: ${(err as Error).message}` }, { status: 500 });
   }
