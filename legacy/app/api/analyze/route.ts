@@ -512,13 +512,13 @@ ${s.content || "(generate relevant content based on business type)"}
     { name: "contacto", label: "Contacto" },
   ];
   const pageMapping = isFood
-    ? `- "inicio": the HERO section and the WHY-US (+ stats) section.
-- "${servId}": the MENU SHOWCASE section (id="menu").
+    ? `- "inicio": the HERO section, then a CONDENSED MENU HIGHLIGHTS teaser (3-4 popular dishes as cards with a "Ver menu completo →" link to #/${servId}), then the WHY-US (+ stats) section, then a short CONTACT TEASER block (address, phone, opening hours + a "Marcar / Contactar" button to #/contacto). The home page MUST summarise the whole business — never leave it as just a hero.
+- "${servId}": the full MENU SHOWCASE section (id="menu").
 - "sobre": the ABOUT / story section (id="services")${showTeam ? " and the TEAM section" : ""}.
 - "contacto": the CONTACT section.
 The <footer> stays OUTSIDE the page containers (shared across all pages), after the last container.`
-    : `- "inicio": the HERO section and the WHY-US (+ stats) section.
-- "${servId}": the SERVICES SHOWCASE section (id="services") and every ORIGINAL SECTION listed above.
+    : `- "inicio": the HERO section, then a CONDENSED SERVICES teaser (3-4 key services as cards with a "Ver todos os serviços →" link to #/${servId}), then the WHY-US (+ stats) section, then a short CONTACT TEASER block (address, phone, email + a "Contactar" button to #/contacto). The home page MUST summarise the whole business — never leave it as just a hero.
+- "${servId}": the full SERVICES SHOWCASE section (id="services") and every ORIGINAL SECTION listed above.
 - "sobre": write a short authentic "Sobre" section for ${analysis.businessName} (2-3 paragraphs about the business + a few values/highlights)${showTeam ? " and the TEAM section" : ""}.
 - "contacto": the CONTACT section.
 The <footer> stays OUTSIDE the page containers (shared across all pages), after the last container.`;
@@ -666,9 +666,10 @@ OUTPUT: ONLY the complete HTML starting with <!DOCTYPE html>. No markdown fences
   const lastStyleClose = html.lastIndexOf("</style>");
   if (lastStyleOpen > -1 && lastStyleClose < lastStyleOpen) html += "\n}</style>";
 
-  // Inject the deterministic motion layer before closing the body.
-  html += "\n" + MOTION_SCRIPT;
+  // Inject scripts: router first (so pages register), then motion, then the link
+  // safety guard last (so it sees the final DOM).
   html += "\n" + PAGE_BOOT;
+  html += "\n" + MOTION_SCRIPT;
   html += "\n" + siteGuard({ waUrl, contactHref: "#/contacto" });
 
   if (!html.includes("</body>")) html += "\n</body>";

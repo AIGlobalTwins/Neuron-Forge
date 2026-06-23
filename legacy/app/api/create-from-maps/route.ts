@@ -577,7 +577,7 @@ Stop after the ${isFood ? "ABOUT" : "WHY US"} closing </section>. Do NOT add </b
   const styleBlock = styleImageBlock(styleRef ? String(styleRef) : "");
   const res1 = await anthropic.messages.create({
     model: claudeModel,
-    max_tokens: 8000,
+    max_tokens: 12000,
     messages: [{ role: "user", content: [...(styleBlock ? [styleBlock] : []), ...imageBlocks, { type: "text", text: prompt1 + (styleBlock ? STYLE_DIRECTIVE : "") }] }],
   });
   let part1 = res1.content[0].type === "text" ? res1.content[0].text.trim() : "";
@@ -645,7 +645,7 @@ Output ONLY raw HTML. No markdown. No explanations.`;
 
   const res2 = await anthropic.messages.create({
     model: claudeModel,
-    max_tokens: 8000,
+    max_tokens: 12000,
     messages: [{ role: "user", content: prompt2 }],
   });
   let part2 = res2.content[0].type === "text" ? res2.content[0].text.trim() : "";

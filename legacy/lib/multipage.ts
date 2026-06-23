@@ -19,7 +19,7 @@ export interface NavPage {
 
 /** CSS (hide inactive pages, no-JS shows the .active home) + the hash router. */
 export const PAGE_BOOT = `
-<style>[data-page]:not(.active){display:none!important}.nav-active{color:var(--nf-accent,#111);font-weight:700}[data-dropdown]{transition:opacity .15s}</style>
+<style>[data-page]:not(.active){display:none!important}.nav-active{color:var(--accent,var(--primary,inherit));font-weight:700}[data-dropdown]{transition:opacity .15s}</style>
 <script>(function(){
   function pages(){return Array.prototype.slice.call(document.querySelectorAll('[data-page]'));}
   function show(name){

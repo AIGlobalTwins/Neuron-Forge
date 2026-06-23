@@ -16,7 +16,7 @@ export function styleImageBlock(input?: string | null): { type: "image"; source:
 }
 
 export const STYLE_DIRECTIVE =
-  "\n\nThe first attached image is a DESIGN REFERENCE supplied by the user. Recreate its visual design closely for THIS business: the overall layout & section structure, colour palette, typography (families / weights / scale), button and card styles, spacing & density, hero treatment, and overall mood. Use ORIGINAL content (never copy any text or logos from the image). This reference takes PRIORITY over the default style.";
+  "\n\n>>> HIGHEST-PRIORITY STYLE OVERRIDE <<<\nThe first attached image is the user's DESIGN REFERENCE and it OVERRIDES every default style rule stated above — the design type, palette, fonts, corner radius, spacing and layout defaults. Recreate the reference's look & feel for THIS business: overall layout & section structure, colour palette (sample the actual colours), typography (families / weights / scale), button and card styles, spacing & density, hero treatment, and overall mood. If the reference conflicts with ANY default above, the REFERENCE WINS. Use ORIGINAL content for this business — never copy text or logos from the image.";
 
 // Turn a user-supplied reference design (a Dribbble shot, a screenshot of a site
 // they like) into a concise DESIGN DIRECTION brief that the website generators
