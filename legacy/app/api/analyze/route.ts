@@ -17,7 +17,7 @@ import { pageNav, multipagePromptBlock, serviceSlug, PAGE_BOOT, type NavPage } f
 import { siteGuard } from "@/lib/site-guard";
 import { buildBusinessContext, type BusinessProfile } from "@/lib/business-context";
 import { styleImageBlock, STYLE_DIRECTIVE } from "@/lib/style-ref";
-import { BOOKING_SECTION_SPEC } from "@/lib/booking-spec";
+import { injectBooking } from "@/lib/booking-widget";
 
 // On the mounted disk (/app/data) so generated-site previews survive redeploys.
 const REDESIGN_DIR = "./data/redesigns";
@@ -739,8 +739,7 @@ export async function POST(req: NextRequest) {
   // 4. Generate redesign — pass an optional reference design (vision) to match.
   let html = "";
   try {
-    const bookingBlock = booking ? `\n\nALSO ADD AN ONLINE BOOKING SECTION:\n${BOOKING_SECTION_SPEC}` : "";
-    html = await withOverloadRetry(() => generateRedesign(anthropic, analysis, crawlResult.pages, url, category, instructions, claudeModel, designType, businessContext + bookingBlock, styleRef ? String(styleRef) : ""));
+    html = await withOverloadRetry(() => generateRedesign(anthropic, analysis, crawlResult.pages, url, category, instructions, claudeModel, designType, businessContext, styleRef ? String(styleRef) : ""));
   } catch (err) {
     return NextResponse.json({ error: `Redesign failed: ${(err as Error).message}` }, { status: 500 });
   }
@@ -748,6 +747,8 @@ export async function POST(req: NextRequest) {
   if (html.length < 3000) {
     return NextResponse.json({ error: "Generated HTML too short — try again" }, { status: 500 });
   }
+
+  if (booking) html = injectBooking(html, { waUrl: waLink(analysis.phone, "") });
 
   // 5. Save
   if (!fs.existsSync(REDESIGN_DIR)) fs.mkdirSync(REDESIGN_DIR, { recursive: true });

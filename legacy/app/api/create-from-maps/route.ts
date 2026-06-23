@@ -15,7 +15,7 @@ import { waLink, whatsappPromptBlock } from "@/lib/phone";
 import { siteGuard } from "@/lib/site-guard";
 import { buildBusinessContext, type BusinessProfile } from "@/lib/business-context";
 import { styleImageBlock, STYLE_DIRECTIVE } from "@/lib/style-ref";
-import { BOOKING_SECTION_SPEC } from "@/lib/booking-spec";
+import { injectBooking } from "@/lib/booking-widget";
 
 // On the mounted disk (/app/data) so generated-site previews survive redeploys.
 const REDESIGN_DIR = "./data/redesigns";
@@ -423,7 +423,7 @@ Brand personality: ${plan.brandPersonality}
 Hero image: ${heroImage}
 Fonts: heading="${fonts.heading}" body="${fonts.body}"
 ${whatsappBlock ? `\n${whatsappBlock}` : ""}
-${businessContext}${booking ? `\n\nALSO ADD AN ONLINE BOOKING SECTION:\n${BOOKING_SECTION_SPEC}` : ""}
+${businessContext}
 `.trim();
 
   const darkBlock = darkThemeInstruction(brief);
@@ -657,11 +657,13 @@ Output ONLY raw HTML. No markdown. No explanations.`;
   part2 = part2.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
 
   // ── Combine parts ──────────────────────────────────────────────────────
-  const html = fixHtml(part1, part2, siteGuard({ waUrl, contactHref: "#contact" }));
+  let html = fixHtml(part1, part2, siteGuard({ waUrl, contactHref: "#contact" }));
 
   if (html.length < 3000) {
     return NextResponse.json({ error: "Generated HTML too short — try again" }, { status: 500 });
   }
+
+  if (booking) html = injectBooking(html, { waUrl });
 
   // ── Save ───────────────────────────────────────────────────────────────
   if (!fs.existsSync(REDESIGN_DIR)) fs.mkdirSync(REDESIGN_DIR, { recursive: true });

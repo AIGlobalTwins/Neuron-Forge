@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import type { SiteConfig } from "@/app/api/site/[id]/route";
 import { PublishButton } from "@/components/PublishButton";
-import { BOOKING_SECTION_SPEC } from "@/lib/booking-spec";
 
 type Tab = "design" | "integrations" | "publish";
 
@@ -90,6 +89,28 @@ export default function SitePage() {
       setPreviewKey((k) => k + 1);
     } catch {
       setAiErr("Edit failed.");
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
+  async function addBooking() {
+    if (aiBusy) return;
+    setAiBusy(true);
+    setAiErr(null);
+    setAiMsg(null);
+    try {
+      const res = await fetch(`/api/site/${id}/booking`, { method: "POST" });
+      const d = await res.json().catch(() => null);
+      if (!res.ok || !d?.ok) {
+        setAiErr(d?.error || "Could not add the booking calendar.");
+        return;
+      }
+      setCanUndo(true);
+      setAiMsg(d.already ? "Booking calendar already present." : "Booking calendar added — preview updated. Re-publish to push it live.");
+      setPreviewKey((k) => k + 1);
+    } catch {
+      setAiErr("Could not add the booking calendar.");
     } finally {
       setAiBusy(false);
     }
@@ -194,7 +215,7 @@ export default function SitePage() {
                     <button key={s} onClick={() => runAi(s)} disabled={aiBusy} className="text-xs px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/10 text-gray-300 hover:border-[#E8622A]/40 hover:text-white transition disabled:opacity-50">{s}</button>
                   ))}
                 </div>
-                <button onClick={() => runAi(BOOKING_SECTION_SPEC)} disabled={aiBusy} className="mt-3 w-full inline-flex items-center justify-center gap-2 text-xs px-3 py-2 rounded-lg bg-[#E8622A]/10 border border-[#E8622A]/30 text-[#E8622A] hover:bg-[#E8622A]/15 transition disabled:opacity-50">
+                <button onClick={addBooking} disabled={aiBusy} className="mt-3 w-full inline-flex items-center justify-center gap-2 text-xs px-3 py-2 rounded-lg bg-[#E8622A]/10 border border-[#E8622A]/30 text-[#E8622A] hover:bg-[#E8622A]/15 transition disabled:opacity-50">
                   <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2" /><path d="M3 9h18M8 2.5v4M16 2.5v4" /></svg>
                   Add online booking (calendar)
                 </button>
