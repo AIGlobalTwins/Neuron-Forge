@@ -542,7 +542,7 @@ Default card/image radius: ${radiusDefault}
 Default button radius: ${btnRadius}
 ═════════════════════════════════════════════════
 
-${formatDesignBriefForPrompt(brief)}
+${formatDesignBriefForPrompt(brief, !!styleRefData)}
 ${darkBlock}
 
 ${MOTION_PROMPT}
@@ -633,11 +633,12 @@ FOOTER — <footer class="bg-slate-900 text-white py-16 px-6">:
 
 STRICT RULES:
 1. Every <a> → real href: #/page-name (to switch page), #section-id (scroll within current page), tel:..., mailto:..., or https://wa.me/... — never href="#" alone
-2. Every <button> → type="submit" in form OR onclick scroll
-3. No Lorem Ipsum — use real content from original site or generate authentic content
-4. Mobile responsive: sm: md: lg: prefixes
-5. Inline SVG icons only
-6. NO testimonials section
+2. Every <button> → type="submit" inside a form OR a real action (onclick smooth-scroll to an existing #section, or set location.hash to a real #/page). NEVER output a button that does nothing.
+3. NO decorative or placeholder buttons/links. Every CTA must have a real destination; if there is none, OMIT it entirely. A WhatsApp button must be <a href="https://wa.me/NUMBER" target="_blank">.
+4. No Lorem Ipsum — use real content from original site or generate authentic content
+5. Mobile responsive: sm: md: lg: prefixes
+6. Inline SVG icons only
+7. NO testimonials section
 
 OUTPUT: ONLY the complete HTML starting with <!DOCTYPE html>. No markdown fences. No explanations.`;
 
@@ -725,6 +726,7 @@ export async function POST(req: NextRequest) {
   else if (crawlResult.address) analysis.address = crawlResult.address;
   if (phone) analysis.phone = phone;
   else if (crawlResult.phone) analysis.phone = crawlResult.phone;
+  if (!analysis.phone) analysis.phone = (clientProfile as BusinessProfile | null)?.phone || "";
   if (email) analysis.email = email;
   else if (crawlResult.email) analysis.email = crawlResult.email;
 

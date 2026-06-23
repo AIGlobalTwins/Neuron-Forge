@@ -320,14 +320,17 @@ export function extractVibeKeywords(instructions = ""): string {
  * Render the brief as a prompt block for HTML generation. This replaces the
  * old thin `UI/UX: <300 chars>` line with concrete, skill-backed direction.
  */
-export function formatDesignBriefForPrompt(brief: DesignBrief): string {
+export function formatDesignBriefForPrompt(brief: DesignBrief, hasReference: boolean = false): string {
   const principles = [...brief.principles, ...ANTI_SLOP].map((p) => `  • ${p}`).join("\n");
+  const heading = hasReference
+    ? "DEFAULT PRINCIPLES — a DESIGN REFERENCE image is attached and OVERRIDES the palette, typography, theme and layout above. Sample the reference's actual colours and match its look; use the brief only where the reference is silent:"
+    : "NON-NEGOTIABLE PRINCIPLES:";
   return `═══ DESIGN BRIEF — "${brief.label}" (${brief.styleName}) ═══
 Aesthetic: ${brief.aestheticKeywords}
 ${brief.effects ? `Effects/animation: ${brief.effects}` : ""}
 Typography: ${brief.fonts.heading} (headings) + ${brief.fonts.body} (body) — ${brief.fontPairingNote}
 Theme: ${brief.theme}
-NON-NEGOTIABLE PRINCIPLES:
+${heading}
 ${principles}
 ══════════════════════════════════════
 

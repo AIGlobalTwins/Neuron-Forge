@@ -398,15 +398,17 @@ export async function POST(req: NextRequest) {
 
   const planBlock = formatPlanForPrompt(plan);
 
-  const designBlock = formatDesignBriefForPrompt(brief);
+  const designBlock = formatDesignBriefForPrompt(brief, !!styleRef);
 
-  const waUrl = waLink(finalPhone, `Olá! Vim pelo site de ${finalName} e queria mais informações.`);
+  const waUrl = waLink(finalPhone || (clientProfile as BusinessProfile | null)?.phone || "", `Olá! Vim pelo site de ${finalName} e queria mais informações.`);
   const whatsappBlock = whatsappPromptBlock(waUrl);
 
   const sharedContext = `
 ${instructions ? `🔴 USER INSTRUCTIONS — MANDATORY, override every default below. Implement ALL of them exactly and visibly: ${instructions}\n\n` : ""}${designBlock}
 
 ${MOTION_PROMPT}
+
+BUTTONS & LINKS — every button/link MUST have a real destination: an existing #section to scroll to, tel:/mailto:, or https://wa.me/NUMBER (target="_blank"). NEVER output a decorative or placeholder button that does nothing — if a CTA has no destination, OMIT it.
 
 ${planBlock}
 

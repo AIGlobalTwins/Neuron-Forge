@@ -82,12 +82,24 @@ export function siteGuard(opts: { waUrl?: string; contactHref?: string; waLabel?
         });
       });
 
-      if(WA && !document.querySelector('a[href*="wa.me"]')){
-        var fab=document.createElement('a');
-        fab.href=WA;fab.target='_blank';fab.rel='noopener noreferrer';fab.setAttribute('aria-label',WALABEL);
-        fab.style.cssText='position:fixed;right:20px;bottom:20px;z-index:9999;width:56px;height:56px;border-radius:9999px;background:#25D366;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.28)';
-        fab.innerHTML=${JSON.stringify(WA_SVG)};
-        document.body.appendChild(fab);
+      if(WA){
+        // Wire EVERY WhatsApp-looking element to the real number (fixes broken/dead
+        // ones); if there is none, add a floating button.
+        var waEls=[];
+        document.querySelectorAll('a').forEach(function(a){var h=(a.getAttribute('href')||'');if(/wa\\.me|api\\.whatsapp|whatsapp\\.com/i.test(h)||/whats\\s*app/i.test(a.textContent||'')||/whatsapp/i.test(a.getAttribute('aria-label')||''))waEls.push(a);});
+        document.querySelectorAll('button').forEach(function(b){if(/whats\\s*app/i.test(b.textContent||'')||/whatsapp/i.test(b.getAttribute('aria-label')||''))waEls.push(b);});
+        if(waEls.length){
+          waEls.forEach(function(el){
+            if(el.tagName==='A'){el.setAttribute('href',WA);el.setAttribute('target','_blank');el.setAttribute('rel','noopener noreferrer');}
+            else{el.addEventListener('click',function(e){e.preventDefault();window.open(WA,'_blank','noopener');});}
+          });
+        } else {
+          var fab=document.createElement('a');
+          fab.href=WA;fab.target='_blank';fab.rel='noopener noreferrer';fab.setAttribute('aria-label',WALABEL);
+          fab.style.cssText='position:fixed;right:20px;bottom:20px;z-index:9999;width:56px;height:56px;border-radius:9999px;background:#25D366;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.28)';
+          fab.innerHTML=${JSON.stringify(WA_SVG)};
+          document.body.appendChild(fab);
+        }
       }
     }catch(_){}
   }
