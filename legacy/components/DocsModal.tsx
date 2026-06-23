@@ -278,141 +278,130 @@ const DOCS = [
   },
 ];
 
-export function DocsModal({ onClose }: Props) {
-  const [active, setActive] = useState(0);
-  const doc = DOCS[active];
-  const c = doc.colorClass;
-
+function BackBtn({ onClick, title }: { onClick: () => void; title: string }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div
-        className="relative z-10 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden"
-        style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0)), #0a0a0c", border: "1px solid rgba(255,255,255,0.08)" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Top light beam */}
-        <div className="pointer-events-none absolute -top-16 left-1/3 -translate-x-1/2 w-64 h-32 rounded-full blur-3xl bg-[#E8622A]/15" />
+    <button onClick={onClick} className="w-8 h-8 rounded-lg border border-[#2a2a2a] flex items-center justify-center text-gray-400 hover:text-white hover:border-[#E8622A]/40 transition shrink-0" title={title}>
+      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
+    </button>
+  );
+}
 
-        {/* Header */}
-        <div className="relative flex items-center justify-between px-6 py-5 border-b border-[#1e1e1e] flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#E8622A]/25 to-[#E8622A]/5 border border-[#E8622A]/30 flex items-center justify-center shadow-[0_0_14px_rgba(232,98,42,0.35)]">
-              <svg viewBox="0 0 20 20" className="w-4 h-4 text-[#E8622A]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 4H5a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4" />
-                <path d="M14 2l4 4-7 7H7v-4l7-7z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-white font-semibold text-sm">Documentation</h2>
-              <p className="text-gray-600 text-xs">How to use each Forge agent</p>
-            </div>
+// Documentation as a full page: a grid of agent cards -> a per-agent detail with a
+// (placeholder) walkthrough video + the explanation, steps, tip and example.
+export function DocsPage({ onClose }: Props) {
+  const [selected, setSelected] = useState<number | null>(null);
+
+  // ── Grid of agent cards ──────────────────────────────────────────────────
+  if (selected === null) {
+    return (
+      <div className="w-full max-w-5xl mx-auto fade-up">
+        <div className="flex items-center gap-3 mb-7">
+          <BackBtn onClick={onClose} title="Back" />
+          <div>
+            <h1 className="text-xl font-semibold text-white">Documentation</h1>
+            <p className="text-gray-600 text-xs">How each agent works — pick one to learn more.</p>
           </div>
-          <button onClick={onClose} className="text-gray-600 hover:text-gray-400 transition-colors">
-            <svg viewBox="0 0 16 16" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-              <path d="M3 3l10 10M13 3L3 13" />
-            </svg>
-          </button>
         </div>
 
-        <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar */}
-          <div className="w-52 flex-shrink-0 border-r border-[#1e1e1e] py-3 overflow-y-auto bg-[#080808]">
-            <p className="text-[10px] uppercase tracking-widest text-gray-700 font-medium px-4 mb-2">Agents</p>
-            {DOCS.map((d, i) => (
-              <button
-                key={d.id}
-                onClick={() => setActive(i)}
-                className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-all ${
-                  active === i
-                    ? `${d.colorClass.active} text-white`
-                    : "text-gray-500 hover:text-gray-300 hover:bg-[#111]"
-                }`}
-              >
-                <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${d.colorClass.bg} border ${d.colorClass.border} flex items-center justify-center flex-shrink-0 ${active === i ? d.colorClass.text : "text-gray-600"}`}>
-                  {d.icon}
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-medium leading-tight truncate">{d.title}</div>
-                  <div className="text-[10px] text-gray-600 leading-tight truncate">{d.subtitle}</div>
-                </div>
-              </button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {DOCS.map((d, i) => (
+            <button
+              key={d.id}
+              onClick={() => setSelected(i)}
+              className="group relative overflow-hidden text-left p-5 rounded-2xl border border-white/[0.07] hover:-translate-y-0.5 transition-all"
+              style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0)), #0b0b0d" }}
+            >
+              <span className={`pointer-events-none absolute -top-12 left-1/2 -translate-x-1/2 w-44 h-24 rounded-full blur-3xl bg-gradient-to-br ${d.colorClass.bg} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+              <div className={`relative w-11 h-11 rounded-xl bg-gradient-to-br ${d.colorClass.bg} border ${d.colorClass.border} flex items-center justify-center ${d.colorClass.text} mb-3`}>
+                {d.icon}
+              </div>
+              <span className={`relative text-[10px] uppercase tracking-widest font-semibold ${d.colorClass.tag}`}>{d.tag}</span>
+              <div className="relative text-white font-semibold mt-0.5">{d.title}</div>
+              <p className="relative text-xs text-gray-500 leading-relaxed mt-1.5">{d.what}</p>
+              <span className="relative inline-flex items-center gap-1 text-xs mt-3 text-gray-600 group-hover:text-white transition-colors">
+                Learn more
+                <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg>
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Per-agent detail ─────────────────────────────────────────────────────
+  const doc = DOCS[selected];
+  const c = doc.colorClass;
+  return (
+    <div className="w-full max-w-3xl mx-auto fade-up">
+      <div className="flex items-center gap-3 mb-6">
+        <BackBtn onClick={() => setSelected(null)} title="All docs" />
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${c.bg} border ${c.border} flex items-center justify-center ${c.text} shrink-0`}>
+            {doc.icon}
+          </div>
+          <div>
+            <span className={`text-[10px] uppercase tracking-widest font-semibold ${c.tag}`}>{doc.tag}</span>
+            <h1 className="text-lg font-bold text-white leading-tight">{doc.title}</h1>
+          </div>
+        </div>
+      </div>
+
+      {/* Walkthrough video (placeholder for now) */}
+      <div
+        className="relative aspect-video w-full rounded-2xl overflow-hidden border border-white/[0.07] mb-6"
+        style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0)), #0a0a0c" }}
+      >
+        <span className={`pointer-events-none absolute -top-20 left-1/2 -translate-x-1/2 w-80 h-40 rounded-full blur-3xl bg-gradient-to-br ${c.bg} opacity-40`} />
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-500">
+          <div className="w-16 h-16 rounded-full bg-white/[0.04] border border-white/10 flex items-center justify-center backdrop-blur-sm">
+            <svg viewBox="0 0 24 24" className="w-6 h-6 ml-0.5" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+          </div>
+          <span className="text-xs">Walkthrough video coming soon</span>
+        </div>
+      </div>
+
+      <div className="glow-card rounded-2xl p-6 space-y-6">
+        <p className="text-sm text-gray-300 leading-relaxed">{doc.what}</p>
+
+        <div>
+          <h3 className="text-[10px] uppercase tracking-widest text-gray-600 font-medium mb-3">What you need</h3>
+          <div className="space-y-2">
+            {doc.needs.map((n, i) => (
+              <div key={i} className="flex items-start gap-2.5">
+                <div className={`w-4 h-4 rounded-full ${c.stepNum} border text-[9px] flex items-center justify-center shrink-0 mt-0.5 font-bold`}>✓</div>
+                <span className="text-sm text-gray-400 leading-relaxed">{n}</span>
+              </div>
             ))}
           </div>
+        </div>
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto">
-            {/* Agent hero */}
-            <div className="px-6 pt-6 pb-5 border-b border-[#1e1e1e]">
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${c.bg} border ${c.border} flex items-center justify-center ${c.text} flex-shrink-0`}>
-                  <div className="scale-125">{doc.icon}</div>
-                </div>
-                <div>
-                  <span className={`text-[10px] uppercase tracking-widest font-semibold ${c.tag}`}>{doc.tag}</span>
-                  <h2 className="text-lg font-bold text-white leading-tight">{doc.title}</h2>
-                </div>
+        <div>
+          <h3 className="text-[10px] uppercase tracking-widest text-gray-600 font-medium mb-3">Step by step</h3>
+          <div className="space-y-2.5">
+            {doc.steps.map((s, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <span className={`w-5 h-5 rounded-full border ${c.stepNum} text-[10px] flex items-center justify-center shrink-0 font-bold mt-0.5`}>{i + 1}</span>
+                <span className="text-sm text-gray-400 leading-relaxed">{s}</span>
               </div>
-
-              {/* What it does */}
-              <p className="mt-4 text-sm text-gray-400 leading-relaxed">{doc.what}</p>
-            </div>
-
-            <div className="px-6 py-5 space-y-5">
-              {/* What you need */}
-              <div>
-                <h3 className="text-[10px] uppercase tracking-widest text-gray-600 font-medium mb-3">What you need</h3>
-                <div className="space-y-2">
-                  {doc.needs.map((n, i) => (
-                    <div key={i} className="flex items-start gap-2.5">
-                      <div className={`w-4 h-4 rounded-full ${c.stepNum} border text-[9px] flex items-center justify-center flex-shrink-0 mt-0.5 font-bold`}>
-                        ✓
-                      </div>
-                      <span className="text-sm text-gray-400 leading-relaxed">{n}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Steps */}
-              <div>
-                <h3 className="text-[10px] uppercase tracking-widest text-gray-600 font-medium mb-3">Step by step</h3>
-                <div className="space-y-2.5">
-                  {doc.steps.map((s, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <span className={`w-5 h-5 rounded-full border ${c.stepNum} text-[10px] flex items-center justify-center flex-shrink-0 font-bold mt-0.5`}>
-                        {i + 1}
-                      </span>
-                      <span className="text-sm text-gray-400 leading-relaxed">{s}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Tip */}
-              <div className={`border ${c.tip} rounded-xl p-4`} style={{ backgroundColor: "transparent" }}>
-                <div className={`flex items-center gap-1.5 mb-1.5`}>
-                  <svg viewBox="0 0 16 16" className={`w-3 h-3 ${c.text}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="8" cy="8" r="6" />
-                    <path d="M8 5v3M8 11v.5" />
-                  </svg>
-                  <span className={`text-[10px] uppercase tracking-widest font-semibold ${c.text}`}>Tip</span>
-                </div>
-                <p className="text-sm text-gray-400 leading-relaxed">{doc.tip}</p>
-              </div>
-
-              {/* Example */}
-              <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <svg viewBox="0 0 16 16" className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M2 4h12M2 8h8M2 12h5" />
-                  </svg>
-                  <span className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Real example</span>
-                </div>
-                <p className="text-sm text-gray-400 leading-relaxed">{doc.example}</p>
-              </div>
-            </div>
+            ))}
           </div>
+        </div>
+
+        <div className={`border ${c.tip} rounded-xl p-4`}>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <svg viewBox="0 0 16 16" className={`w-3 h-3 ${c.text}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="6" /><path d="M8 5v3M8 11v.5" /></svg>
+            <span className={`text-[10px] uppercase tracking-widest font-semibold ${c.text}`}>Tip</span>
+          </div>
+          <p className="text-sm text-gray-400 leading-relaxed">{doc.tip}</p>
+        </div>
+
+        <div className="bg-[#0e0e10] border border-white/[0.06] rounded-xl p-4">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <svg viewBox="0 0 16 16" className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4h12M2 8h8M2 12h5" /></svg>
+            <span className="text-[10px] uppercase tracking-widest text-gray-600 font-medium">Real example</span>
+          </div>
+          <p className="text-sm text-gray-400 leading-relaxed">{doc.example}</p>
         </div>
       </div>
     </div>

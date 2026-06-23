@@ -10,7 +10,7 @@ import { SocialAnalyzerModal } from "@/components/SocialAnalyzerModal";
 import { WhatsAppModal } from "@/components/WhatsAppModal";
 import { ConsultingModal } from "@/components/ConsultingModal";
 import { OnboardingModal } from "@/components/OnboardingModal";
-import { DocsModal } from "@/components/DocsModal";
+import { DocsPage } from "@/components/DocsModal";
 import { SeoModal } from "@/components/SeoModal";
 import { SecurityModal } from "@/components/SecurityModal";
 import { EmailMarketingModal } from "@/components/EmailMarketingModal";
@@ -264,7 +264,6 @@ export default function Home() {
   const [agent, setAgent] = useState<string | null>(null); // active agent page (null = grid)
   const [showSettings, setShowSettings] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showDocs, setShowDocs] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [hasKey, setHasKey] = useState(true); // optimistic — avoids flash
   const [lang, setLang] = useState<"pt" | "en">("en");
@@ -302,6 +301,7 @@ export default function Home() {
       case "ads": return <GoogleAdsModal onClose={back} />;
       case "calendar": return <ContentCalendarModal onClose={back} />;
       case "social": return <SocialAnalyzerModal onClose={back} />;
+      case "docs": return <DocsPage onClose={back} />;
       default: return null;
     }
   }
@@ -330,7 +330,7 @@ export default function Home() {
         toggleLang={toggleLang}
         hasKey={hasKey}
         onHistory={() => setShowHistory(true)}
-        onDocs={() => setShowDocs(true)}
+        onDocs={() => setAgent("docs")}
         onSettings={() => setShowSettings(true)}
         onHome={() => setAgent(null)}
         t={T[lang]}
@@ -396,7 +396,6 @@ export default function Home() {
 
       {/* Modals */}
       {showOnboarding && <OnboardingModal onComplete={handleOnboardingComplete} />}
-      {showDocs && <DocsModal onClose={() => setShowDocs(false)} />}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       {showHistory && <HistoryModal onClose={() => setShowHistory(false)} />}
     </div>
