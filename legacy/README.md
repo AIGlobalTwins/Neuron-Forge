@@ -10,13 +10,17 @@ All agents are powered by **Claude** (Sonnet / Opus / Haiku — selectable per r
 
 | Agent | Description |
 |---|---|
-| [Analyze & Redesign](docs/agents/analyze-redesign.md) | Screenshots an existing website, scores the design, and generates a modern redesign |
-| [Create from Google Maps](docs/agents/create-from-maps.md) | Builds a full website from a Google Maps business profile |
-| [Instagram Posts](docs/agents/instagram-posts.md) | Generates captions, hashtags and image prompts for Instagram, with direct publishing |
-| [WhatsApp Agent](docs/agents/whatsapp-agent.md) | Creates a 24/7 AI customer support agent for WhatsApp Business |
-| [Consulting Agent](docs/agents/consulting-agent.md) | Diagnoses business problems, builds action plans, and exports professional PDF reports |
-| [SEO Content Agent](docs/agents/seo-agent.md) | Generates blog articles, meta tags, landing page copy and FAQs optimised for search engines |
-| [Security Agent](docs/security-agent.md) | Passive security audit — analyses HTTP headers, inline JS, forms, comments and exposed paths, exports a PDF report |
+| Analyze & Redesign | Screenshots an existing website, scores the design, and generates a modern redesign |
+| Create from Google Maps | Builds a full website from a Google Maps business profile |
+| Instagram Posts | Generates captions, hashtags and image ideas for Instagram (optional direct publishing) |
+| Social Analyzer | Audits any Instagram profile (yours, a client's, a competitor's) — score, engagement, content pillars, recommendations and a 7-day plan |
+| WhatsApp Agent | Creates a 24/7 AI customer support agent for WhatsApp Business |
+| Consulting Agent | Diagnoses business problems, builds action plans, and exports professional PDF reports |
+| SEO Content Agent | Generates blog articles, meta tags, landing page copy and FAQs optimised for search engines |
+| Email Marketing | Complete email sequences — welcome, nurture, promotion, re-engagement, abandoned cart |
+| Google Ads | Campaign copy (Search / PMax / Display / Remarketing) within character limits + negative keywords |
+| Content Calendar | A 30-day editorial calendar with themes, captions, hashtags and best posting times |
+| Security Agent | Real passive audit — live TLS, HTTPS redirect, security headers, cookie flags, mixed content, SRI, exposed paths; PDF report |
 
 More agents are continuously added. See [Adding a New Agent](docs/ADDING-AGENT.md).
 
@@ -25,12 +29,13 @@ More agents are continuously added. See [Adding a New Agent](docs/ADDING-AGENT.m
 ## Stack
 
 - **Framework:** Next.js 14 App Router (TypeScript)
-- **AI:** Anthropic Claude 4.6 — Sonnet, Opus, Haiku (Vision + Text, model selectable per request)
-- **Auth:** Clerk (optional — gracefully skipped when keys are absent)
-- **Photos:** Curated Unsplash catalog per business category (hero + content arrays); uploaded photos take priority for hero
-- **Browser automation:** Playwright (screenshots, HTML/CSS extraction, PDF generation)
-- **Storage:** Local filesystem (`data/`) — settings, bot configs, conversation history
-- **Deploy:** Vercel
+- **AI:** Anthropic Claude — Opus 4.8 / Sonnet 4.6 / Haiku 4.5 (Vision + Text, model selectable per request)
+- **Auth:** Supabase Auth (Google OAuth) — gated by middleware; open when env keys are absent
+- **Data:** Supabase (Postgres + RLS) — per-user settings, generation history, and the Client Workspace; generated sites are stored on a mounted disk (`data/`)
+- **Client Workspace:** save a business profile once; every agent pre-fills from it and groups its outputs; AI auto-fill researches the client's website to fill the profile
+- **Photos:** Curated Unsplash catalog per business category; uploaded photos take priority for hero
+- **Browser automation:** Playwright (screenshots, HTML/CSS extraction, website research, PDF generation)
+- **Deploy:** Render (Docker, auto-deploy from `main`)
 
 ---
 
