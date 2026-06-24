@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicKey, getClaudeModel, getWhatsAppAccessToken, getWhatsAppPhoneNumberId, getWhatsAppVerifyToken } from "@/lib/settings";
 import { readBotConfig, buildSystemPrompt, readHistory, appendHistory } from "@/lib/whatsapp-bot";
 
+export const runtime = "nodejs";
+
 const GRAPH = "https://graph.facebook.com/v19.0";
+
+// Verify Meta's X-Hub-Signature-256 (HMAC-SHA256 of the raw body with the app secret).
+function validSignature(raw: string, header: string | null, secret: string): boolean {
+  if (!header) return false;
+  const expected = "sha256=" + crypto.createHmac("sha256", secret).update(raw, "utf8").digest("hex");
+  const a = Buffer.from(header);
+  const b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
 
 // ── GET: Webhook verification by Meta ────────────────────────────────────
 export async function GET(req: NextRequest) {
@@ -22,7 +34,21 @@ export async function GET(req: NextRequest) {
 
 // ── POST: Incoming message from Meta ─────────────────────────────────────
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => null);
+  const raw = await req.text();
+
+  // Reject forged calls. Enforced when WHATSAPP_APP_SECRET is set; until then we only
+  // warn so an existing bot keeps working (set the secret to close this).
+  const secret = process.env.WHATSAPP_APP_SECRET;
+  if (secret) {
+    if (!validSignature(raw, req.headers.get("x-hub-signature-256"), secret)) {
+      return new NextResponse("Forbidden", { status: 403 });
+    }
+  } else {
+    console.warn("[whatsapp/webhook] WHATSAPP_APP_SECRET not set — incoming webhooks are NOT verified");
+  }
+
+  let body: { entry?: Array<{ changes?: Array<{ value?: { messages?: Array<{ from: string; type: string; text?: { body?: string } }> } }> }> } | null = null;
+  try { body = JSON.parse(raw); } catch { return NextResponse.json({ ok: true }); }
   if (!body) return NextResponse.json({ ok: true });
 
   try {
