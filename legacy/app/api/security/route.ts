@@ -3,6 +3,7 @@ import tls from "tls";
 import Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 import { extractJsonObject } from "@/lib/json-extract";
+import { assertPublicUrl } from "@/lib/ssrf";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -175,6 +176,7 @@ export async function POST(req: NextRequest) {
     try {
       parsedUrl = new URL(targetUrl);
       if (isPrivateHost(parsedUrl.hostname)) throw new Error("private");
+      await assertPublicUrl(targetUrl);
     } catch {
       return NextResponse.json({ error: "That doesn't look like a valid public URL." }, { status: 400 });
     }

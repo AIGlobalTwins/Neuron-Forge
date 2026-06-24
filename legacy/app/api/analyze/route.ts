@@ -18,6 +18,8 @@ import { siteGuard } from "@/lib/site-guard";
 import { buildBusinessContext, type BusinessProfile } from "@/lib/business-context";
 import { styleImageBlock, STYLE_DIRECTIVE } from "@/lib/style-ref";
 import { injectBooking } from "@/lib/booking-widget";
+import { assertPublicUrl } from "@/lib/ssrf";
+import { writeSiteOwner } from "@/lib/site-store";
 
 // On the mounted disk (/app/data) so generated-site previews survive redeploys.
 const REDESIGN_DIR = "./data/redesigns";
@@ -693,6 +695,11 @@ export async function POST(req: NextRequest) {
   const businessContext = buildBusinessContext(clientProfile as BusinessProfile | null);
 
   if (!url) return NextResponse.json({ error: "url required" }, { status: 400 });
+  try {
+    await assertPublicUrl(String(url));
+  } catch (e) {
+    return NextResponse.json({ error: `Invalid or blocked URL: ${(e as Error).message}` }, { status: 400 });
+  }
   let userId: string | null = null;
   try { userId = await (await import("@/lib/supabase/server")).getSupabaseUserId(); } catch {}
   const anthropicKey = getAnthropicKey(userId);
@@ -754,6 +761,7 @@ export async function POST(req: NextRequest) {
   if (!fs.existsSync(REDESIGN_DIR)) fs.mkdirSync(REDESIGN_DIR, { recursive: true });
   const id = randomUUID();
   fs.writeFileSync(path.join(REDESIGN_DIR, `analyze_${id}.html`), html, "utf-8");
+  writeSiteOwner(id, userId);
 
   console.log(`[analyze] ${analysis.businessName} | score=${analysis.score} | pages=${crawlResult.pages.length} | ${Math.round(html.length / 1024)}KB`);
 

@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { currentUid, canAccessSite } from "@/lib/site-store";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const { id } = params;
 
   if (!/^[\w-]+$/.test(id)) {
+    return new NextResponse("Not found", { status: 404 });
+  }
+
+  // Owner-scoped (new sites carry an owner sidecar); legacy sites with no owner stay viewable.
+  if (!canAccessSite(id, await currentUid())) {
     return new NextResponse("Not found", { status: 404 });
   }
 

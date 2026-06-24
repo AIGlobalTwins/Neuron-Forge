@@ -4,6 +4,7 @@ import { chromium } from "playwright";
 
 import { getAnthropicKey } from "@/lib/settings";
 import { extractJsonObject } from "@/lib/json-extract";
+import { assertPublicUrl } from "@/lib/ssrf";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -93,8 +94,9 @@ export async function POST(req: NextRequest) {
   let url = "";
   try {
     url = normalizeUrl(raw);
+    await assertPublicUrl(url);
   } catch {
-    return NextResponse.json({ error: "That doesn't look like a valid website URL." }, { status: 400 });
+    return NextResponse.json({ error: "That doesn't look like a valid public website URL." }, { status: 400 });
   }
 
   let userId: string | null = null;

@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicKey } from "@/lib/settings";
+import { siteAccess } from "@/lib/site-store";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -47,6 +48,9 @@ async function withRetry<T>(fn: () => Promise<T>, tries = 3): Promise<T> {
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const uid = await userId();
   // (middleware already gates this route; uid may be null only when supabase is off)
+
+  const acc = await siteAccess(params.id);
+  if (!acc.ok) return NextResponse.json({ error: acc.status === 401 ? "Sign in required." : "Site not found." }, { status: acc.status });
 
   const htmlPath = htmlPathFor(params.id);
   if (!htmlPath) return NextResponse.json({ error: "Site not found." }, { status: 404 });

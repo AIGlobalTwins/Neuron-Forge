@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { injectBooking } from "@/lib/booking-widget";
+import { siteAccess } from "@/lib/site-store";
 
 export const runtime = "nodejs";
 
@@ -20,6 +21,9 @@ function htmlPathFor(id: string): string | null {
 
 /** Inject the online-booking calendar section into a saved site. Deterministic (no AI). */
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
+  const acc = await siteAccess(params.id);
+  if (!acc.ok) return NextResponse.json({ error: acc.status === 401 ? "Sign in required." : "Site not found." }, { status: acc.status });
+
   const htmlPath = htmlPathFor(params.id);
   if (!htmlPath) return NextResponse.json({ error: "Site not found." }, { status: 404 });
 

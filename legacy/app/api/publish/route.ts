@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { deploySite, cloudflareEnabled } from "@/lib/cloudflare-deploy";
+import { siteAccess } from "@/lib/site-store";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -33,6 +34,9 @@ export async function POST(req: NextRequest) {
   const websiteId = String(body.websiteId ?? "").trim();
   const name = String(body.name ?? "site").trim();
   if (!websiteId) return NextResponse.json({ error: "websiteId required" }, { status: 400 });
+
+  const acc = await siteAccess(websiteId);
+  if (!acc.ok) return NextResponse.json({ error: acc.status === 401 ? "Sign in required." : "Could not find that generated site to publish." }, { status: acc.status });
 
   const html = readSiteHtml(websiteId);
   if (!html) return NextResponse.json({ error: "Could not find that generated site to publish." }, { status: 404 });

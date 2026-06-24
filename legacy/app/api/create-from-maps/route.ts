@@ -16,6 +16,7 @@ import { siteGuard } from "@/lib/site-guard";
 import { buildBusinessContext, type BusinessProfile } from "@/lib/business-context";
 import { styleImageBlock, STYLE_DIRECTIVE } from "@/lib/style-ref";
 import { injectBooking } from "@/lib/booking-widget";
+import { writeSiteOwner } from "@/lib/site-store";
 
 // On the mounted disk (/app/data) so generated-site previews survive redeploys.
 const REDESIGN_DIR = "./data/redesigns";
@@ -705,6 +706,7 @@ Output ONLY raw HTML. No markdown. No explanations.`;
   if (!fs.existsSync(REDESIGN_DIR)) fs.mkdirSync(REDESIGN_DIR, { recursive: true });
   const id = randomUUID();
   fs.writeFileSync(path.join(REDESIGN_DIR, `maps_${id}.html`), html, "utf-8");
+  writeSiteOwner(id, userId);
 
   console.log(`[maps] "${finalName}" | ${finalCategory} | ${Math.round(html.length / 1024)}KB | photos=${savedImageUrls.length}`);
 

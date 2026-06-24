@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { siteAccess } from "@/lib/site-store";
 
 export async function POST(
   req: NextRequest,
@@ -11,6 +12,9 @@ export async function POST(
   if (!/^[\w-]+$/.test(id)) {
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
+
+  const acc = await siteAccess(id);
+  if (!acc.ok) return NextResponse.json({ error: acc.status === 401 ? "Sign in required." : "Website not found" }, { status: acc.status });
 
   let body: { html?: string };
   try {

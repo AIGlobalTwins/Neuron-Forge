@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { siteAccess } from "@/lib/site-store";
 
 export const runtime = "nodejs";
 
@@ -74,23 +75,15 @@ function inject(html: string, c: SiteConfig): string {
   return h;
 }
 
-async function requireUser(): Promise<boolean> {
-  try {
-    const { getSupabaseUserId } = await import("@/lib/supabase/server");
-    const uid = await getSupabaseUserId();
-    return !!uid;
-  } catch {
-    return true; // supabase off → open
-  }
-}
-
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  if (!(await requireUser())) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
+  const acc = await siteAccess(params.id);
+  if (!acc.ok) return NextResponse.json({ error: acc.status === 401 ? "Sign in required." : "Not found." }, { status: acc.status });
   return NextResponse.json({ config: readConfig(params.id) });
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!(await requireUser())) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
+  const acc = await siteAccess(params.id);
+  if (!acc.ok) return NextResponse.json({ error: acc.status === 401 ? "Sign in required." : "Not found." }, { status: acc.status });
   const htmlPath = htmlPathFor(params.id);
   if (!htmlPath) return NextResponse.json({ error: "Site not found." }, { status: 404 });
 
