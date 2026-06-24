@@ -46,18 +46,20 @@ export function bookingWidgetHtml(opts: { waUrl?: string; accent?: string }): st
   function upd(){conf.disabled=!(selDay&&selSlot);}
   cal.addEventListener('click',function(e){
     var p=e.target.closest('[data-prev]'),n=e.target.closest('[data-next]'),d=e.target.closest('[data-day]');
+    if(p||n||d)e.stopImmediatePropagation();
     if(p){view=new Date(view.getFullYear(),view.getMonth()-1,1);renderCal();return;}
     if(n){view=new Date(view.getFullYear(),view.getMonth()+1,1);renderCal();return;}
     if(d){selDay=new Date(parseInt(d.getAttribute('data-day'),10));selSlot=null;renderCal();renderSlots();upd();}
-  });
-  slots.addEventListener('click',function(e){var s=e.target.closest('[data-slot]');if(s){selSlot=s.getAttribute('data-slot');renderSlots();upd();}});
-  conf.addEventListener('click',function(){
+  },true);
+  slots.addEventListener('click',function(e){var s=e.target.closest('[data-slot]');if(s){e.stopImmediatePropagation();selSlot=s.getAttribute('data-slot');renderSlots();upd();}},true);
+  conf.addEventListener('click',function(e){
+    e.stopImmediatePropagation();
     if(!(selDay&&selSlot))return;
     var ds=pad(selDay.getDate())+'/'+pad(selDay.getMonth()+1)+'/'+selDay.getFullYear(),txt='Olá! Gostava de marcar para '+ds+' às '+selSlot+'.';
     if(WA){var base=WA.split('?')[0];window.open(base+'?text='+encodeURIComponent(txt),'_blank','noopener');}
     else{var c=document.querySelector('[id*="contact" i],[id*="contacto" i],form');if(c)c.scrollIntoView({behavior:'smooth'});}
     if(out){out.textContent='Marcação para '+ds+' às '+selSlot+(WA?' — continue no WhatsApp para confirmar.':' — contacte-nos para confirmar.');out.style.display='block';}
-  });
+  },true);
   renderCal();renderSlots();upd();
 })();`;
 

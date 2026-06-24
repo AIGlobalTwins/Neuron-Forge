@@ -44,6 +44,7 @@ export function siteGuard(opts: { waUrl?: string; contactHref?: string; waLabel?
       function scrollId(id){var e=document.getElementById(id);if(e)e.scrollIntoView({behavior:'smooth'});else gotoContact();}
 
       document.querySelectorAll('a').forEach(function(a){
+        if(a.closest('#agendamento'))return; // booking widget manages its own clicks
         var h=(a.getAttribute('href')||'').trim();
         if(/^(tel:|mailto:|https?:|\\/\\/)/i.test(h)||h.indexOf('wa.me')>=0)return; // real
         if(h===''||h==='#'||h.toLowerCase().indexOf('javascript:')===0){a.addEventListener('click',function(e){e.preventDefault();gotoContact();});return;}
@@ -64,6 +65,7 @@ export function siteGuard(opts: { waUrl?: string; contactHref?: string; waLabel?
       });
 
       document.querySelectorAll('button').forEach(function(b){
+        if(b.closest('#agendamento'))return; // booking widget manages its own clicks
         var t=(b.getAttribute('type')||'').toLowerCase();
         if(t==='submit'||t==='reset')return;
         if(b.id==='hamburger'||b.hasAttribute('data-dropdown-toggle')||b.hasAttribute('data-dropdown'))return;
