@@ -116,7 +116,7 @@ export function siteGuard(opts: { waUrl?: string; contactHref?: string; waLabel?
         if(waEls.length){
           waEls.forEach(function(el){
             if(el.tagName==='A'){el.setAttribute('href',WA);el.setAttribute('target','_blank');el.setAttribute('rel','noopener noreferrer');}
-            else{el.addEventListener('click',function(e){e.preventDefault();window.open(WA,'_blank','noopener');});}
+            else{el.addEventListener('click',function(e){e.preventDefault();var w=window.open(WA,'_blank','noopener');if(!w)location.href=WA;});}
           });
         } else {
           var fab=document.createElement('a');

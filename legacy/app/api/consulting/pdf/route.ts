@@ -30,7 +30,7 @@ function buildReportHtml(plan: ConsultingPlan, area: string): string {
         <div class="section-icon">⬡</div>
         <h2>Recommended Neuron Forge Tools</h2>
       </div>
-      ${plan.forgeTools.map((t) => `
+      ${(plan.forgeTools ?? []).map((t) => `
         <div class="forge-card">
           <div class="forge-name">${t.name}</div>
           <div class="forge-reason">${t.reason}</div>
@@ -120,7 +120,7 @@ function buildReportHtml(plan: ConsultingPlan, area: string): string {
       <div class="section-icon">1</div>
       <h2>Diagnosis — Identified Problems</h2>
     </div>
-    ${plan.diagnosis.map((d) => `<div class="list-item"><div class="list-dot"></div><div class="list-text">${d}</div></div>`).join("")}
+    ${(plan.diagnosis ?? []).map((d) => `<div class="list-item"><div class="list-dot"></div><div class="list-text">${d}</div></div>`).join("")}
   </div>
 
   <div class="section">
@@ -128,7 +128,7 @@ function buildReportHtml(plan: ConsultingPlan, area: string): string {
       <div class="section-icon">2</div>
       <h2>Objectives</h2>
     </div>
-    ${plan.objectives.map((o) => `<div class="list-item"><div class="list-dot"></div><div class="list-text">${o}</div></div>`).join("")}
+    ${(plan.objectives ?? []).map((o) => `<div class="list-item"><div class="list-dot"></div><div class="list-text">${o}</div></div>`).join("")}
   </div>
 
   <div class="section">
@@ -145,7 +145,7 @@ function buildReportHtml(plan: ConsultingPlan, area: string): string {
       <h2>KPIs — Success Metrics</h2>
     </div>
     <div class="kpi-grid">
-      ${plan.kpis.map((k) => `
+      ${(plan.kpis ?? []).map((k) => `
         <div class="kpi-card">
           <div class="kpi-metric">${k.metric}</div>
           <div class="kpi-target">${k.target}</div>
@@ -159,7 +159,7 @@ function buildReportHtml(plan: ConsultingPlan, area: string): string {
       <div class="section-icon">5</div>
       <h2>Risks & Mitigations</h2>
     </div>
-    ${plan.risks.map((r) => `
+    ${(plan.risks ?? []).map((r) => `
       <div class="risk-row">
         <div class="risk-badge">Risk</div>
         <div class="risk-content">
@@ -188,10 +188,10 @@ export async function POST(req: NextRequest) {
 
   if (!plan) return NextResponse.json({ error: "plan is required" }, { status: 400 });
 
-  const html = buildReportHtml(plan as ConsultingPlan, area || "Consultoria");
-
-  const browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
+  let browser: Awaited<ReturnType<typeof chromium.launch>> | null = null;
   try {
+    const html = buildReportHtml(plan as ConsultingPlan, area || "Consultoria");
+    browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "domcontentloaded" });
     const pdf = await page.pdf({ format: "A4", printBackground: true, margin: { top: "0", right: "0", bottom: "0", left: "0" } });
@@ -201,7 +201,10 @@ export async function POST(req: NextRequest) {
         "Content-Disposition": `attachment; filename="plano-consultoria.pdf"`,
       },
     });
+  } catch (e) {
+    console.error("[consulting/pdf] error:", (e as Error).message);
+    return NextResponse.json({ error: "Não foi possível gerar o PDF. Tenta novamente." }, { status: 500 });
   } finally {
-    await browser.close();
+    if (browser) await browser.close();
   }
 }

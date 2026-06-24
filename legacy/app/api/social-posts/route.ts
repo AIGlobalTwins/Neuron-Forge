@@ -74,11 +74,19 @@ Responde APENAS com um JSON array de ${count} objecto(s) (sem markdown):
   }
 ]${businessContext}`;
 
-  const res = await anthropic.messages.create({
-    model: claudeModel,
-    max_tokens: Math.min(8000, 1500 + Number(count) * 900),
-    messages: [{ role: "user", content: prompt }],
-  });
+  let res: Anthropic.Message;
+  try {
+    res = await anthropic.messages.create({
+      model: claudeModel,
+      max_tokens: Math.min(8000, 1500 + Number(count) * 900),
+      messages: [{ role: "user", content: prompt }],
+    });
+  } catch (e) {
+    const m = String((e as Error).message || "");
+    if (/401|invalid|authentication/i.test(m)) return NextResponse.json({ error: "Invalid Anthropic API Key." }, { status: 401 });
+    if (/overloaded|429|503|rate.?limit/i.test(m)) return NextResponse.json({ error: "AI está ocupado — tenta novamente." }, { status: 503 });
+    return NextResponse.json({ error: `Erro ao gerar posts: ${m.slice(0, 120)}` }, { status: 500 });
+  }
 
   const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "[]";
   const parsed = extractJsonArray<GeneratedPost>(raw);

@@ -21,42 +21,48 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Instagram not configured. Add the Access Token and Account ID in Settings." }, { status: 400 });
   }
 
-  // Step 1: Create media container
-  const createRes = await fetch(`${GRAPH}/${accountId}/media`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      image_url: imageUrl,
-      caption: `${caption}`,
-      access_token: token,
-    }),
-  });
+  type GraphResp = { id?: string; error?: { message?: string } };
+  try {
+    // Step 1: Create media container
+    const createRes = await fetch(`${GRAPH}/${accountId}/media`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        image_url: imageUrl,
+        caption: `${caption}`,
+        access_token: token,
+      }),
+    });
 
-  const createData = await createRes.json();
-  if (!createRes.ok || !createData.id) {
-    return NextResponse.json(
-      { error: createData.error?.message || "Erro ao criar container de media" },
-      { status: 500 }
-    );
+    const createData: GraphResp = await createRes.json().catch(() => ({}));
+    if (!createRes.ok || !createData.id) {
+      return NextResponse.json(
+        { error: createData.error?.message || "Erro ao criar container de media" },
+        { status: 502 }
+      );
+    }
+
+    // Step 2: Publish
+    const publishRes = await fetch(`${GRAPH}/${accountId}/media_publish`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        creation_id: createData.id,
+        access_token: token,
+      }),
+    });
+
+    const publishData: GraphResp = await publishRes.json().catch(() => ({}));
+    if (!publishRes.ok || !publishData.id) {
+      return NextResponse.json(
+        { error: publishData.error?.message || "Erro ao publicar no Instagram" },
+        { status: 502 }
+      );
+    }
+
+    return NextResponse.json({ ok: true, postId: publishData.id });
+  } catch (e) {
+    console.error("[instagram-publish] error:", (e as Error).message);
+    return NextResponse.json({ error: "Não foi possível contactar a Instagram. Tenta novamente." }, { status: 502 });
   }
-
-  // Step 2: Publish
-  const publishRes = await fetch(`${GRAPH}/${accountId}/media_publish`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      creation_id: createData.id,
-      access_token: token,
-    }),
-  });
-
-  const publishData = await publishRes.json();
-  if (!publishRes.ok || !publishData.id) {
-    return NextResponse.json(
-      { error: publishData.error?.message || "Erro ao publicar no Instagram" },
-      { status: 500 }
-    );
-  }
-
-  return NextResponse.json({ ok: true, postId: publishData.id });
 }

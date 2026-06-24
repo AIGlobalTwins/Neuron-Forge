@@ -21,6 +21,34 @@ import { injectBooking } from "@/lib/booking-widget";
 const REDESIGN_DIR = "./data/redesigns";
 const UPLOADS_DIR = "./public/uploads";
 
+// Retry transient Anthropic capacity errors (529/429/503) so a single blip does not
+// abort the whole paid Maps build (Playwright + Unsplash already spent).
+async function withOverloadRetry<T>(fn: () => Promise<T>, tries = 3): Promise<T> {
+  const delays = [1500, 4000, 9000];
+  for (let i = 0; ; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      const status = (e as { status?: number })?.status;
+      const msg = String((e as Error)?.message || "");
+      const transient = status === 529 || status === 429 || status === 503 || /overloaded|rate.?limit|529|503/i.test(msg);
+      if (!transient || i >= tries - 1) throw e;
+      await new Promise((r) => setTimeout(r, delays[i] ?? 9000));
+    }
+  }
+}
+
+// SSRF guard: a Maps URL must point at a real Google Maps host, never an internal IP.
+function isSafeMapsUrl(raw: string): boolean {
+  let u: URL;
+  try { u = new URL(raw); } catch { return false; }
+  if (u.protocol !== "https:" && u.protocol !== "http:") return false;
+  const host = u.hostname.toLowerCase();
+  if (!/(^|\.)(google\.[a-z.]+|goo\.gl|maps\.app\.goo\.gl)$/.test(host)) return false;
+  if (/^(localhost$|127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(host) || host === "::1") return false;
+  return true;
+}
+
 // ── Photo catalog by category ──────────────────────────────────────────────
 // hero: full-screen background (1600px wide)
 // content: section images (800px wide, aspect 4:3)
@@ -275,6 +303,10 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const { mapsUrl = "", name = "", category = "Business", address = "", phone = "", email = "", images = [], instructions = "", designType = "auto", clientId = null, clientProfile = null, styleRef = null, booking = false } = body;
 
+  if (mapsUrl && !isSafeMapsUrl(String(mapsUrl))) {
+    return NextResponse.json({ error: "mapsUrl must be a valid Google Maps link." }, { status: 400 });
+  }
+
   // Full active-client business profile → prompt block (empty when no client).
   const businessContext = buildBusinessContext(clientProfile as BusinessProfile | null);
 
@@ -382,7 +414,10 @@ export async function POST(req: NextRequest) {
   console.log(`[maps] unsplash hero ${heroPoolRaw.length}→${heroPool.length} content ${contentPoolRaw.length}→${contentPool.length}`);
 
   // ── Resolve final image set (uploaded > unsplash-plan > catalog) ───────
-  const heroImage = savedImageUrls[0] ?? heroPool[0] ?? catalog.hero[0];
+  // Only use an uploaded image for the hero if it's a real http URL — a relative
+  // /uploads/ path 404s once the single HTML ships to Cloudflare.
+  const heroUpload = savedImageUrls[0] && /^https?:\/\//.test(savedImageUrls[0]) ? savedImageUrls[0] : null;
+  const heroImage = heroUpload ?? heroPool[0] ?? catalog.hero[0];
   const contentPhotos = contentPool.length >= 3
     ? contentPool
     : [...contentPool, ...catalog.content];
@@ -580,11 +615,11 @@ ${!isFood ? `WHY US (id="why") — <section id="why" class="py-24 px-6 bg-white"
 Stop after the ${isFood ? "ABOUT" : "WHY US"} closing </section>. Do NOT add </body> or </html>. Output ONLY valid HTML, no markdown, no explanations.`;
 
   const styleBlock = styleImageBlock(styleRef ? String(styleRef) : "");
-  const res1 = await anthropic.messages.create({
+  const res1 = await withOverloadRetry(() => anthropic.messages.create({
     model: claudeModel,
     max_tokens: 12000,
     messages: [{ role: "user", content: [...(styleBlock ? [styleBlock] : []), ...imageBlocks, { type: "text", text: prompt1 + (styleBlock ? STYLE_DIRECTIVE : "") }] }],
-  });
+  }));
   let part1 = res1.content[0].type === "text" ? res1.content[0].text.trim() : "";
   part1 = part1.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
 
@@ -648,11 +683,12 @@ CRITICAL: You MUST output ALL sections listed above completely — do not skip a
 
 Output ONLY raw HTML. No markdown. No explanations.`;
 
-  const res2 = await anthropic.messages.create({
+  const res2 = await withOverloadRetry(() => anthropic.messages.create({
     model: claudeModel,
-    max_tokens: 12000,
+    max_tokens: 16000,
     messages: [{ role: "user", content: prompt2 }],
-  });
+  }));
+  if (res2.stop_reason === "max_tokens") console.warn(`[maps] part2 hit max_tokens for "${finalName}" — footer/contact may be truncated`);
   let part2 = res2.content[0].type === "text" ? res2.content[0].text.trim() : "";
   part2 = part2.replace(/^```html\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
 

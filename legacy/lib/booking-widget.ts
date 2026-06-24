@@ -56,7 +56,7 @@ export function bookingWidgetHtml(opts: { waUrl?: string; accent?: string }): st
     e.stopImmediatePropagation();
     if(!(selDay&&selSlot))return;
     var ds=pad(selDay.getDate())+'/'+pad(selDay.getMonth()+1)+'/'+selDay.getFullYear(),txt='Olá! Gostava de marcar para '+ds+' às '+selSlot+'.';
-    if(WA){var base=WA.split('?')[0];window.open(base+'?text='+encodeURIComponent(txt),'_blank','noopener');}
+    if(WA){var base=WA.split('?')[0],wu=base+'?text='+encodeURIComponent(txt),w=window.open(wu,'_blank','noopener');if(!w)location.href=wu;}
     else{var c=document.querySelector('[id*="contact" i],[id*="contacto" i],form');if(c)c.scrollIntoView({behavior:'smooth'});}
     if(out){out.textContent='Marcação para '+ds+' às '+selSlot+(WA?' — continue no WhatsApp para confirmar.':' — contacte-nos para confirmar.');out.style.display='block';}
   },true);
@@ -88,6 +88,18 @@ export function bookingWidgetHtml(opts: { waUrl?: string; accent?: string }): st
 export function injectBooking(html: string, opts: { waUrl?: string }): string {
   if (/id=["']agendamento["']/i.test(html)) return html; // already present
   const widget = bookingWidgetHtml({ waUrl: opts.waUrl, accent: extractAccent(html) });
+
+  // Multipage sites wrap content in <div data-page>. A bare section before the footer
+  // would sit OUTSIDE the router and render on every page. Put the widget at the end of
+  // the first (home) page container instead, so it only shows on the home page.
+  const pages = [...html.matchAll(/<(?:div|section)[^>]*\bdata-page=/gi)];
+  if (pages.length >= 2 && pages[1].index !== undefined) {
+    const closeIdx = html.lastIndexOf("</div>", pages[1].index);
+    if (closeIdx > (pages[0].index ?? 0)) {
+      return html.slice(0, closeIdx) + widget + "\n" + html.slice(closeIdx);
+    }
+  }
+
   const footerIdx = html.search(/<footer[\s>]/i);
   if (footerIdx >= 0) return html.slice(0, footerIdx) + widget + "\n" + html.slice(footerIdx);
   const bodyClose = html.lastIndexOf("</body>");

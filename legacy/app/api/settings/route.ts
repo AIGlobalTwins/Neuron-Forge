@@ -50,8 +50,10 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const update: Record<string, string> = {};
 
-  if (typeof body.anthropicApiKey === "string" && body.anthropicApiKey.trim()) {
-    update.anthropicApiKey = body.anthropicApiKey.trim();
+  const incomingKey = (typeof body.anthropicApiKey === "string" && body.anthropicApiKey.trim())
+    || (typeof body.anthropicKey === "string" && body.anthropicKey.trim());
+  if (incomingKey) {
+    update.anthropicApiKey = incomingKey;
   }
   if (typeof body.instagramToken === "string") {
     update.instagramToken = body.instagramToken.trim();

@@ -32,7 +32,7 @@ export function OnboardingModal({ onComplete }: Props) {
       const res = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ anthropicKey: apiKey.trim() }),
+        body: JSON.stringify({ anthropicApiKey: apiKey.trim() }),
       });
       if (!res.ok) throw new Error("Failed to save");
       setStep(2);

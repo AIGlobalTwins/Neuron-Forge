@@ -24,12 +24,13 @@ export async function POST(
     return NextResponse.json({ error: "html required" }, { status: 400 });
   }
 
-  const redesignDir = path.join(process.cwd(), "outputs", "redesigns");
-  const candidates = [
-    path.join(redesignDir, `analyze_${id}.html`),
-    path.join(redesignDir, `maps_${id}.html`),
-    path.join(redesignDir, `${id}.html`),
-  ];
+  // Generators write to data/redesigns; older builds used outputs/redesigns. Check both.
+  const dirs = [path.join(process.cwd(), "data", "redesigns"), path.join(process.cwd(), "outputs", "redesigns")];
+  const candidates = dirs.flatMap((d) => [
+    path.join(d, `analyze_${id}.html`),
+    path.join(d, `maps_${id}.html`),
+    path.join(d, `${id}.html`),
+  ]);
 
   let targetPath: string | null = null;
   for (const p of candidates) {
