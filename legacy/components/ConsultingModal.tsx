@@ -197,7 +197,7 @@ export function ConsultingModal({ onClose, onOpenTool }: Props) {
             <div>
               <h2 className="text-white font-semibold text-sm">Consulting Agent</h2>
               <p className="text-gray-600 text-xs">
-                {step === "topic" && "Select an area and describe the problem"}
+                {step === "topic" && "Select an area and describe the problem — strategies inspired by Alex Hormozi"}
                 {step === "questions" && `${answeredCount}/${questions.length} questions answered`}
                 {step === "generating" && "Building your plan..."}
                 {step === "plan" && plan?.title}

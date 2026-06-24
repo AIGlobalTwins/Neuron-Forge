@@ -5,6 +5,7 @@ import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 import { qualityBar } from "@/lib/agent-quality";
 import { extractJsonObject } from "@/lib/json-extract";
 import { buildBusinessContext, type BusinessProfile } from "@/lib/business-context";
+import { HORMOZI_PERSONA } from "@/lib/consulting-persona";
 import fs from "fs";
 import path from "path";
 
@@ -68,7 +69,9 @@ export async function POST(req: NextRequest) {
 
     const anthropic = new Anthropic({ apiKey: anthropicKey });
 
-    const prompt = `You are a senior business consultant specialized in ${area}. Analyze the full diagnosis and build a professional consulting plan.
+    const prompt = `${HORMOZI_PERSONA}
+
+You are a sharp growth consultant specialized in ${area}. Analyze the full diagnosis and build a hard-hitting, specific consulting plan THROUGH the frameworks above — name the ONE constraint, then fix the offer (value equation + guarantee + price), the leads (Core Four mix + a lead magnet), and the execution volume.
 
 ## INITIAL PROBLEM
 ${problem}
@@ -114,6 +117,9 @@ Build the plan as JSON. Respond ONLY with JSON (no markdown):
 }
 
 Notes:
+- Lead the diagnosis with the ONE constraint (leads / offer / fulfillment), then the value-equation weaknesses
+- Objectives + actions must concretely improve the OFFER (value equation, risk-reversal guarantee, premium price), the LEADS (a Core Four channel mix + a specific lead magnet) and EXECUTION VOLUME — always with real numbers
+- KPIs must include the money math: CAC, LTV (or LTV:CAC ≥ 3:1), conversion rate, and a weekly activity-volume metric
 - At least 6 action items across 2-3 phases
 - At least 4 KPIs
 - At least 3 risks

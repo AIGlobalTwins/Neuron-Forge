@@ -174,6 +174,7 @@ function buildReportHtml(plan: ConsultingPlan, area: string): string {
 
   <div class="footer">
     <span>Neuron Forge Consulting Agent</span>
+    <span>Strategies inspired by Alex Hormozi's $100M frameworks</span>
     <span>${date}</span>
   </div>
 

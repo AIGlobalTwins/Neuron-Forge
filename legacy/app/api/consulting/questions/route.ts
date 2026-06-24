@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 
 import { getAnthropicKey, getClaudeModel } from "@/lib/settings";
 import { extractJsonArray } from "@/lib/json-extract";
+import { HORMOZI_PERSONA } from "@/lib/consulting-persona";
 
 export interface Question {
   id: string;
@@ -32,14 +33,16 @@ export async function POST(req: NextRequest) {
 
     const anthropic = new Anthropic({ apiKey: anthropicKey });
 
-    const prompt = `You are a senior business consultant specialized in ${area}. A client described the following problem:
+    const prompt = `${HORMOZI_PERSONA}
+
+You are a sharp growth consultant specialized in ${area}. A client described the following problem:
 
 "${problem}"
 
-Generate exactly 7 diagnostic questions that are highly specific to this problem and area. The questions must surface the root causes, the business context, the available resources and the real constraints.
+Generate exactly 7 diagnostic questions that uncover the levers above: the ONE constraint (leads / offer / fulfillment), the offer's value equation, current lead channels (Core Four) and activity volume, pricing and margins, the guarantee / risk-reversal, and the money math (LTV, CAC, conversion). Make them highly specific to THIS problem and area — surface root causes, resources and real constraints.
 
 Rules:
-- Each question must be actionable — the answer should directly shape the solution plan
+- Each question must be actionable — the answer should directly shape the offer / leads / pricing plan
 - Mix types: some open (text), some scale, some multiple-choice (choice)
 - No generic questions that could apply to any business
 - Adapt 100% to the described problem and the ${area} area
