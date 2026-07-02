@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { deploySite, cloudflareEnabled } from "@/lib/cloudflare-deploy";
 import { siteAccess } from "@/lib/site-store";
+import { scriptNameFor, setPublished } from "@/lib/publish-store";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -32,7 +33,6 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const websiteId = String(body.websiteId ?? "").trim();
-  const name = String(body.name ?? "site").trim();
   if (!websiteId) return NextResponse.json({ error: "websiteId required" }, { status: 400 });
 
   const acc = await siteAccess(websiteId);
@@ -42,12 +42,14 @@ export async function POST(req: NextRequest) {
   if (!html) return NextResponse.json({ error: "Could not find that generated site to publish." }, { status: 404 });
 
   try {
-    // Append a short, stable id so two clients with the same name don't collide,
-    // and re-publishing the same site updates the same URL.
-    const result = await deploySite(`${name}-${websiteId.slice(0, 6)}`, html);
+    // Stable, id-derived script name so re-publishing (even after a rename) always
+    // updates the SAME Worker/URL instead of orphaning the old one.
+    const scriptName = scriptNameFor(websiteId);
+    const result = await deploySite(scriptName, html);
     if (!result.url) {
       return NextResponse.json({ error: "Published, but couldn't resolve the live URL. Enable the workers.dev subdomain in Cloudflare." }, { status: 502 });
     }
+    setPublished(websiteId, scriptName, result.url);
     return NextResponse.json({ url: result.url });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message || "Publish failed." }, { status: 502 });

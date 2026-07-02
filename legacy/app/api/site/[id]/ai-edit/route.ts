@@ -7,6 +7,7 @@ import { siteAccess } from "@/lib/site-store";
 import { siteGuard, stripSiteGuard } from "@/lib/site-guard";
 import { waLink } from "@/lib/phone";
 import { inject, readConfig } from "@/lib/integrations";
+import { markContentUpdated } from "@/lib/publish-store";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -67,6 +68,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     try {
       fs.copyFileSync(prevPath, htmlPath);
       fs.unlinkSync(prevPath);
+      markContentUpdated(params.id);
       return NextResponse.json({ ok: true });
     } catch (e) {
       return NextResponse.json({ error: (e as Error).message }, { status: 500 });
@@ -173,6 +175,7 @@ Return ONLY the full updated HTML document, starting with <!DOCTYPE html>.`;
   try {
     fs.copyFileSync(htmlPath, prevPath); // backup for undo
     fs.writeFileSync(htmlPath, out, "utf-8");
+    markContentUpdated(params.id);
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }

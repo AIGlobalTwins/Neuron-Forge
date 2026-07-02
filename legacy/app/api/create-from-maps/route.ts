@@ -17,6 +17,7 @@ import { buildBusinessContext, type BusinessProfile } from "@/lib/business-conte
 import { styleImageBlock, STYLE_DIRECTIVE } from "@/lib/style-ref";
 import { injectBooking } from "@/lib/booking-widget";
 import { writeSiteOwner } from "@/lib/site-store";
+import { markContentUpdated } from "@/lib/publish-store";
 
 // On the mounted disk (/app/data) so generated-site previews survive redeploys.
 const REDESIGN_DIR = "./data/redesigns";
@@ -708,6 +709,7 @@ Output ONLY raw HTML. No markdown. No explanations.`;
   const id = randomUUID();
   fs.writeFileSync(path.join(REDESIGN_DIR, `maps_${id}.html`), html, "utf-8");
   writeSiteOwner(id, userId);
+  markContentUpdated(id);
 
   console.log(`[maps] "${finalName}" | ${finalCategory} | ${Math.round(html.length / 1024)}KB | photos=${savedImageUrls.length}`);
 

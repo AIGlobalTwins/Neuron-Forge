@@ -20,6 +20,7 @@ import { styleImageBlock, STYLE_DIRECTIVE } from "@/lib/style-ref";
 import { injectBooking } from "@/lib/booking-widget";
 import { assertPublicUrl } from "@/lib/ssrf";
 import { writeSiteOwner } from "@/lib/site-store";
+import { markContentUpdated } from "@/lib/publish-store";
 
 // On the mounted disk (/app/data) so generated-site previews survive redeploys.
 const REDESIGN_DIR = "./data/redesigns";
@@ -764,6 +765,7 @@ export async function POST(req: NextRequest) {
   const id = randomUUID();
   fs.writeFileSync(path.join(REDESIGN_DIR, `analyze_${id}.html`), html, "utf-8");
   writeSiteOwner(id, userId);
+  markContentUpdated(id);
 
   console.log(`[analyze] ${analysis.businessName} | score=${analysis.score} | pages=${crawlResult.pages.length} | ${Math.round(html.length / 1024)}KB`);
 

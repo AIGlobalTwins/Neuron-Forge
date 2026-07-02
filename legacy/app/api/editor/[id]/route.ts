@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { siteAccess } from "@/lib/site-store";
+import { markContentUpdated } from "@/lib/publish-store";
 
 export async function POST(
   req: NextRequest,
@@ -49,5 +50,6 @@ export async function POST(
   }
 
   fs.writeFileSync(targetPath, html, "utf-8");
+  markContentUpdated(id);
   return NextResponse.json({ ok: true });
 }

@@ -24,6 +24,8 @@ export default function SitePage() {
   const [aiMsg, setAiMsg] = useState<string | null>(null);
   const [aiErr, setAiErr] = useState<string | null>(null);
   const [canUndo, setCanUndo] = useState(false);
+  const [publish, setPublish] = useState<{ url?: string; publishedAt?: number; contentUpdatedAt?: number } | null>(null);
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     const n = new URLSearchParams(window.location.search).get("name");
@@ -34,7 +36,7 @@ export default function SitePage() {
     if (!id) return;
     fetch(`/api/site/${id}`)
       .then((r) => r.json())
-      .then((d) => setCfg(d?.config ?? {}))
+      .then((d) => { setCfg(d?.config ?? {}); setPublish(d?.publish ?? null); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [id]);
@@ -59,6 +61,7 @@ export default function SitePage() {
         return;
       }
       setSavedMsg("Saved. Re-publish (Publish tab) to push it live.");
+      setDirty(true);
       setPreviewKey((k) => k + 1);
     } catch {
       setErr("Save failed.");
@@ -86,6 +89,7 @@ export default function SitePage() {
       setAiPrompt("");
       setCanUndo(true);
       setAiMsg("Done — preview updated. Re-publish to push it live.");
+      setDirty(true);
       setPreviewKey((k) => k + 1);
     } catch {
       setAiErr("Edit failed.");
@@ -108,6 +112,7 @@ export default function SitePage() {
       }
       setCanUndo(true);
       setAiMsg(d.already ? "Booking calendar already present." : "Booking calendar added — preview updated. Re-publish to push it live.");
+      setDirty(true);
       setPreviewKey((k) => k + 1);
     } catch {
       setAiErr("Could not add the booking calendar.");
@@ -304,9 +309,19 @@ export default function SitePage() {
           <div className="max-w-xl mx-auto fade-up">
             <div className="glow-card rounded-2xl p-6 text-center space-y-4">
               <h3 className="text-lg font-semibold text-white">Publish this site</h3>
+              {(dirty || (!!publish?.publishedAt && (publish.contentUpdatedAt || 0) > (publish.publishedAt || 0))) && publish?.url && (
+                <div className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/25 rounded-lg px-3 py-2">
+                  Alterações por publicar — carrega Re-publish para atualizar o site live.
+                </div>
+              )}
               <p className="text-sm text-gray-500">Push the latest version (with your edits and integrations) to a live URL you can hand to the client. Publishing again updates the same URL.</p>
               <div className="flex justify-center">
-                <PublishButton websiteId={id} name={name} />
+                <PublishButton
+                  websiteId={id}
+                  name={name}
+                  initialUrl={publish?.url ?? null}
+                  onPublished={(u) => { setPublish((p) => ({ ...(p || {}), url: u, publishedAt: Date.now() })); setDirty(false); }}
+                />
               </div>
             </div>
           </div>

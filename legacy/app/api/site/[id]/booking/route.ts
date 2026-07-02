@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { injectBooking } from "@/lib/booking-widget";
 import { siteAccess } from "@/lib/site-store";
+import { markContentUpdated } from "@/lib/publish-store";
 
 export const runtime = "nodejs";
 
@@ -46,6 +47,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   try {
     fs.copyFileSync(htmlPath, `${htmlPath}.prev`); // backup so the editor's Undo restores it
     fs.writeFileSync(htmlPath, out, "utf-8");
+    markContentUpdated(params.id);
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }

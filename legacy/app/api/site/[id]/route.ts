@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { siteAccess } from "@/lib/site-store";
 import { type SiteConfig, readConfig, inject, configPathFor } from "@/lib/integrations";
+import { getPublishInfo, markContentUpdated } from "@/lib/publish-store";
 
 export const runtime = "nodejs";
 
@@ -22,7 +23,7 @@ function htmlPathFor(id: string): string | null {
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const acc = await siteAccess(params.id);
   if (!acc.ok) return NextResponse.json({ error: acc.status === 401 ? "Sign in required." : "Not found." }, { status: acc.status });
-  return NextResponse.json({ config: readConfig(params.id) });
+  return NextResponse.json({ config: readConfig(params.id), publish: getPublishInfo(params.id) });
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     fs.writeFileSync(configPathFor(params.id), JSON.stringify(config, null, 2), "utf-8");
     const html = fs.readFileSync(htmlPath, "utf-8");
     fs.writeFileSync(htmlPath, inject(html, config), "utf-8");
+    markContentUpdated(params.id);
     return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message || "Save failed." }, { status: 500 });
