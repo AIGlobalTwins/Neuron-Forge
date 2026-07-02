@@ -42,30 +42,7 @@ async function withOverloadRetry<T>(fn: () => Promise<T>, tries = 4): Promise<T>
   }
 }
 
-// ── Step 1: Screenshot ────────────────────────────────────────────────────
-async function takeScreenshot(url: string): Promise<string> {
-  const browser = await launchPooled({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
-  try {
-    const page = await browser.newPage();
-    await page.setViewportSize({ width: 1280, height: 900 });
-    try {
-      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30_000 });
-    } catch {
-      // Even slower sites: settle for the first byte, then render below.
-      await page.goto(url, { waitUntil: "commit", timeout: 15_000 }).catch(() => {});
-    }
-    // Real sites rarely reach networkidle (analytics / chat / ads keep the network
-    // busy), so don't wait for it — give fonts/hero/images a fixed beat, then capture.
-    await page.waitForTimeout(3000);
-    const buf = await page.screenshot({ fullPage: false });
-    return buf.toString("base64");
-  } finally {
-    await browser.close();
-    releasePooled();
-  }
-}
-
-// ── Step 2: Extract nav links + crawl sub-pages ───────────────────────────
+// ── Step 1+2: Screenshot + extract nav links + crawl sub-pages (one browser) ──
 interface PageData {
   label: string;
   url: string;
@@ -81,7 +58,7 @@ interface SourceSnapshot {
   bodyStructure: string; // first 2000 chars of body HTML
 }
 
-async function crawlSite(baseUrl: string): Promise<{ home: string; pages: PageData[]; phone: string; email: string; address: string; source: SourceSnapshot }> {
+async function crawlSite(baseUrl: string): Promise<{ screenshot: string; home: string; pages: PageData[]; phone: string; email: string; address: string; source: SourceSnapshot }> {
   const browser = await launchPooled({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
   const origin = new URL(baseUrl).origin;
 
@@ -104,8 +81,16 @@ async function crawlSite(baseUrl: string): Promise<{ home: string; pages: PageDa
 
   try {
     const homePage = await browser.newPage();
-    await homePage.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 15_000 });
-    await homePage.waitForTimeout(1000);
+    await homePage.setViewportSize({ width: 1280, height: 900 });
+    try {
+      await homePage.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    } catch {
+      await homePage.goto(baseUrl, { waitUntil: "commit", timeout: 15_000 }).catch(() => {});
+    }
+    await homePage.waitForTimeout(2500);
+    // Screenshot from THIS same navigation — no second browser / second home load.
+    let screenshot = "";
+    try { screenshot = (await homePage.screenshot({ fullPage: false })).toString("base64"); } catch { /* best-effort */ }
 
     // Extract nav links (internal only)
     const navLinks: { label: string; href: string }[] = await homePage.evaluate((origin) => {
@@ -180,28 +165,29 @@ async function crawlSite(baseUrl: string): Promise<{ home: string; pages: PageDa
 
     await homePage.close();
 
-    // Crawl up to 5 nav pages
-    const pages: PageData[] = [];
+    // Crawl up to 5 nav pages — in parallel (batches of 3) instead of one-by-one.
     const toVisit = navLinks.filter(l => new URL(l.href).pathname !== "/").slice(0, 5);
-
-    for (const link of toVisit) {
+    const crawlOne = async (link: { label: string; href: string }): Promise<PageData> => {
       try {
         const p = await browser.newPage();
         await p.goto(link.href, { waitUntil: "domcontentloaded", timeout: 12_000 });
-        await p.waitForTimeout(500);
+        await p.waitForTimeout(300);
         const content = await extractText(p);
         await p.close();
-
         const pathname = new URL(link.href).pathname;
         const slug = pathname.replace(/\//g, "-").replace(/^-|-$/g, "").toLowerCase() || "page";
-
-        pages.push({ label: link.label, url: link.href, slug, content: content.slice(0, 1500) });
+        return { label: link.label, url: link.href, slug, content: content.slice(0, 1500) };
       } catch {
-        pages.push({ label: link.label, url: link.href, slug: link.label.toLowerCase().replace(/\s+/g, "-"), content: "" });
+        return { label: link.label, url: link.href, slug: link.label.toLowerCase().replace(/\s+/g, "-"), content: "" };
       }
+    };
+    const pages: PageData[] = [];
+    for (let i = 0; i < toVisit.length; i += 3) {
+      pages.push(...await Promise.all(toVisit.slice(i, i + 3).map(crawlOne)));
     }
 
     return {
+      screenshot,
       home: homeContent.slice(0, 1500),
       pages,
       phone: homeContact.phone,
@@ -711,20 +697,17 @@ export async function POST(req: NextRequest) {
 
   const anthropic = new Anthropic({ apiKey: anthropicKey });
 
-  // 1. Screenshot
-  let screenshotBase64 = "";
-  try {
-    screenshotBase64 = await takeScreenshot(url);
-  } catch (err) {
-    return NextResponse.json({ error: `Could not screenshot: ${(err as Error).message}` }, { status: 400 });
-  }
-
-  // 2. Crawl site (homepage + sub-pages)
+  // 1+2. Screenshot + crawl the site in a single browser pass (was two separate
+  // browsers each re-loading the homepage).
   let crawlResult: Awaited<ReturnType<typeof crawlSite>>;
   try {
     crawlResult = await crawlSite(url);
   } catch {
-    crawlResult = { home: "", pages: [], phone: "", email: "", address: "", source: { metaDescription: "", headFonts: "", cssVars: "", styleTags: "", bodyStructure: "" } };
+    crawlResult = { screenshot: "", home: "", pages: [], phone: "", email: "", address: "", source: { metaDescription: "", headFonts: "", cssVars: "", styleTags: "", bodyStructure: "" } };
+  }
+  const screenshotBase64 = crawlResult.screenshot;
+  if (!screenshotBase64 && !crawlResult.home) {
+    return NextResponse.json({ error: "Could not load that website — check the URL and try again." }, { status: 400 });
   }
 
   // 3. Vision analysis

@@ -232,7 +232,7 @@ async function extractFromMaps(mapsUrl: string): Promise<{ name: string; address
       Object.defineProperty(navigator, "webdriver", { get: () => undefined });
     });
     await page.goto(mapsUrl, { waitUntil: "domcontentloaded", timeout: 35_000 });
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(2000);
 
     // Title is the most reliable source for the name
     const title = await page.title();
