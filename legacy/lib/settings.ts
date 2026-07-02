@@ -5,7 +5,6 @@ const DATA_DIR = path.join(process.cwd(), "data");
 
 export const AVAILABLE_MODELS = [
   { id: "claude-opus-4-8", label: "Opus 4.8", desc: "Mais capaz — melhor qualidade" },
-  { id: "claude-opus-4-7", label: "Opus 4.7", desc: "Muito capaz — topo anterior" },
   { id: "claude-sonnet-4-6", label: "Sonnet 4.6", desc: "Equilibrado — rápido e capaz" },
   { id: "claude-haiku-4-5", label: "Haiku 4.5", desc: "Mais rápido e barato" },
 ] as const;
@@ -96,7 +95,11 @@ export function getAnthropicKey(userId?: string | null): string {
 }
 
 export function getClaudeModel(userId?: string | null): string {
-  const model = readSettings(userId).claudeModel;
+  const raw = readSettings(userId).claudeModel;
+  // Migrate superseded / mis-suffixed ids to the current release (no silent downgrade).
+  const model = raw === "claude-opus-4-7" ? "claude-opus-4-8"
+    : raw === "claude-haiku-4-5-20251001" ? "claude-haiku-4-5"
+    : raw;
   const valid = AVAILABLE_MODELS.some((m) => m.id === model);
   return valid ? model : DEFAULT_MODEL;
 }

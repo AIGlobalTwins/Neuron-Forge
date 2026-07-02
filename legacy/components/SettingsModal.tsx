@@ -54,8 +54,8 @@ function CheckIcon() {
   );
 }
 
-const MODEL_IDS = ["claude-opus-4-8", "claude-opus-4-7", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"] as const;
-const MODEL_LABELS = ["Opus 4.8", "Opus 4.7", "Sonnet 4.6", "Haiku 4.5"] as const;
+const MODEL_IDS = ["claude-opus-4-8", "claude-sonnet-4-6", "claude-haiku-4-5"] as const;
+const MODEL_LABELS = ["Opus 4.8", "Sonnet 4.6", "Haiku 4.5"] as const;
 
 export function SettingsModal({ onClose }: Props) {
   const lang = useLang();
