@@ -9,7 +9,9 @@ export const AVAILABLE_MODELS = [
   { id: "claude-haiku-4-5", label: "Haiku 4.5", desc: "Mais rápido e barato" },
 ] as const;
 
-export const DEFAULT_MODEL = "claude-sonnet-4-6";
+// Generation defaults to the most capable model for the best output (edits still use
+// Sonnet — see the ai-edit routes). Users can switch in Settings.
+export const DEFAULT_MODEL = "claude-opus-4-8";
 
 export interface AppSettings {
   anthropicApiKey: string;

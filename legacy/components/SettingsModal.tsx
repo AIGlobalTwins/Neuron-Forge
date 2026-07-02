@@ -61,7 +61,7 @@ export function SettingsModal({ onClose }: Props) {
   const lang = useLang();
   const t = S[lang];
   const [anthropicKey, setAnthropicKey] = useState("");
-  const [claudeModel, setClaudeModel] = useState("claude-sonnet-4-6");
+  const [claudeModel, setClaudeModel] = useState("claude-opus-4-8");
   const [showAnthropic, setShowAnthropic] = useState(false);
   const [hasAnthropicKey, setHasAnthropicKey] = useState(false);
   const [saving, setSaving] = useState(false);

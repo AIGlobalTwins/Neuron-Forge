@@ -28,7 +28,7 @@ export async function GET() {
   const gc = getGoogleConnection(userId);
   return NextResponse.json({
     anthropicApiKey: s.anthropicApiKey ? maskKey(s.anthropicApiKey) : "",
-    claudeModel: s.claudeModel || "claude-sonnet-4-6",
+    claudeModel: s.claudeModel || "claude-opus-4-8",
     // has* reflect the resolved value (settings file OR environment variable),
     // so a key set via Render env vars correctly clears the "No API Key" banner.
     hasAnthropicKey: !!getAnthropicKey(userId),
