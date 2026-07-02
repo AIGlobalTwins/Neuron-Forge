@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { chromium } from "playwright";
+import { launchPooled, releasePooled } from "@/lib/browser-pool";
+import type { Browser } from "playwright";
 import type { ConsultingPlan } from "../plan/route";
 
 function buildReportHtml(plan: ConsultingPlan, area: string): string {
@@ -189,10 +190,10 @@ export async function POST(req: NextRequest) {
 
   if (!plan) return NextResponse.json({ error: "plan is required" }, { status: 400 });
 
-  let browser: Awaited<ReturnType<typeof chromium.launch>> | null = null;
+  let browser: Browser | null = null;
   try {
     const html = buildReportHtml(plan as ConsultingPlan, area || "Consultoria");
-    browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
+    browser = await launchPooled({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "domcontentloaded" });
     const pdf = await page.pdf({ format: "A4", printBackground: true, margin: { top: "0", right: "0", bottom: "0", left: "0" } });
@@ -206,6 +207,6 @@ export async function POST(req: NextRequest) {
     console.error("[consulting/pdf] error:", (e as Error).message);
     return NextResponse.json({ error: "Não foi possível gerar o PDF. Tenta novamente." }, { status: 500 });
   } finally {
-    if (browser) await browser.close();
+    if (browser) { await browser.close(); releasePooled(); }
   }
 }

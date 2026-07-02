@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import type { SiteConfig } from "@/app/api/site/[id]/route";
+import type { SiteConfig } from "@/lib/integrations";
 import { PublishButton } from "@/components/PublishButton";
 
 type Tab = "design" | "integrations" | "publish";

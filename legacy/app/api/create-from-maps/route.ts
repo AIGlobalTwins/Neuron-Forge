@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { chromium } from "playwright";
+import { launchPooled, releasePooled } from "@/lib/browser-pool";
 import Anthropic from "@anthropic-ai/sdk";
 import { randomUUID } from "crypto";
 import fs from "fs";
@@ -212,7 +212,7 @@ async function extractFromMaps(mapsUrl: string): Promise<{ name: string; address
   // Instant fallback: parse name from URL before launching browser
   const result = { name: nameFromMapsUrl(mapsUrl), address: "", phone: "", category: "" };
 
-  const browser = await chromium.launch({
+  const browser = await launchPooled({
     headless: true,
     args: [
       "--no-sandbox",
@@ -246,6 +246,7 @@ async function extractFromMaps(mapsUrl: string): Promise<{ name: string; address
     try { result.category = await page.$eval('button.DkEaL', (el) => (el as HTMLElement).innerText); } catch {}
   } finally {
     await browser.close();
+    releasePooled();
   }
   return result;
 }

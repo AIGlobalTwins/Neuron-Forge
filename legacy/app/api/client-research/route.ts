@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { chromium } from "playwright";
+import { launchPooled, releasePooled } from "@/lib/browser-pool";
 
 import { getAnthropicKey } from "@/lib/settings";
 import { extractJsonObject } from "@/lib/json-extract";
@@ -39,7 +39,7 @@ function nonSpaceLen(s: string): number {
 
 // Render the page (handles JS-heavy sites) and pull the visible text.
 async function renderWithChromium(url: string): Promise<string> {
-  const browser = await chromium.launch({
+  const browser = await launchPooled({
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
   });
@@ -59,6 +59,7 @@ async function renderWithChromium(url: string): Promise<string> {
     return `${head}\n\n${compact(data.body)}`.slice(0, 12000);
   } finally {
     await browser.close().catch(() => {});
+    releasePooled();
   }
 }
 

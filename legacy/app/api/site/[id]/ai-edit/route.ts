@@ -4,6 +4,9 @@ import path from "path";
 import Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicKey } from "@/lib/settings";
 import { siteAccess } from "@/lib/site-store";
+import { siteGuard, stripSiteGuard } from "@/lib/site-guard";
+import { waLink } from "@/lib/phone";
+import { inject, readConfig } from "@/lib/integrations";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -148,6 +151,23 @@ Return ONLY the full updated HTML document, starting with <!DOCTYPE html>.`;
         { status: 422 },
       );
     }
+  }
+
+  // Re-apply the runtime safety net + the reseller's integrations — a full rewrite can
+  // drop the site-guard scripts and the nf:head/nf:body blocks, silently regressing a
+  // live client site (dead buttons, dead WhatsApp, lost GA/pixel).
+  try {
+    out = stripSiteGuard(out);
+    const cfg = readConfig(params.id);
+    const num = (cfg.whatsapp?.number || "").replace(/[^0-9]/g, "");
+    const waFromHtml = (out.match(/wa\.me\/(\d{6,15})/) || [])[1] || "";
+    const waUrl = num ? waLink(num, "") : waFromHtml ? `https://wa.me/${waFromHtml}` : "";
+    const contactHref = /data-page=/i.test(out) ? "#/contacto" : "#contact";
+    const guard = siteGuard({ waUrl, contactHref });
+    out = /<\/body>/i.test(out) ? out.replace(/<\/body>/i, `${guard}\n</body>`) : out + guard;
+    out = inject(out, cfg);
+  } catch (e) {
+    console.error("[ai-edit] re-apply guard/integrations failed:", (e as Error).message);
   }
 
   try {

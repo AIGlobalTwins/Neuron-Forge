@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { chromium } from "playwright";
+import { launchPooled, releasePooled } from "@/lib/browser-pool";
 import Anthropic from "@anthropic-ai/sdk";
 import { randomUUID } from "crypto";
 import fs from "fs";
@@ -43,7 +43,7 @@ async function withOverloadRetry<T>(fn: () => Promise<T>, tries = 4): Promise<T>
 
 // ── Step 1: Screenshot ────────────────────────────────────────────────────
 async function takeScreenshot(url: string): Promise<string> {
-  const browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
+  const browser = await launchPooled({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
   try {
     const page = await browser.newPage();
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -60,6 +60,7 @@ async function takeScreenshot(url: string): Promise<string> {
     return buf.toString("base64");
   } finally {
     await browser.close();
+    releasePooled();
   }
 }
 
@@ -80,7 +81,7 @@ interface SourceSnapshot {
 }
 
 async function crawlSite(baseUrl: string): Promise<{ home: string; pages: PageData[]; phone: string; email: string; address: string; source: SourceSnapshot }> {
-  const browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
+  const browser = await launchPooled({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
   const origin = new URL(baseUrl).origin;
 
   const extractText = async (page: import("playwright").Page): Promise<string> => {
@@ -209,6 +210,7 @@ async function crawlSite(baseUrl: string): Promise<{ home: string; pages: PageDa
     };
   } finally {
     await browser.close();
+    releasePooled();
   }
 }
 

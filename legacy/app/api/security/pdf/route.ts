@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { chromium } from "playwright";
+import { launchPooled, releasePooled } from "@/lib/browser-pool";
 import type { SecurityResult, SecurityFinding, SecurityRating } from "../route";
 
 const SEVERITY_COLORS: Record<SecurityFinding["severity"], { bg: string; text: string; border: string; label: string }> = {
@@ -221,7 +221,7 @@ export async function POST(req: NextRequest) {
 
   const html = buildHtml(result);
 
-  const browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
+  const browser = await launchPooled({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"] });
   try {
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "domcontentloaded" });
@@ -239,5 +239,6 @@ export async function POST(req: NextRequest) {
     });
   } finally {
     await browser.close();
+    releasePooled();
   }
 }
